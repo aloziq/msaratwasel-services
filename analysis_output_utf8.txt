@@ -1,0 +1,16 @@
+﻿Analyzing wasel...                                              
+
+   info - The type parameter name 'Type' matches a visible type name - lib\core\usecases\usecase.dart:9:24 - avoid_types_as_parameter_names
+   info - Don't use 'BuildContext's across async gaps - lib\features\qr_scan\presentation\screens\qr_scan_screen.dart:39:17 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\features\reports\presentation\screens\reports_screen.dart:145:27 - curly_braces_in_flow_control_structures
+  error - Target of URI doesn't exist: '../../domain/entities/student_entity.dart' - lib\features\teacher\data\models\student_model.dart:1:8 - uri_does_not_exist
+  error - Classes can only extend other classes - lib\features\teacher\data\models\student_model.dart:3:28 - extends_non_class
+  error - No associated named super constructor parameter - lib\features\teacher\data\models\student_model.dart:5:20 - super_formal_parameter_without_associated_named
+  error - No associated named super constructor parameter - lib\features\teacher\data\models\student_model.dart:6:20 - super_formal_parameter_without_associated_named
+  error - No associated named super constructor parameter - lib\features\teacher\data\models\student_model.dart:7:20 - super_formal_parameter_without_associated_named
+  error - No associated named super constructor parameter - lib\features\teacher\data\models\student_model.dart:8:20 - super_formal_parameter_without_associated_named
+  error - No associated named super constructor parameter - lib\features\teacher\data\models\student_model.dart:9:11 - super_formal_parameter_without_associated_named
+  error - No associated named super constructor parameter - lib\features\teacher\data\models\student_model.dart:10:11 - super_formal_parameter_without_associated_named
+  error - Undefined name 'AttendanceStatus' - lib\features\teacher\data\models\student_model.dart:20:15 - undefined_identifier
+  error - Undefined name 'AttendanceStatus' - lib\features\teacher\data\models\student_model.dart:22:23 - undefined_identifier
+

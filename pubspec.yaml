@@ -1,0 +1,56 @@
+name: msaratwasel_services
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  
+  # State Management
+  flutter_bloc: ^8.1.6
+  
+  # Functional Programming
+  dartz: ^0.10.1
+  
+  # Value Equality
+  equatable: ^2.0.5
+  
+  # Local Storage
+  shared_preferences: ^2.3.3
+  
+  # Navigation
+  go_router: ^14.6.0
+  
+  # UI Enhancements
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.0
+  phosphor_flutter: ^2.1.0
+  mobile_scanner: ^7.1.4
+  fl_chart: ^0.70.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/images/
+    - assets/icons/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/msaratwasel_services.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/msaratwasel_services.png"
