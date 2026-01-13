@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +11,7 @@ import '../cubit/reports_cubit.dart';
 import '../cubit/reports_state.dart';
 import '../../domain/entities/report_entity.dart';
 import '../../../../../core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -28,31 +30,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            PhosphorIconsRegular.list,
-            color: theme.colorScheme.onSurface,
-            size: 32,
-          ),
-          onPressed: () {
-            MainShell.of(context)?.openDrawer();
-          },
-        ),
-        title: Text(
-          'التقارير والإحصائيات',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-            fontSize: 22,
-          ),
-        ),
-        centerTitle: true,
-      ),
       body: BlocBuilder<ReportsCubit, ReportsState>(
         builder: (context, state) {
           if (state is ReportsLoading) {
@@ -60,7 +40,45 @@ class _ReportsScreenState extends State<ReportsScreen> {
           } else if (state is ReportsError) {
             return Center(child: Text(state.message));
           } else if (state is ReportsLoaded) {
-            return _buildContent(state.stats);
+            return CustomScrollView(
+              slivers: [
+                CupertinoSliverNavigationBar(
+                  leading: IconButton(
+                    icon: Icon(
+                      PhosphorIconsRegular.list,
+                      color: theme.colorScheme.onSurface,
+                      size: 32,
+                    ),
+                    onPressed: () {
+                      MainShell.of(context)?.openDrawer();
+                    },
+                  ),
+                  largeTitle: Text(
+                    l10n.reportsTitle,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                    ),
+                  ),
+                  backgroundColor: Colors.transparent,
+                  border: null,
+                  stretch: true,
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildSummaryGrid(context, state.stats),
+                      const SizedBox(height: AppSpacing.xl),
+                      _buildTrendChart(context, state.stats.weeklyTrend),
+                      const SizedBox(height: AppSpacing.xl),
+                      _buildInsights(state.stats),
+                      const SizedBox(height: AppSpacing.xxl),
+                    ]),
+                  ),
+                ),
+              ],
+            );
           }
           return const SizedBox.shrink();
         },
@@ -68,20 +86,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildContent(AttendanceStatsEntity stats) {
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      children: [
-        _buildSummaryGrid(stats),
-        const SizedBox(height: AppSpacing.xl),
-        _buildTrendChart(stats.weeklyTrend),
-        const SizedBox(height: AppSpacing.xl),
-        _buildInsights(stats),
-      ],
-    );
-  }
-
-  Widget _buildSummaryGrid(AttendanceStatsEntity stats) {
+  Widget _buildSummaryGrid(BuildContext context, AttendanceStatsEntity stats) {
+    final l10n = AppLocalizations.of(context)!;
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -91,28 +97,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
       childAspectRatio: 1.5,
       children: [
         _SummaryCard(
-          title: 'إجمالي الطلاب',
+          title: l10n.totalStudents,
           value: '${stats.totalStudents}',
           icon: PhosphorIconsFill.users,
           color: BrandColors.primary,
           index: 0,
         ),
         _SummaryCard(
-          title: 'حضور اليوم',
+          title: l10n.attendanceToday,
           value: '${stats.presentToday}',
           icon: PhosphorIconsFill.checkCircle,
           color: Colors.green,
           index: 1,
         ),
         _SummaryCard(
-          title: 'غياب اليوم',
+          title: l10n.absenceToday,
           value: '${stats.absentToday}',
           icon: PhosphorIconsFill.xCircle,
           color: Colors.red,
           index: 2,
         ),
         _SummaryCard(
-          title: 'متوسط الحضور',
+          title: l10n.averageAttendance,
           value: '${stats.averageAttendance.toStringAsFixed(1)}%',
           icon: PhosphorIconsFill.chartLineUp,
           color: Colors.orange,
@@ -122,8 +128,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildTrendChart(List<ReportEntity> trend) {
+  Widget _buildTrendChart(BuildContext context, List<ReportEntity> trend) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -137,7 +144,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'اتجاه الحضور الأسبوعي',
+            l10n.weeklyAttendanceTrend,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -179,6 +186,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _buildInsights(AttendanceStatsEntity stats) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -201,7 +209,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'رؤية ذكية',
+                  l10n.smartInsight,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -209,8 +217,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
                 Text(
                   stats.averageAttendance >= 90
-                      ? 'أداء الحضور ممتاز هذا الأسبوع! استمر في تحفيز الطلاب.'
-                      : 'هناك انخفاض طفيف في الحضور. قد ترغب في مراجعة الأسباب.',
+                      ? l10n.excellentAttendanceInsight
+                      : l10n.lowAttendanceInsight,
                   style: theme.textTheme.bodySmall,
                 ),
               ],

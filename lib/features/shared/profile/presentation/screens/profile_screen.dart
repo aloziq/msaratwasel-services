@@ -14,194 +14,69 @@ class ProfileScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-
-        centerTitle: true,
-        leading: BackButton(
-          color: Colors.white,
-          style: ButtonStyle(
-            iconSize: WidgetStateProperty.all(24),
-            shadowColor: WidgetStateProperty.all(Colors.black),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              PhosphorIconsRegular.pencilSimple,
-              color: Colors.white,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.zero,
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'الإحصائيات', // Statistics
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : BrandColors.textPrimary,
-                    ),
-                  ).animate().fadeIn().slideX(begin: 0.2, end: 0),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildStatsRow(
-                    context,
-                  ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
-                  const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'المعلومات الشخصية', // Personal Information
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : BrandColors.textPrimary,
-                    ),
-                  ).animate().fadeIn(delay: 200.ms).slideX(begin: 0.2, end: 0),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildInfoTile(
-                    context,
-                    icon: PhosphorIconsDuotone.identificationCard,
-                    label: 'الرقم المدني', // Civil ID
-                    value: '1234567890',
-                    delay: 300.ms,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildInfoTile(
-                    context,
-                    icon: PhosphorIconsDuotone.phone,
-                    label: 'رقم الهاتف', // Phone Number
-                    value: '+966 50 123 4567',
-                    delay: 400.ms,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildInfoTile(
-                    context,
-                    icon: PhosphorIconsDuotone.envelope,
-                    label: 'البريد الإلكتروني', // Email
-                    value: 'teacher@wasel.edu.sa',
-                    delay: 500.ms,
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return SizedBox(
-      height: 380,
-      child: Stack(
-        alignment: Alignment.topCenter,
-        children: [
-          // Background Curve
-          ClipPath(
-            clipper: _HeaderClipper(),
-            child: Container(
-              height: 320,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient(context),
-              ),
+      backgroundColor: Colors.transparent,
+      body: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _ShrinkingProfileHeaderDelegate(
+              maxExtent: 380,
+              minExtent: MediaQuery.of(context).padding.top + 80,
+              theme: theme,
+              isDark: isDark,
             ),
           ),
-
-          // Profile Content
-          Positioned(
-            top: 110,
-            child: Column(
-              children: [
-                // Avatar with Glow
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: CircleAvatar(
-                        radius: 56,
-                        backgroundImage: const NetworkImage(
-                          'https://i.pravatar.cc/300?img=11', // Placeholder
-                        ),
-                      ),
-                    ),
-                  ),
-                ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
-
-                const SizedBox(height: AppSpacing.md),
-
-                // Name
-                const Text(
-                  'عبدالله الأحمد', // Abdullah Al-Ahmad
-                  style: TextStyle(
-                    fontSize: 28,
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  'الإحصائيات', // Statistics
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black26,
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                    color: isDark ? Colors.white : BrandColors.textPrimary,
                   ),
-                ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.3, end: 0),
-
-                const SizedBox(height: AppSpacing.xs),
-
-                // Role Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
+                ).animate().fadeIn().slideX(begin: 0.2, end: 0),
+                const SizedBox(height: AppSpacing.md),
+                _buildStatsRow(
+                  context,
+                ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  'المعلومات الشخصية', // Personal Information
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : BrandColors.textPrimary,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: const Text(
-                    'معلم صف', // Class Teacher
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3, end: 0),
-              ],
+                ).animate().fadeIn(delay: 200.ms).slideX(begin: 0.2, end: 0),
+                const SizedBox(height: AppSpacing.md),
+                _buildInfoTile(
+                  context,
+                  icon: PhosphorIconsDuotone.identificationCard,
+                  label: 'الرقم المدني', // Civil ID
+                  value: '1234567890',
+                  delay: 300.ms,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _buildInfoTile(
+                  context,
+                  icon: PhosphorIconsDuotone.phone,
+                  label: 'رقم الهاتف', // Phone Number
+                  value: '+966 50 123 4567',
+                  delay: 400.ms,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _buildInfoTile(
+                  context,
+                  icon: PhosphorIconsDuotone.envelope,
+                  label: 'البريد الإلكتروني', // Email
+                  value: 'mohammed@wasel.edu.sa',
+                  delay: 500.ms,
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+              ]),
             ),
           ),
         ],
@@ -366,22 +241,231 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
+class _ShrinkingProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double maxExtent;
+  final double minExtent;
+  final ThemeData theme;
+  final bool isDark;
+
+  _ShrinkingProfileHeaderDelegate({
+    required this.maxExtent,
+    required this.minExtent,
+    required this.theme,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final progress = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    // Animation values
+    final avatarScale = 1.0 - (progress * 0.45); // Scales to ~0.55
+
+    // Horizontal positions
+    // Avatar: Start centered, end at left: 16
+    final initialAvatarLeft = (screenWidth / 2) - 60;
+    final finalAvatarLeft = 16.0;
+    final currentAvatarLeft =
+        initialAvatarLeft + (progress * (finalAvatarLeft - initialAvatarLeft));
+
+    // Vertical positions
+    final initialAvatarTop = 110.0;
+    final finalAvatarTop = topPadding + 6; // Center better in 80h bar
+    final currentAvatarTop =
+        initialAvatarTop + (progress * (finalAvatarTop - initialAvatarTop));
+
+    // Name position: Start centered below avatar, end at right: 72
+    final initialNameTop = initialAvatarTop + 120 + 16;
+    final finalNameTop = topPadding + 26; // Center better in 80h bar
+    final currentNameTop =
+        initialNameTop + (progress * (finalNameTop - initialNameTop));
+
+    final nameScale = 1.0 - (progress * 0.25);
+    final nameShadowAlpha = (1.0 - progress).clamp(0.0, 1.0);
+
+    final roleOpacity = (1.0 - progress * 4.0).clamp(0.0, 1.0);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Background Gradient
+        ClipPath(
+          clipper: _HeaderClipper(progress: progress),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient(context),
+            ),
+          ),
+        ),
+
+        // Back Button
+        Positioned(
+          top: topPadding + 10,
+          right: 16,
+          child: const BackButton(color: Colors.white),
+        ),
+
+        // Avatar
+        Positioned(
+          top: currentAvatarTop,
+          left: currentAvatarLeft,
+          child: Transform.scale(
+            scale: avatarScale,
+            alignment: Alignment.topLeft,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2 * (1 - progress)),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: const CircleAvatar(
+                radius: 60,
+                backgroundColor: Colors.white,
+                child: Padding(
+                  padding: EdgeInsets.all(4),
+                  child: CircleAvatar(
+                    radius: 56,
+                    backgroundImage: NetworkImage(
+                      'https://i.pravatar.cc/300?img=11',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Name
+        Positioned(
+          top: currentNameTop,
+          left: 0,
+          right: 0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Transform.scale(
+              scale: nameScale,
+              alignment: Alignment.lerp(
+                Alignment.center,
+                Alignment.centerRight,
+                progress,
+              )!,
+              child: Container(
+                padding: EdgeInsets.only(
+                  right: progress * 64,
+                ), // Avoid overlapping back button
+                alignment: Alignment.lerp(
+                  Alignment.center,
+                  Alignment.centerRight,
+                  progress,
+                )!,
+                child: Text(
+                  'عبدالله الأحمد',
+                  textAlign: progress > 0.5
+                      ? TextAlign.right
+                      : TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withValues(
+                          alpha: 0.26 * nameShadowAlpha,
+                        ),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Role Badge
+        Positioned(
+          top: initialNameTop + 40,
+          left: 0,
+          right: 0,
+          child: Opacity(
+            opacity: roleOpacity,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: const Text(
+                  'معلم صف',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool shouldRebuild(_ShrinkingProfileHeaderDelegate oldDelegate) {
+    return oldDelegate.maxExtent != maxExtent ||
+        oldDelegate.minExtent != minExtent ||
+        oldDelegate.theme != theme ||
+        oldDelegate.isDark != isDark;
+  }
+}
+
 class _HeaderClipper extends CustomClipper<Path> {
+  final double progress;
+
+  _HeaderClipper({this.progress = 0.0});
+
   @override
   Path getClip(Size size) {
     final path = Path();
-    path.lineTo(0, size.height - 60);
-    path.quadraticBezierTo(
-      size.width / 2,
-      size.height,
-      size.width,
-      size.height - 60,
-    );
+    final curveHeight = 60.0 * (1.0 - progress);
+
+    path.lineTo(0, size.height - curveHeight);
+    if (curveHeight > 0) {
+      path.quadraticBezierTo(
+        size.width / 2,
+        size.height,
+        size.width,
+        size.height - curveHeight,
+      );
+    } else {
+      path.lineTo(size.width, size.height);
+    }
     path.lineTo(size.width, 0);
     path.close();
     return path;
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(_HeaderClipper oldClipper) =>
+      oldClipper.progress != progress;
 }

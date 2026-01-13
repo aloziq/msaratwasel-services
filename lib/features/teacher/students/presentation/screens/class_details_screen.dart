@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,62 +35,66 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          widget.classroom.name,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : BrandColors.textPrimary,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              PhosphorIconsRegular.qrCode,
-              color: isDark ? Colors.white : BrandColors.primary,
+      backgroundColor: Colors.transparent,
+      body: CustomScrollView(
+        slivers: [
+          CupertinoSliverNavigationBar(
+            leading: const BackButton(),
+            largeTitle: Text(
+              widget.classroom.name,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontFamily: theme.textTheme.titleLarge?.fontFamily,
+              ),
             ),
-            onPressed: () => context.push(AppRoutes.qrScan),
+            backgroundColor: Colors.transparent,
+            border: null,
+            stretch: true,
+            trailing: IconButton(
+              icon: Icon(
+                PhosphorIconsRegular.qrCode,
+                color: isDark ? Colors.white : BrandColors.primary,
+              ),
+              onPressed: () => context.push(AppRoutes.qrScan),
+            ),
+          ),
+          BlocBuilder<ClassDetailsCubit, ClassDetailsState>(
+            builder: (context, state) {
+              if (state is ClassDetailsLoading) {
+                return const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              } else if (state is ClassDetailsLoaded) {
+                return _buildStudentsSliverList(state.students);
+              } else if (state is ClassDetailsError) {
+                return SliverFillRemaining(
+                  child: Center(child: Text(state.message)),
+                );
+              }
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            },
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: BlocBuilder<ClassDetailsCubit, ClassDetailsState>(
-              builder: (context, state) {
-                if (state is ClassDetailsLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (state is ClassDetailsLoaded) {
-                  return _buildStudentsList(state.students);
-                } else if (state is ClassDetailsError) {
-                  return Center(child: Text(state.message));
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-          _buildBottomBar(),
-        ],
-      ),
+      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
-  Widget _buildStudentsList(List<StudentEntity> students) {
-    return ListView.separated(
+  Widget _buildStudentsSliverList(List<StudentEntity> students) {
+    return SliverPadding(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: students.length,
-      separatorBuilder: (context, index) =>
-          const SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) {
-        final student = students[index];
-        return _StudentCard(
-          student: student,
-        ).animate().fadeIn(delay: (50 * index).ms).slideX(begin: 0.1, end: 0);
-      },
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final student = students[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: _StudentCard(student: student)
+                .animate()
+                .fadeIn(delay: (50 * index).ms)
+                .slideX(begin: 0.1, end: 0),
+          );
+        }, childCount: students.length),
+      ),
     );
   }
 

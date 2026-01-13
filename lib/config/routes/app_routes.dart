@@ -17,6 +17,10 @@ abstract class AppRoutes {
   static const reports = '/reports';
   static const profile = '/profile';
   static const assistantHome = '/assistant';
+  static const busStudents = '/bus-students';
+  static const dailyChecklist = '/daily-checklist';
+  static const incidentReport = '/incident-report';
+  static const busMap = '/bus-map';
 
   /// Helper to generate class details path with classId
   static String classDetailsPath(String classId) => '/class/$classId';

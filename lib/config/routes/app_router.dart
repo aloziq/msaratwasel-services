@@ -26,7 +26,13 @@ import '../../features/teacher/reports/presentation/cubit/reports_cubit.dart';
 import '../../features/teacher/reports/domain/usecases/get_attendance_stats_usecase.dart';
 import '../../features/teacher/reports/data/repositories/reports_repository_impl.dart';
 import '../../features/shared/profile/presentation/screens/profile_screen.dart';
-import '../../features/assistant/presentation/screens/assistant_home_screen.dart';
+import '../../features/assistant/home/presentation/screens/assistant_home_screen.dart';
+import '../../features/assistant/students/presentation/screens/bus_students_screen.dart';
+import '../../features/assistant/checklist/presentation/screens/daily_checklist_screen.dart';
+import '../../features/assistant/incidents/presentation/screens/incident_report_screen.dart';
+import '../../features/assistant/tracking/presentation/screens/bus_map_screen.dart';
+import '../../features/assistant/core/presentation/cubit/bus_trip_cubit.dart';
+import '../../features/assistant/core/data/repositories/assistant_repository_impl.dart';
 import 'app_routes.dart';
 
 /// Application router configuration using GoRouter.
@@ -128,7 +134,37 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.assistantHome,
             name: 'assistantHome',
-            builder: (context, state) => const AssistantHomeScreen(),
+            builder: (context, state) => BlocProvider(
+              create: (context) =>
+                  BusTripCubit(repository: AssistantRepositoryImpl())
+                    ..loadTrip(),
+              child: const AssistantHomeScreen(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.busStudents,
+            name: 'busStudents',
+            builder: (context, state) => BlocProvider(
+              create: (context) =>
+                  BusTripCubit(repository: AssistantRepositoryImpl())
+                    ..loadTrip(),
+              child: const BusStudentsScreen(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.dailyChecklist,
+            name: 'dailyChecklist',
+            builder: (context, state) => const DailyChecklistScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.incidentReport,
+            name: 'incidentReport',
+            builder: (context, state) => const IncidentReportScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.busMap,
+            name: 'busMap',
+            builder: (context, state) => const BusMapScreen(),
           ),
         ],
       ),

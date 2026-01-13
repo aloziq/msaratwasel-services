@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 enum UserRole {
   driver('سائق'),
-  busAssistant('مساعد الباص'),
+  busAssistant('مشرفة الباص'),
   fieldSupervisor('مشرف ميداني'),
   teacher('معلم');
 

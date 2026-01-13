@@ -29,5 +29,76 @@
     "profile": "الملف الشخصي",
     "settings": "الإعدادات",
     "totalStudents": "الطلاب",
-    "averageAttendance": "متوسط الحضور"
+    "averageAttendance": "متوسط الحضور",
+    "studentsList": "قائمة الطلاب",
+    "noStudentsFound": "لا يوجد طلاب يطابقون البحث",
+    "searchPlaceholder": "البحث باسم الطالب أو الرقم...",
+    "all": "الكل",
+    "atHome": "في المنزل",
+    "onBus": "في الحافلة",
+    "atSchool": "في المدرسة",
+    "absent": "غائب",
+    "tripProgress": "تقدم الرحلة",
+    "deliveredStudentsCount": "تم توصيل {atSchool} من {total} طلاب",
+    "@deliveredStudentsCount": {
+        "placeholders": {
+            "atSchool": { "type": "int" },
+            "total": { "type": "int" }
+        }
+    },
+    "remaining": "المتبقي",
+    "percentage": "النسبة",
+    "boardedBus": "ركب الحافلة",
+    "reachedSchool": "وصل المدرسة",
+    "arrivedSafely": "وصل بالسلامة",
+    "guardianLabel": "ولي الأمر: {name}",
+    "@guardianLabel": {
+        "placeholders": {
+            "name": { "type": "String" }
+        }
+    },
+    "dailyChecklistTitle": "قائمة المهام اليومية",
+    "tasksSavedSuccessfully": "تم حفظ المهام بنجاح",
+    "confirmAndSendReport": "تأكيد وإرسال التقرير",
+    "checklistTask1": "التأكد من ربط أحزمة الأمان لجميع الطلاب",
+    "checklistTask2": "مراجعة نظافة الحافلة قبل وبعد الرحلة",
+    "checklistTask3": "التأكد من خلو الحافلة من الطلاب تماماً",
+    "checklistTask4": "فحص حقائب الطلاب المنسية",
+    "checklistTask5": "التأكد من تشغيل نظام التكييف/التهوية",
+    "incidentReportTitle": "بلاغ عن حادث",
+    "incidentType": "نوع البلاغ",
+    "problemDescription": "وصف المشكلة",
+    "reportDetailsPlaceholder": "اكتب تفاصيل البلاغ هنا...",
+    "attachPhotoOptional": "إرفاق صورة (اختياري)",
+    "reportSentSuccessfully": "تم إرسال البلاغ للإدارة فوراً",
+    "sendUrgentReport": "إرسال البلاغ العاجل",
+    "incidentTypeBehavioral": "سلوكي",
+    "incidentTypeHealth": "صحي",
+    "incidentTypeTechnical": "عطل فني",
+    "incidentTypeTraffic": "حادث مروري",
+    "incidentTypeOther": "آخر",
+    "reportsTitle": "التقارير والإحصائيات",
+    "dailyAverageAttendance": "متوسط الحضور اليومي",
+    "absenceRate": "نسبة الغياب",
+    "lateRate": "نسبة التأخير",
+    "attendanceTrend": "اتجاه الحضور",
+    "insights": "رؤى وتحليلات",
+    "insightPerfectAttendance": "فصل {className} لديه حضور مثالي اليوم!",
+    "@insightPerfectAttendance": {
+        "placeholders": {
+            "className": { "type": "String" }
+        }
+    },
+    "insightLowAttendance": "انخفاض بنسبة الحضور بنسبة {percentage}% مقارنة بالأمس",
+    "@insightLowAttendance": {
+        "placeholders": {
+            "percentage": { "type": "int" }
+        }
+    },
+    "attendanceToday": "حضور اليوم",
+    "absenceToday": "غياب اليوم",
+    "weeklyAttendanceTrend": "اتجاه الحضور الأسبوعي",
+    "smartInsight": "رؤية ذكية",
+    "excellentAttendanceInsight": "أداء الحضور ممتاز هذا الأسبوع! استمر في تحفيز الطلاب.",
+    "lowAttendanceInsight": "هناك انخفاض طفيف في الحضور. قد ترغب في مراجعة الأسباب."
 }

@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/theme/app_theme.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import '../../../core/domain/entities/bus_student_entity.dart';
+import '../../../core/presentation/cubit/bus_trip_cubit.dart';
 
 class AssistantHomeScreen extends StatelessWidget {
   const AssistantHomeScreen({super.key});
@@ -27,18 +33,113 @@ class AssistantHomeScreen extends StatelessWidget {
             MainShell.of(context)?.openDrawer();
           },
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              PhosphorIconsRegular.bell,
+              color: theme.colorScheme.onSurface,
+            ),
+            onPressed: () {},
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWelcomeHeader(context),
-            const SizedBox(height: AppSpacing.xl),
-            _buildQuickActions(context),
-          ],
+      body: BlocBuilder<BusTripCubit, BusTripState>(
+        builder: (context, state) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildWelcomeHeader(context),
+                const SizedBox(height: AppSpacing.xl),
+                if (state is BusTripLoaded)
+                  _buildTripSummaryCard(context, state.trip),
+                const SizedBox(height: AppSpacing.xl),
+                _buildQuickActions(context),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTripSummaryCard(BuildContext context, dynamic trip) {
+    final theme = Theme.of(context);
+    final total = trip.students.length;
+    final onBus = trip.students
+        .where((s) => s.status == BusStudentStatus.onBus)
+        .length;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                PhosphorIconsFill.bus,
+                color: theme.colorScheme.primary,
+                size: 32,
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'الرحلة النشطة - حافلة ${trip.busNumber}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'السائق: ${trip.driverName}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+              const Spacer(),
+              _StatusBadge(label: 'قيد التنفيذ', color: Colors.green),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem(context, '$total', 'إجمالي الطلاب'),
+              _buildStatItem(context, '$onBus', 'صعدوا'),
+              _buildStatItem(context, '${total - onBus}', 'متبقي'),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn().scale(begin: const Offset(0.9, 0.9));
+  }
+
+  Widget _buildStatItem(BuildContext context, String value, String label) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
         ),
-      ),
+        Text(label, style: theme.textTheme.bodySmall),
+      ],
     );
   }
 
@@ -77,7 +178,7 @@ class AssistantHomeScreen extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'مساعد المعلم',
+                  UserRole.busAssistant.displayName,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isDark
@@ -124,12 +225,13 @@ class AssistantHomeScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'الإجراءات السريعة',
+          'الخدمات الأساسية',
           style: theme.textTheme.titleLarge?.copyWith(
             fontSize: 20,
+            fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
           ),
-        ).animate().fadeIn(delay: 500.ms),
+        ).animate().fadeIn(delay: 300.ms),
         const SizedBox(height: 16),
         GridView.count(
           crossAxisCount: 2,
@@ -137,25 +239,66 @@ class AssistantHomeScreen extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 1.3,
+          childAspectRatio: 1.2,
           children: [
             _ActionCard(
               icon: PhosphorIconsFill.users,
               label: 'قائمة الطلاب',
-              color: Colors.tealAccent,
-              onTap: () {},
+              color: Colors.blue,
+              onTap: () => context.push(AppRoutes.busStudents),
+              delay: 400,
+            ),
+            _ActionCard(
+              icon: PhosphorIconsFill.checkCircle,
+              label: 'القائمة اليومية',
+              color: Colors.orange,
+              onTap: () => context.push(AppRoutes.dailyChecklist),
+              delay: 500,
+            ),
+            _ActionCard(
+              icon: PhosphorIconsFill.warningCircle,
+              label: 'بلاغ عن حادث',
+              color: Colors.red,
+              onTap: () => context.push(AppRoutes.incidentReport),
               delay: 600,
             ),
             _ActionCard(
-              icon: PhosphorIconsFill.qrCode,
-              label: 'مسح الحضور',
-              color: theme.colorScheme.onPrimaryContainer,
-              onTap: () {},
+              icon: PhosphorIconsFill.mapPin,
+              label: 'تتبع الحافلة',
+              color: Colors.green,
+              onTap: () => context.push(AppRoutes.busMap),
               delay: 700,
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

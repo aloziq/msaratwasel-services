@@ -29,5 +29,76 @@
     "profile": "Profile",
     "settings": "Settings",
     "totalStudents": "Total Students",
-    "averageAttendance": "Average Attendance"
+    "averageAttendance": "Average Attendance",
+    "studentsList": "Students List",
+    "noStudentsFound": "No students match the search",
+    "searchPlaceholder": "Search by name or ID...",
+    "all": "All",
+    "atHome": "At Home",
+    "onBus": "On Bus",
+    "atSchool": "At School",
+    "absent": "Absent",
+    "tripProgress": "Trip Progress",
+    "deliveredStudentsCount": "Delivered {atSchool} of {total} students",
+    "@deliveredStudentsCount": {
+        "placeholders": {
+            "atSchool": { "type": "int" },
+            "total": { "type": "int" }
+        }
+    },
+    "remaining": "Remaining",
+    "percentage": "Percentage",
+    "boardedBus": "Boarded Bus",
+    "reachedSchool": "Reached School",
+    "arrivedSafely": "Arrived Safely",
+    "guardianLabel": "Guardian: {name}",
+    "@guardianLabel": {
+        "placeholders": {
+            "name": { "type": "String" }
+        }
+    },
+    "dailyChecklistTitle": "Daily Tasks List",
+    "tasksSavedSuccessfully": "Tasks saved successfully",
+    "confirmAndSendReport": "Confirm and Send Report",
+    "checklistTask1": "Ensure all students have seatbelts fastened",
+    "checklistTask2": "Review bus cleanliness before and after the trip",
+    "checklistTask3": "Ensure the bus is completely empty of students",
+    "checklistTask4": "Check for forgotten student bags",
+    "checklistTask5": "Ensure the air conditioning/ventilation system is working",
+    "incidentReportTitle": "Incident Report",
+    "incidentType": "Incident Type",
+    "problemDescription": "Problem Description",
+    "reportDetailsPlaceholder": "Write report details here...",
+    "attachPhotoOptional": "Attach photo (optional)",
+    "reportSentSuccessfully": "Report sent to management immediately",
+    "sendUrgentReport": "Send Urgent Report",
+    "incidentTypeBehavioral": "Behavioral",
+    "incidentTypeHealth": "Health",
+    "incidentTypeTechnical": "Technical Failure",
+    "incidentTypeTraffic": "Traffic Accident",
+    "incidentTypeOther": "Other",
+    "reportsTitle": "Reports & Statistics",
+    "dailyAverageAttendance": "Daily Avg Attendance",
+    "absenceRate": "Absence Rate",
+    "lateRate": "Late Rate",
+    "attendanceTrend": "Attendance Trend",
+    "insights": "Insights & Analytics",
+    "insightPerfectAttendance": "Class {className} has perfect attendance today!",
+    "@insightPerfectAttendance": {
+        "placeholders": {
+            "className": { "type": "String" }
+        }
+    },
+    "insightLowAttendance": "Attendance dropped by {percentage}% compared to yesterday",
+    "@insightLowAttendance": {
+        "placeholders": {
+            "percentage": { "type": "int" }
+        }
+    },
+    "attendanceToday": "Attendance Today",
+    "absenceToday": "Absence Today",
+    "weeklyAttendanceTrend": "Weekly Attendance Trend",
+    "smartInsight": "Smart Insight",
+    "excellentAttendanceInsight": "Attendance performance is excellent this week! Keep it up.",
+    "lowAttendanceInsight": "There is a slight drop in attendance. You might want to check the reasons."
 }

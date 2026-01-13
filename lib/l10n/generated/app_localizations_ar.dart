@@ -100,4 +100,164 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get averageAttendance => 'متوسط الحضور';
+
+  @override
+  String get studentsList => 'قائمة الطلاب';
+
+  @override
+  String get noStudentsFound => 'لا يوجد طلاب يطابقون البحث';
+
+  @override
+  String get searchPlaceholder => 'البحث باسم الطالب أو الرقم...';
+
+  @override
+  String get all => 'الكل';
+
+  @override
+  String get atHome => 'في المنزل';
+
+  @override
+  String get onBus => 'في الحافلة';
+
+  @override
+  String get atSchool => 'في المدرسة';
+
+  @override
+  String get absent => 'غائب';
+
+  @override
+  String get tripProgress => 'تقدم الرحلة';
+
+  @override
+  String deliveredStudentsCount(int atSchool, int total) {
+    return 'تم توصيل $atSchool من $total طلاب';
+  }
+
+  @override
+  String get remaining => 'المتبقي';
+
+  @override
+  String get percentage => 'النسبة';
+
+  @override
+  String get boardedBus => 'ركب الحافلة';
+
+  @override
+  String get reachedSchool => 'وصل المدرسة';
+
+  @override
+  String get arrivedSafely => 'وصل بالسلامة';
+
+  @override
+  String guardianLabel(String name) {
+    return 'ولي الأمر: $name';
+  }
+
+  @override
+  String get dailyChecklistTitle => 'قائمة المهام اليومية';
+
+  @override
+  String get tasksSavedSuccessfully => 'تم حفظ المهام بنجاح';
+
+  @override
+  String get confirmAndSendReport => 'تأكيد وإرسال التقرير';
+
+  @override
+  String get checklistTask1 => 'التأكد من ربط أحزمة الأمان لجميع الطلاب';
+
+  @override
+  String get checklistTask2 => 'مراجعة نظافة الحافلة قبل وبعد الرحلة';
+
+  @override
+  String get checklistTask3 => 'التأكد من خلو الحافلة من الطلاب تماماً';
+
+  @override
+  String get checklistTask4 => 'فحص حقائب الطلاب المنسية';
+
+  @override
+  String get checklistTask5 => 'التأكد من تشغيل نظام التكييف/التهوية';
+
+  @override
+  String get incidentReportTitle => 'بلاغ عن حادث';
+
+  @override
+  String get incidentType => 'نوع البلاغ';
+
+  @override
+  String get problemDescription => 'وصف المشكلة';
+
+  @override
+  String get reportDetailsPlaceholder => 'اكتب تفاصيل البلاغ هنا...';
+
+  @override
+  String get attachPhotoOptional => 'إرفاق صورة (اختياري)';
+
+  @override
+  String get reportSentSuccessfully => 'تم إرسال البلاغ للإدارة فوراً';
+
+  @override
+  String get sendUrgentReport => 'إرسال البلاغ العاجل';
+
+  @override
+  String get incidentTypeBehavioral => 'سلوكي';
+
+  @override
+  String get incidentTypeHealth => 'صحي';
+
+  @override
+  String get incidentTypeTechnical => 'عطل فني';
+
+  @override
+  String get incidentTypeTraffic => 'حادث مروري';
+
+  @override
+  String get incidentTypeOther => 'آخر';
+
+  @override
+  String get reportsTitle => 'التقارير والإحصائيات';
+
+  @override
+  String get dailyAverageAttendance => 'متوسط الحضور اليومي';
+
+  @override
+  String get absenceRate => 'نسبة الغياب';
+
+  @override
+  String get lateRate => 'نسبة التأخير';
+
+  @override
+  String get attendanceTrend => 'اتجاه الحضور';
+
+  @override
+  String get insights => 'رؤى وتحليلات';
+
+  @override
+  String insightPerfectAttendance(String className) {
+    return 'فصل $className لديه حضور مثالي اليوم!';
+  }
+
+  @override
+  String insightLowAttendance(int percentage) {
+    return 'انخفاض بنسبة الحضور بنسبة $percentage% مقارنة بالأمس';
+  }
+
+  @override
+  String get attendanceToday => 'حضور اليوم';
+
+  @override
+  String get absenceToday => 'غياب اليوم';
+
+  @override
+  String get weeklyAttendanceTrend => 'اتجاه الحضور الأسبوعي';
+
+  @override
+  String get smartInsight => 'رؤية ذكية';
+
+  @override
+  String get excellentAttendanceInsight =>
+      'أداء الحضور ممتاز هذا الأسبوع! استمر في تحفيز الطلاب.';
+
+  @override
+  String get lowAttendanceInsight =>
+      'هناك انخفاض طفيف في الحضور. قد ترغب في مراجعة الأسباب.';
 }

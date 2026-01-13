@@ -32,31 +32,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(
-            PhosphorIconsRegular.list,
-            color: theme.colorScheme.onSurface,
-            size: 32,
-          ),
-          onPressed: () {
-            MainShell.of(context)?.openDrawer();
-          },
-        ),
-        title: Text(
-          l10n.settings,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        centerTitle: true,
-      ),
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          CupertinoSliverNavigationBar(
+            leading: BackButton(
+              style: ButtonStyle(
+                iconSize: WidgetStateProperty.all(24),
+                shadowColor: WidgetStateProperty.all(Colors.black),
+              ),
+            ),
+            largeTitle: Text(
+              l10n.settings,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: 24,
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            border: null,
+            stretch: true,
+          ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),

@@ -283,6 +283,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Average Attendance'**
   String get averageAttendance;
+
+  /// No description provided for @studentsList.
+  ///
+  /// In en, this message translates to:
+  /// **'Students List'**
+  String get studentsList;
+
+  /// No description provided for @noStudentsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No students match the search'**
+  String get noStudentsFound;
+
+  /// No description provided for @searchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or ID...'**
+  String get searchPlaceholder;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
+  /// No description provided for @atHome.
+  ///
+  /// In en, this message translates to:
+  /// **'At Home'**
+  String get atHome;
+
+  /// No description provided for @onBus.
+  ///
+  /// In en, this message translates to:
+  /// **'On Bus'**
+  String get onBus;
+
+  /// No description provided for @atSchool.
+  ///
+  /// In en, this message translates to:
+  /// **'At School'**
+  String get atSchool;
+
+  /// No description provided for @absent.
+  ///
+  /// In en, this message translates to:
+  /// **'Absent'**
+  String get absent;
+
+  /// No description provided for @tripProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip Progress'**
+  String get tripProgress;
+
+  /// No description provided for @deliveredStudentsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered {atSchool} of {total} students'**
+  String deliveredStudentsCount(int atSchool, int total);
+
+  /// No description provided for @remaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get remaining;
+
+  /// No description provided for @percentage.
+  ///
+  /// In en, this message translates to:
+  /// **'Percentage'**
+  String get percentage;
+
+  /// No description provided for @boardedBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Boarded Bus'**
+  String get boardedBus;
+
+  /// No description provided for @reachedSchool.
+  ///
+  /// In en, this message translates to:
+  /// **'Reached School'**
+  String get reachedSchool;
+
+  /// No description provided for @arrivedSafely.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived Safely'**
+  String get arrivedSafely;
+
+  /// No description provided for @guardianLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Guardian: {name}'**
+  String guardianLabel(String name);
+
+  /// No description provided for @dailyChecklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Tasks List'**
+  String get dailyChecklistTitle;
+
+  /// No description provided for @tasksSavedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks saved successfully'**
+  String get tasksSavedSuccessfully;
+
+  /// No description provided for @confirmAndSendReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm and Send Report'**
+  String get confirmAndSendReport;
+
+  /// No description provided for @checklistTask1.
+  ///
+  /// In en, this message translates to:
+  /// **'Ensure all students have seatbelts fastened'**
+  String get checklistTask1;
+
+  /// No description provided for @checklistTask2.
+  ///
+  /// In en, this message translates to:
+  /// **'Review bus cleanliness before and after the trip'**
+  String get checklistTask2;
+
+  /// No description provided for @checklistTask3.
+  ///
+  /// In en, this message translates to:
+  /// **'Ensure the bus is completely empty of students'**
+  String get checklistTask3;
+
+  /// No description provided for @checklistTask4.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for forgotten student bags'**
+  String get checklistTask4;
+
+  /// No description provided for @checklistTask5.
+  ///
+  /// In en, this message translates to:
+  /// **'Ensure the air conditioning/ventilation system is working'**
+  String get checklistTask5;
+
+  /// No description provided for @incidentReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident Report'**
+  String get incidentReportTitle;
+
+  /// No description provided for @incidentType.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident Type'**
+  String get incidentType;
+
+  /// No description provided for @problemDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem Description'**
+  String get problemDescription;
+
+  /// No description provided for @reportDetailsPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Write report details here...'**
+  String get reportDetailsPlaceholder;
+
+  /// No description provided for @attachPhotoOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach photo (optional)'**
+  String get attachPhotoOptional;
+
+  /// No description provided for @reportSentSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Report sent to management immediately'**
+  String get reportSentSuccessfully;
+
+  /// No description provided for @sendUrgentReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Urgent Report'**
+  String get sendUrgentReport;
+
+  /// No description provided for @incidentTypeBehavioral.
+  ///
+  /// In en, this message translates to:
+  /// **'Behavioral'**
+  String get incidentTypeBehavioral;
+
+  /// No description provided for @incidentTypeHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get incidentTypeHealth;
+
+  /// No description provided for @incidentTypeTechnical.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Failure'**
+  String get incidentTypeTechnical;
+
+  /// No description provided for @incidentTypeTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic Accident'**
+  String get incidentTypeTraffic;
+
+  /// No description provided for @incidentTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get incidentTypeOther;
+
+  /// No description provided for @reportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports & Statistics'**
+  String get reportsTitle;
+
+  /// No description provided for @dailyAverageAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Avg Attendance'**
+  String get dailyAverageAttendance;
+
+  /// No description provided for @absenceRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Absence Rate'**
+  String get absenceRate;
+
+  /// No description provided for @lateRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Late Rate'**
+  String get lateRate;
+
+  /// No description provided for @attendanceTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance Trend'**
+  String get attendanceTrend;
+
+  /// No description provided for @insights.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights & Analytics'**
+  String get insights;
+
+  /// No description provided for @insightPerfectAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Class {className} has perfect attendance today!'**
+  String insightPerfectAttendance(String className);
+
+  /// No description provided for @insightLowAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance dropped by {percentage}% compared to yesterday'**
+  String insightLowAttendance(int percentage);
+
+  /// No description provided for @attendanceToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance Today'**
+  String get attendanceToday;
+
+  /// No description provided for @absenceToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Absence Today'**
+  String get absenceToday;
+
+  /// No description provided for @weeklyAttendanceTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Attendance Trend'**
+  String get weeklyAttendanceTrend;
+
+  /// No description provided for @smartInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart Insight'**
+  String get smartInsight;
+
+  /// No description provided for @excellentAttendanceInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance performance is excellent this week! Keep it up.'**
+  String get excellentAttendanceInsight;
+
+  /// No description provided for @lowAttendanceInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'There is a slight drop in attendance. You might want to check the reasons.'**
+  String get lowAttendanceInsight;
 }
 
 class _AppLocalizationsDelegate

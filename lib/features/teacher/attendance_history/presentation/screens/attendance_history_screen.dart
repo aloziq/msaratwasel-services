@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,31 +31,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            PhosphorIconsRegular.list,
-            color: Theme.of(context).colorScheme.onSurface,
-            size: 32,
-          ),
-          onPressed: () {
-            MainShell.of(context)?.openDrawer();
-          },
-        ),
-        title: Text(
-          _getTitle(),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
-            fontSize: 22,
-          ),
-        ),
-        centerTitle: true,
-      ),
       body: BlocBuilder<AttendanceHistoryCubit, AttendanceHistoryState>(
         builder: (context, state) {
           if (state is AttendanceHistoryLoading) {
@@ -62,13 +41,50 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
           } else if (state is AttendanceHistoryError) {
             return Center(child: Text(state.message));
           } else if (state is AttendanceHistoryLoaded) {
-            if (selectedRecord != null) {
-              return _buildStudentsList(selectedRecord!.attendedStudents);
-            } else if (selectedClass != null) {
-              return _buildDailyRecordsList(selectedClass!.dailyRecords);
-            } else {
-              return _buildClassesList(state.history);
-            }
+            return CustomScrollView(
+              slivers: [
+                CupertinoSliverNavigationBar(
+                  leading: selectedRecord != null || selectedClass != null
+                      ? BackButton(
+                          onPressed: () {
+                            setState(() {
+                              if (selectedRecord != null) {
+                                selectedRecord = null;
+                              } else if (selectedClass != null) {
+                                selectedClass = null;
+                              }
+                            });
+                          },
+                        )
+                      : IconButton(
+                          icon: Icon(
+                            PhosphorIconsRegular.list,
+                            color: theme.colorScheme.onSurface,
+                            size: 32,
+                          ),
+                          onPressed: () {
+                            MainShell.of(context)?.openDrawer();
+                          },
+                        ),
+                  largeTitle: Text(
+                    _getTitle(),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                    ),
+                  ),
+                  backgroundColor: Colors.transparent,
+                  border: null,
+                  stretch: true,
+                ),
+                if (selectedRecord != null)
+                  _buildStudentsSliverList(selectedRecord!.attendedStudents)
+                else if (selectedClass != null)
+                  _buildDailyRecordsSliverList(selectedClass!.dailyRecords)
+                else
+                  _buildClassesSliverList(state.history),
+              ],
+            );
           }
           return const SizedBox.shrink();
         },
@@ -85,45 +101,48 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     return 'سجل الحضور';
   }
 
-  Widget _buildClassesList(List<AttendanceHistoryEntity> history) {
-    return ListView.builder(
+  Widget _buildClassesSliverList(List<AttendanceHistoryEntity> history) {
+    return SliverPadding(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: history.length,
-      itemBuilder: (context, index) {
-        final item = history[index];
-        return _ClassCard(
-          className: item.className,
-          recordCount: item.dailyRecords.length,
-          onTap: () => setState(() => selectedClass = item),
-          index: index,
-        );
-      },
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final item = history[index];
+          return _ClassCard(
+            className: item.className,
+            recordCount: item.dailyRecords.length,
+            onTap: () => setState(() => selectedClass = item),
+            index: index,
+          );
+        }, childCount: history.length),
+      ),
     );
   }
 
-  Widget _buildDailyRecordsList(List<AttendanceHistoryRecord> records) {
-    return ListView.builder(
+  Widget _buildDailyRecordsSliverList(List<AttendanceHistoryRecord> records) {
+    return SliverPadding(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: records.length,
-      itemBuilder: (context, index) {
-        final record = records[index];
-        return _HistoryCard(
-          record: record,
-          index: index,
-          onTap: () => setState(() => selectedRecord = record),
-        );
-      },
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final record = records[index];
+          return _HistoryCard(
+            record: record,
+            index: index,
+            onTap: () => setState(() => selectedRecord = record),
+          );
+        }, childCount: records.length),
+      ),
     );
   }
 
-  Widget _buildStudentsList(List<StudentEntity> students) {
-    return ListView.builder(
+  Widget _buildStudentsSliverList(List<StudentEntity> students) {
+    return SliverPadding(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: students.length,
-      itemBuilder: (context, index) {
-        final student = students[index];
-        return _StudentHistoryCard(student: student, index: index);
-      },
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final student = students[index];
+          return _StudentHistoryCard(student: student, index: index);
+        }, childCount: students.length),
+      ),
     );
   }
 }

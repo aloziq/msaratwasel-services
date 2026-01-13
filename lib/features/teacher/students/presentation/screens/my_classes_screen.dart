@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,28 +28,9 @@ class _MyClassesScreenState extends State<MyClassesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            PhosphorIconsRegular.list,
-            color: Theme.of(context).colorScheme.onSurface,
-            size: 32,
-          ),
-          onPressed: () {
-            MainShell.of(context)?.openDrawer();
-          },
-        ),
-        title: Text(
-          'فصولي',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
+      backgroundColor: Colors.transparent,
       body: BlocBuilder<MyClassesCubit, MyClassesState>(
         builder: (context, state) {
           if (state is MyClassesLoading) {
@@ -56,22 +38,46 @@ class _MyClassesScreenState extends State<MyClassesScreen> {
           } else if (state is MyClassesError) {
             return Center(child: Text(state.message));
           } else if (state is MyClassesLoaded) {
-            return _buildClassesList(state.classrooms);
+            final classrooms = state.classrooms;
+            return CustomScrollView(
+              slivers: [
+                CupertinoSliverNavigationBar(
+                  leading: IconButton(
+                    icon: Icon(
+                      PhosphorIconsRegular.list,
+                      color: theme.colorScheme.onSurface,
+                      size: 32,
+                    ),
+                    onPressed: () {
+                      MainShell.of(context)?.openDrawer();
+                    },
+                  ),
+                  largeTitle: Text(
+                    'فصولي',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                    ),
+                  ),
+                  backgroundColor: Colors.transparent,
+                  border: null,
+                  stretch: true,
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final classroom = classrooms[index];
+                      return _ClassCard(classroom: classroom, index: index);
+                    }, childCount: classrooms.length),
+                  ),
+                ),
+              ],
+            );
           }
           return const SizedBox.shrink();
         },
       ),
-    );
-  }
-
-  Widget _buildClassesList(List<ClassroomEntity> classrooms) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      itemCount: classrooms.length,
-      itemBuilder: (context, index) {
-        final classroom = classrooms[index];
-        return _ClassCard(classroom: classroom, index: index);
-      },
     );
   }
 }

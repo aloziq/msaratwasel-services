@@ -253,7 +253,7 @@ class _AppDrawerState extends State<AppDrawer> {
         isDark: isDark,
         onTap: () {
           Navigator.pop(context);
-          context.go(AppRoutes.settings);
+          context.push(AppRoutes.settings);
         },
       ),
     );
