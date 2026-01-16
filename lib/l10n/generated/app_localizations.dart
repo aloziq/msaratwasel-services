@@ -386,6 +386,18 @@ abstract class AppLocalizations {
   /// **'Daily Tasks List'**
   String get dailyChecklistTitle;
 
+  /// No description provided for @dailyChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Checklist'**
+  String get dailyChecklist;
+
+  /// No description provided for @busTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus Tracking'**
+  String get busTracking;
+
   /// No description provided for @tasksSavedSuccessfully.
   ///
   /// In en, this message translates to:
@@ -583,6 +595,600 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There is a slight drop in attendance. You might want to check the reasons.'**
   String get lowAttendanceInsight;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit personal info'**
+  String get editProfile;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get changePassword;
+
+  /// No description provided for @changeChildrenLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Children Location'**
+  String get changeChildrenLocation;
+
+  /// No description provided for @manageKids.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage registered students'**
+  String get manageKids;
+
+  /// No description provided for @locationChangeWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Important Notice'**
+  String get locationChangeWarningTitle;
+
+  /// No description provided for @locationChangeWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Please note that if the location is changed, the school must be notified 48 hours prior to the change to ensure transport arrangements.'**
+  String get locationChangeWarningBody;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @proceed.
+  ///
+  /// In en, this message translates to:
+  /// **'Proceed'**
+  String get proceed;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @activitiesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest school updates and announcements.'**
+  String get activitiesSubtitle;
+
+  /// No description provided for @helpCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Help center'**
+  String get helpCenter;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get contactUs;
+
+  /// No description provided for @aboutApp.
+  ///
+  /// In en, this message translates to:
+  /// **'About app'**
+  String get aboutApp;
+
+  /// No description provided for @canteen.
+  ///
+  /// In en, this message translates to:
+  /// **'Canteen'**
+  String get canteen;
+
+  /// No description provided for @support.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get support;
+
+  /// No description provided for @appName.
+  ///
+  /// In en, this message translates to:
+  /// **'Msarat Wasel'**
+  String get appName;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @aboutAppDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Msarat Wasel is the ideal solution for managing school transport effectively and safely. It allows parents to track their children and receive real-time notifications, ensuring peace of mind and student safety.'**
+  String get aboutAppDescription;
+
+  /// No description provided for @aboutCompanyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About Wasel Company'**
+  String get aboutCompanyTitle;
+
+  /// No description provided for @aboutCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Wasel School Transport is a leading company in transport services, striving to provide a safe and comfortable transport experience for students while employing the latest technologies to ensure quality and reliability.'**
+  String get aboutCompany;
+
+  /// No description provided for @developedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Developed by'**
+  String get developedBy;
+
+  /// No description provided for @contactMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Methods'**
+  String get contactMethods;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumber;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @website.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get website;
+
+  /// No description provided for @socialMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Social Media'**
+  String get socialMedia;
+
+  /// No description provided for @complaintsBox.
+  ///
+  /// In en, this message translates to:
+  /// **'Complaints & Suggestions Box'**
+  String get complaintsBox;
+
+  /// No description provided for @complaintMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your suggestion or complaint here...'**
+  String get complaintMessageHint;
+
+  /// No description provided for @submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
+  /// No description provided for @complaintSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your message has been sent successfully'**
+  String get complaintSent;
+
+  /// No description provided for @currentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get currentPassword;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get fieldRequired;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get newPassword;
+
+  /// No description provided for @passwordLengthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be at least 6 characters'**
+  String get passwordLengthError;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get confirmPassword;
+
+  /// No description provided for @passwordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordMismatch;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get saveChanges;
+
+  /// No description provided for @passwordUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated successfully'**
+  String get passwordUpdatedSuccess;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @privacyIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'First: Introduction'**
+  String get privacyIntroTitle;
+
+  /// No description provided for @privacyIntroBody1.
+  ///
+  /// In en, this message translates to:
+  /// **'This document represents a legal agreement between the application users (Guardian, Student, Driver, Supervisor, Teacher, Field Supervisor, School) and the application administration.'**
+  String get privacyIntroBody1;
+
+  /// No description provided for @privacyIntroBody2.
+  ///
+  /// In en, this message translates to:
+  /// **'By using the application, all users acknowledge their agreement to this policy and commitment to it.'**
+  String get privacyIntroBody2;
+
+  /// No description provided for @privacyDataCollectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Second: Data Collection'**
+  String get privacyDataCollectionTitle;
+
+  /// No description provided for @privacyStudentDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Student Data:'**
+  String get privacyStudentDataTitle;
+
+  /// No description provided for @privacyStudentData1.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get privacyStudentData1;
+
+  /// No description provided for @privacyStudentData2.
+  ///
+  /// In en, this message translates to:
+  /// **'School ID'**
+  String get privacyStudentData2;
+
+  /// No description provided for @privacyStudentData3.
+  ///
+  /// In en, this message translates to:
+  /// **'Civil ID'**
+  String get privacyStudentData3;
+
+  /// No description provided for @privacyStudentData4.
+  ///
+  /// In en, this message translates to:
+  /// **'Student Photo'**
+  String get privacyStudentData4;
+
+  /// No description provided for @privacyStudentData5.
+  ///
+  /// In en, this message translates to:
+  /// **'Home Photo'**
+  String get privacyStudentData5;
+
+  /// No description provided for @privacyStudentData6.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus Geographic Location'**
+  String get privacyStudentData6;
+
+  /// No description provided for @privacyStudentData7.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance Log via Barcode'**
+  String get privacyStudentData7;
+
+  /// No description provided for @privacyOtherDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Data:'**
+  String get privacyOtherDataTitle;
+
+  /// No description provided for @privacyOtherData1.
+  ///
+  /// In en, this message translates to:
+  /// **'Guardian Data: Name, Phone Number, Email, Civil ID.'**
+  String get privacyOtherData1;
+
+  /// No description provided for @privacyOtherData2.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver, Supervisor, and Teacher Data: Name, ID/Job Number, Contact Info.'**
+  String get privacyOtherData2;
+
+  /// No description provided for @privacyOtherData3.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Data: Login Log, Barcode Usage, Bus Geographic Location.'**
+  String get privacyOtherData3;
+
+  /// No description provided for @privacyDataUsageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Third: Data Usage'**
+  String get privacyDataUsageTitle;
+
+  /// No description provided for @privacyDataUsage1.
+  ///
+  /// In en, this message translates to:
+  /// **'Ensuring student safety during school transport.'**
+  String get privacyDataUsage1;
+
+  /// No description provided for @privacyDataUsage2.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabling guardians to track student status.'**
+  String get privacyDataUsage2;
+
+  /// No description provided for @privacyDataUsage3.
+  ///
+  /// In en, this message translates to:
+  /// **'Managing school transport operations efficiently.'**
+  String get privacyDataUsage3;
+
+  /// No description provided for @privacyDataUsage4.
+  ///
+  /// In en, this message translates to:
+  /// **'Issuing reports for the school and supervisors.'**
+  String get privacyDataUsage4;
+
+  /// No description provided for @privacyDataUsage5.
+  ///
+  /// In en, this message translates to:
+  /// **'Data is not used for any commercial or promotional purposes.'**
+  String get privacyDataUsage5;
+
+  /// No description provided for @privacyDataProtectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fourth: Data Protection'**
+  String get privacyDataProtectionTitle;
+
+  /// No description provided for @privacyDataProtection1.
+  ///
+  /// In en, this message translates to:
+  /// **'Storing data in secure servers using encryption technologies.'**
+  String get privacyDataProtection1;
+
+  /// No description provided for @privacyDataProtection2.
+  ///
+  /// In en, this message translates to:
+  /// **'Restricting access to data according to user permissions.'**
+  String get privacyDataProtection2;
+
+  /// No description provided for @privacyDataProtection3.
+  ///
+  /// In en, this message translates to:
+  /// **'Periodic review of security procedures.'**
+  String get privacyDataProtection3;
+
+  /// No description provided for @privacyDataProtection4.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sharing data with third parties unless approved by the school or required by law.'**
+  String get privacyDataProtection4;
+
+  /// No description provided for @privacyUserRightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fifth: User Rights'**
+  String get privacyUserRightsTitle;
+
+  /// No description provided for @privacyUserRights1.
+  ///
+  /// In en, this message translates to:
+  /// **'The right to access their data.'**
+  String get privacyUserRights1;
+
+  /// No description provided for @privacyUserRights2.
+  ///
+  /// In en, this message translates to:
+  /// **'The right to request correction or deletion of inaccurate data.'**
+  String get privacyUserRights2;
+
+  /// No description provided for @privacyUserRights3.
+  ///
+  /// In en, this message translates to:
+  /// **'The right to object to the use of their data for non-educational purposes.'**
+  String get privacyUserRights3;
+
+  /// No description provided for @privacyUserObligationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sixth: User Obligations'**
+  String get privacyUserObligationsTitle;
+
+  /// No description provided for @privacyUserObligations1.
+  ///
+  /// In en, this message translates to:
+  /// **'Using the application only for educational and school transport purposes.'**
+  String get privacyUserObligations1;
+
+  /// No description provided for @privacyUserObligations2.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sharing login credentials with other parties.'**
+  String get privacyUserObligations2;
+
+  /// No description provided for @privacyUserObligations3.
+  ///
+  /// In en, this message translates to:
+  /// **'Adhering to local laws regarding data protection.'**
+  String get privacyUserObligations3;
+
+  /// No description provided for @privacyLegalLiabilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Seventh: Legal Liability'**
+  String get privacyLegalLiabilityTitle;
+
+  /// No description provided for @privacyLegalLiability1.
+  ///
+  /// In en, this message translates to:
+  /// **'The application is not responsible for any unauthorized use by users.'**
+  String get privacyLegalLiability1;
+
+  /// No description provided for @privacyLegalLiability2.
+  ///
+  /// In en, this message translates to:
+  /// **'The school bears the responsibility of managing user permissions.'**
+  String get privacyLegalLiability2;
+
+  /// No description provided for @privacyLegalLiability3.
+  ///
+  /// In en, this message translates to:
+  /// **'Any security breach will be dealt with according to local laws (including Royal Decree No. 6/2022 on Personal Data Protection in Oman).'**
+  String get privacyLegalLiability3;
+
+  /// No description provided for @privacyAmendmentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Eighth: Amendments'**
+  String get privacyAmendmentsTitle;
+
+  /// No description provided for @privacyAmendments1.
+  ///
+  /// In en, this message translates to:
+  /// **'The application administration reserves the right to amend this policy in accordance with laws and technical developments.'**
+  String get privacyAmendments1;
+
+  /// No description provided for @privacyAmendments2.
+  ///
+  /// In en, this message translates to:
+  /// **'Users will be notified of any substantial changes.'**
+  String get privacyAmendments2;
+
+  /// No description provided for @privacyConsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ninth: Consent'**
+  String get privacyConsentTitle;
+
+  /// No description provided for @privacyConsentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'By using the application, all users agree to this policy and adhere to it.'**
+  String get privacyConsentBody;
+
+  /// No description provided for @privacySimplifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'📱 Simplified Version for Users'**
+  String get privacySimplifiedTitle;
+
+  /// No description provided for @privacyQ1.
+  ///
+  /// In en, this message translates to:
+  /// **'Why do we collect data?'**
+  String get privacyQ1;
+
+  /// No description provided for @privacyA1.
+  ///
+  /// In en, this message translates to:
+  /// **'- To ensure student safety during the trip.\n- To help the guardian track the student\'s arrival and departure.\n- To facilitate the work of the driver, supervisor, teacher, and field supervisor.'**
+  String get privacyA1;
+
+  /// No description provided for @privacyQ2.
+  ///
+  /// In en, this message translates to:
+  /// **'What data do we use?'**
+  String get privacyQ2;
+
+  /// No description provided for @privacyA2.
+  ///
+  /// In en, this message translates to:
+  /// **'- Student name and school number.\n- Civil ID and student photo for identity verification.\n- Home photo and bus geographic location.\n- Student attendance log via barcode.\n- Guardian data for communication.\n- Driver, supervisor, and teacher data.'**
+  String get privacyA2;
+
+  /// No description provided for @privacyQ3.
+  ///
+  /// In en, this message translates to:
+  /// **'How do we protect your data?'**
+  String get privacyQ3;
+
+  /// No description provided for @privacyA3.
+  ///
+  /// In en, this message translates to:
+  /// **'- We store information in secure and encrypted systems.\n- We do not share your data with any external party unless approved by the school or required by law.\n- We define access permissions so each user only sees what they need for their work.'**
+  String get privacyA3;
+
+  /// No description provided for @privacyQ4.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Rights'**
+  String get privacyQ4;
+
+  /// No description provided for @privacyA4.
+  ///
+  /// In en, this message translates to:
+  /// **'- You can access your data.\n- You can request correction or deletion of incorrect data.\n- Your data will not be used for any commercial or promotional purposes.'**
+  String get privacyA4;
+
+  /// No description provided for @privacyQ5.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Obligations'**
+  String get privacyQ5;
+
+  /// No description provided for @privacyA5.
+  ///
+  /// In en, this message translates to:
+  /// **'- Use the application only for school transport.\n- Do not share your account or login details with others.\n- Adhere to local laws regarding data protection.'**
+  String get privacyA5;
+
+  /// No description provided for @application.
+  ///
+  /// In en, this message translates to:
+  /// **'Application'**
+  String get application;
+
+  /// No description provided for @light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get light;
+
+  /// No description provided for @dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get dark;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @chats.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats'**
+  String get chats;
 }
 
 class _AppLocalizationsDelegate

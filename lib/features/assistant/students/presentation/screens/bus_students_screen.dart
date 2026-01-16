@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../../../core/domain/entities/bus_student_entity.dart';
 import '../../../core/presentation/cubit/bus_trip_cubit.dart';
@@ -426,7 +428,10 @@ class _StudentCard extends StatelessWidget {
                         context,
                         PhosphorIconsFill.chatCircleText,
                         Colors.blue,
-                        () {},
+                        () => context.push(
+                          AppRoutes.messages,
+                          extra: 'ولي أمر ${student.name}',
+                        ),
                       ),
                     ],
                   ),

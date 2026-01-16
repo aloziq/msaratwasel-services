@@ -33,6 +33,8 @@ import '../../features/assistant/incidents/presentation/screens/incident_report_
 import '../../features/assistant/tracking/presentation/screens/bus_map_screen.dart';
 import '../../features/assistant/core/presentation/cubit/bus_trip_cubit.dart';
 import '../../features/assistant/core/data/repositories/assistant_repository_impl.dart';
+import '../../features/shared/messages/presentation/screens/messages_screen.dart';
+import '../../features/shared/messages/presentation/screens/chats_list_screen.dart';
 import 'app_routes.dart';
 
 /// Application router configuration using GoRouter.
@@ -165,6 +167,19 @@ class AppRouter {
             path: AppRoutes.busMap,
             name: 'busMap',
             builder: (context, state) => const BusMapScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.messages,
+            name: 'messages',
+            builder: (context, state) {
+              final recipientName = state.extra as String?;
+              return MessagesScreen(recipientName: recipientName);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.chats,
+            name: 'chats',
+            builder: (context, state) => const ChatsListScreen(),
           ),
         ],
       ),

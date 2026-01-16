@@ -21,6 +21,8 @@ abstract class AppRoutes {
   static const dailyChecklist = '/daily-checklist';
   static const incidentReport = '/incident-report';
   static const busMap = '/bus-map';
+  static const messages = '/messages';
+  static const chats = '/chats';
 
   /// Helper to generate class details path with classId
   static String classDetailsPath(String classId) => '/class/$classId';

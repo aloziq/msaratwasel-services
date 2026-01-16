@@ -36,6 +36,13 @@ class AssistantHomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(
+              PhosphorIconsRegular.chatCircle,
+              color: theme.colorScheme.onSurface,
+            ),
+            onPressed: () => context.push(AppRoutes.chats),
+          ),
+          IconButton(
+            icon: Icon(
               PhosphorIconsRegular.bell,
               color: theme.colorScheme.onSurface,
             ),
@@ -256,18 +263,18 @@ class AssistantHomeScreen extends StatelessWidget {
               delay: 500,
             ),
             _ActionCard(
-              icon: PhosphorIconsFill.warningCircle,
-              label: 'بلاغ عن حادث',
-              color: Colors.red,
-              onTap: () => context.push(AppRoutes.incidentReport),
-              delay: 600,
-            ),
-            _ActionCard(
               icon: PhosphorIconsFill.mapPin,
               label: 'تتبع الحافلة',
               color: Colors.green,
               onTap: () => context.push(AppRoutes.busMap),
               delay: 700,
+            ),
+            _ActionCard(
+              icon: PhosphorIconsFill.chatCircle,
+              label: 'المحادثات',
+              color: Colors.purple,
+              onTap: () => context.push(AppRoutes.chats),
+              delay: 800,
             ),
           ],
         ),

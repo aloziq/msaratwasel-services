@@ -131,25 +131,21 @@ class _AppDrawerState extends State<AppDrawer> {
   ) {
     final List<Widget> items = [];
 
-    // Home - always present but path depends on role
-    final homePath = role == UserRole.busAssistant
-        ? AppRoutes.assistantHome
-        : AppRoutes.teacherHome;
-    items.add(
-      _DrawerItem(
-        title: l10n.home,
-        icon: PhosphorIconsRegular.house,
-        isSelected: currentLocation == homePath,
-        isDark: isDark,
-        onTap: () {
-          Navigator.pop(context);
-          context.go(homePath);
-        },
-      ),
-    );
-
-    // Teacher-specific items
+    // ---------------- TEACHER ROLE ----------------
     if (role == UserRole.teacher) {
+      items.add(
+        _DrawerItem(
+          title: l10n.home,
+          icon: PhosphorIconsRegular.house,
+          isSelected: currentLocation == AppRoutes.teacherHome,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.teacherHome);
+          },
+        ),
+      );
+
       items.add(
         _DrawerItem(
           title: l10n.myStudents,
@@ -212,24 +208,103 @@ class _AppDrawerState extends State<AppDrawer> {
       );
     }
 
-    // Assistant and Driver specific items
+    // ---------------- ASSISTANT / DRIVER ROLE ----------------
     if (role == UserRole.busAssistant || role == UserRole.driver) {
       items.add(
         _DrawerItem(
-          title: l10n.scanAttendance,
-          icon: PhosphorIconsRegular.qrCode,
-          isSelected: currentLocation == AppRoutes.qrScan,
+          title: l10n.home,
+          icon: PhosphorIconsRegular.house,
+          isSelected: currentLocation == AppRoutes.assistantHome,
           isDark: isDark,
           onTap: () {
             Navigator.pop(context);
-            context.go(AppRoutes.qrScan);
+            context.go(AppRoutes.assistantHome);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.studentsList,
+          icon: PhosphorIconsRegular.users,
+          isSelected: currentLocation == AppRoutes.busStudents,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.busStudents);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.dailyChecklist,
+          icon: PhosphorIconsRegular.checkCircle,
+          isSelected: currentLocation == AppRoutes.dailyChecklist,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.dailyChecklist);
+          },
+        ),
+      );
+
+      // Moved from home screen to drawer as per request
+      items.add(
+        _DrawerItem(
+          title: l10n.incidentReportTitle,
+          icon: PhosphorIconsRegular.warningCircle,
+          isSelected: currentLocation == AppRoutes.incidentReport,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.push(AppRoutes.incidentReport);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.busTracking,
+          icon: PhosphorIconsRegular.mapPin,
+          isSelected: currentLocation == AppRoutes.busMap,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.busMap);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.chats,
+          icon: PhosphorIconsRegular.chats,
+          isSelected: currentLocation == AppRoutes.chats,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.push(AppRoutes.chats);
           },
         ),
       );
     }
 
-    // Field Supervisor specific items
+    // ---------------- FIELD SUPERVISOR ROLE ----------------
     if (role == UserRole.fieldSupervisor) {
+      items.add(
+        _DrawerItem(
+          title: l10n.home,
+          icon: PhosphorIconsRegular.house,
+          isSelected: currentLocation == AppRoutes.teacherHome,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.teacherHome);
+          },
+        ),
+      );
+
       items.add(
         _DrawerItem(
           title: l10n.reports,
@@ -244,7 +319,7 @@ class _AppDrawerState extends State<AppDrawer> {
       );
     }
 
-    // Common items
+    // ---------------- COMMON ITEMS ----------------
     items.add(
       _DrawerItem(
         title: l10n.settings,

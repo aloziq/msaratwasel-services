@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
+import '../../../../shared/presentation/widgets/hold_to_confirm_button.dart';
 
 class IncidentReportScreen extends StatefulWidget {
   const IncidentReportScreen({super.key});
@@ -107,22 +108,16 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(56),
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          onPressed: () {
+        child: HoldToConfirmButton(
+          label: l10n.sendUrgentReport,
+          color: Colors.red,
+          icon: PhosphorIconsFill.warningCircle,
+          onConfirmed: () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(l10n.reportSentSuccessfully)),
             );
             Navigator.pop(context);
           },
-          child: Text(l10n.sendUrgentReport),
         ),
       ),
     );
