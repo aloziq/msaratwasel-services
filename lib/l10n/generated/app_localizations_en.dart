@@ -598,4 +598,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chats => 'Chats';
+
+  @override
+  String get location => 'Location';
+
+  @override
+  String get speed => 'Speed';
+
+  @override
+  String get distance => 'Distance';
+
+  @override
+  String get remainingTime => 'Remaining';
+
+  @override
+  String get busStateAtStation => 'At Station';
+
+  @override
+  String get busStateEnRoute => 'En Route';
+
+  @override
+  String get busStateArrived => 'Arrived';
+
+  @override
+  String get kmPerHour => 'km/h';
+
+  @override
+  String get km => 'km';
+
+  @override
+  String get minutes => 'min';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get updated => 'Updated';
 }

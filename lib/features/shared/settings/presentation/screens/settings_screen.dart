@@ -245,10 +245,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: FilledButton.icon(
                       onPressed: () => context.read<AuthCubit>().logout(),
                       style: FilledButton.styleFrom(
-                        backgroundColor: BrandColors.error.withValues(
+                        backgroundColor: theme.colorScheme.error.withValues(
                           alpha: 0.1,
                         ),
-                        foregroundColor: BrandColors.error,
+                        foregroundColor: theme.colorScheme.error,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -284,14 +284,13 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
         title,
         style: theme.textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.bold,
-          color: isDark ? Colors.white : BrandColors.primary,
+          color: theme.colorScheme.primary,
           letterSpacing: 0.5,
         ),
       ),
@@ -305,15 +304,14 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.1)
-              : BrandColors.border,
+          color: theme.colorScheme.outline.withValues(alpha: 0.3),
         ),
         boxShadow: isDark
             ? []
@@ -348,7 +346,8 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -362,14 +361,10 @@ class _SettingsTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.1)
-                      : BrandColors.primary.withValues(alpha: 0.08),
+                      : theme.colorScheme.primary.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  color: isDark ? Colors.white : BrandColors.primary,
-                  size: 22,
-                ),
+                child: Icon(icon, color: theme.colorScheme.primary, size: 22),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -381,7 +376,7 @@ class _SettingsTile extends StatelessWidget {
                       style: GoogleFonts.cairo(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : BrandColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                         height: 1.2,
                       ),
                     ),
@@ -391,9 +386,7 @@ class _SettingsTile extends StatelessWidget {
                         subtitle!,
                         style: GoogleFonts.cairo(
                           fontSize: 13,
-                          color: isDark
-                              ? Colors.white60
-                              : BrandColors.textSecondary,
+                          color: theme.colorScheme.onSurfaceVariant,
                           height: 1.2,
                         ),
                       ),
@@ -420,15 +413,13 @@ class _SettingsTile extends StatelessWidget {
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
     return Divider(
       height: 1,
       thickness: 1,
       indent: 64,
       endIndent: 0,
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.05)
-          : BrandColors.border.withValues(alpha: 0.5),
+      color: theme.colorScheme.outline.withValues(alpha: 0.2),
     );
   }
 }
@@ -492,7 +483,8 @@ class _SegmentedToggle extends StatelessWidget {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onTap,
@@ -524,8 +516,8 @@ class _SegmentedToggle extends StatelessWidget {
               icon,
               size: 18, // Slightly larger
               color: isSelected
-                  ? (isDark ? Colors.white : BrandColors.primary)
-                  : (isDark ? Colors.white38 : Colors.grey),
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(width: 8),
             Text(
@@ -534,8 +526,8 @@ class _SegmentedToggle extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 color: isSelected
-                    ? (isDark ? Colors.white : BrandColors.textPrimary)
-                    : (isDark ? Colors.white38 : Colors.grey),
+                    ? theme.colorScheme.onSurface
+                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ),
           ],

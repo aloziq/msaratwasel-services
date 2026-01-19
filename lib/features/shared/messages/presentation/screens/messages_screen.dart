@@ -132,14 +132,16 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           height: 1.2,
                           color: isDark
                               ? Colors.white
-                              : BrandColors.textPrimary,
+                              : theme.colorScheme.onSurface,
                         ),
                       ),
                     )
                   : Text(
                       name,
                       style: TextStyle(
-                        color: isDark ? Colors.white : BrandColors.textPrimary,
+                        color: isDark
+                            ? Colors.white
+                            : theme.colorScheme.onSurface,
                       ),
                     ),
               backgroundColor: theme.scaffoldBackgroundColor,
@@ -217,7 +219,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                               size: 48,
                               color: isDark
                                   ? Colors.white38
-                                  : BrandColors.textSecondary,
+                                  : theme.colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
@@ -234,7 +236,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: isDark
                                     ? Colors.white54
-                                    : BrandColors.textSecondary,
+                                    : theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -267,7 +269,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                       icon: const Icon(Icons.photo_camera_outlined),
                       color: isDark
                           ? Colors.white54
-                          : BrandColors.textSecondary,
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                     Expanded(
                       child: TextField(
@@ -341,8 +343,9 @@ class _DateSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final now = DateTime.now();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = theme.brightness == Brightness.dark;
     String label;
 
     if (date.year == now.year &&
@@ -372,7 +375,7 @@ class _DateSeparator extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: isDark ? Colors.white70 : BrandColors.textPrimary,
+              color: isDark ? Colors.white70 : theme.colorScheme.onSurface,
             ),
           ),
         ),
@@ -396,6 +399,7 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final alignment = isParent ? Alignment.centerRight : Alignment.centerLeft;
+    final theme = Theme.of(context);
 
     final bubbleColor = isParent
         ? BrandColors.primary
@@ -405,7 +409,7 @@ class _MessageBubble extends StatelessWidget {
 
     final textColor = isParent
         ? Colors.white
-        : (isDark ? Colors.white : BrandColors.textPrimary);
+        : (isDark ? Colors.white : theme.colorScheme.onSurface);
 
     final radius = BorderRadius.only(
       topLeft: Radius.circular(isParent ? 18 : 4),
@@ -515,7 +519,7 @@ class _MessageBubble extends StatelessWidget {
                                     ? Colors.white70
                                     : (isDark
                                           ? Colors.white54
-                                          : BrandColors.textSecondary),
+                                          : theme.colorScheme.onSurfaceVariant),
                               ),
                         ),
                         if (statusIcon != null) ...[

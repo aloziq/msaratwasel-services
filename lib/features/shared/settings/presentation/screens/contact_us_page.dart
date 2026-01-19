@@ -176,7 +176,7 @@ class _ContactUsPageState extends State<ContactUsPage> {
                       border: Border.all(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.1)
-                            : BrandColors.border,
+                            : theme.colorScheme.outline.withValues(alpha: 0.3),
                       ),
                       boxShadow: isDark
                           ? []
@@ -254,7 +254,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
@@ -262,7 +262,7 @@ class _SectionHeader extends StatelessWidget {
         style: GoogleFonts.cairo(
           fontWeight: FontWeight.bold,
           fontSize: 14,
-          color: isDark ? Colors.white : BrandColors.primary,
+          color: theme.colorScheme.primary,
           letterSpacing: 0.5,
         ),
       ),
@@ -287,6 +287,7 @@ class _ContactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -298,9 +299,7 @@ class _ContactCard extends StatelessWidget {
             color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : BrandColors.border,
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
             ),
             boxShadow: isDark
                 ? []
@@ -337,9 +336,7 @@ class _ContactCard extends StatelessWidget {
                       title,
                       style: GoogleFonts.cairo(
                         fontSize: 12,
-                        color: isDark
-                            ? Colors.white54
-                            : BrandColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -349,7 +346,7 @@ class _ContactCard extends StatelessWidget {
                       style: GoogleFonts.cairo(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : BrandColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -358,9 +355,9 @@ class _ContactCard extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: isDark
-                    ? Colors.white24
-                    : Colors.grey.withValues(alpha: 0.3),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.3,
+                ),
               ),
             ],
           ),
@@ -387,6 +384,7 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -396,9 +394,7 @@ class _SocialButton extends StatelessWidget {
           color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : BrandColors.border,
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
           boxShadow: isDark
               ? []

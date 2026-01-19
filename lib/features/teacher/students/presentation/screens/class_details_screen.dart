@@ -180,7 +180,7 @@ class _StudentCard extends StatelessWidget {
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
-              : BrandColors.border.withValues(alpha: 0.5),
+              : theme.colorScheme.outline.withValues(alpha: 0.5),
         ),
         boxShadow: [
           BoxShadow(
@@ -237,9 +237,7 @@ class _StudentCard extends StatelessWidget {
                             student.name,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? Colors.white
-                                  : BrandColors.textPrimary,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -248,17 +246,13 @@ class _StudentCard extends StatelessWidget {
                               Icon(
                                 PhosphorIconsRegular.user,
                                 size: 14,
-                                color: isDark
-                                    ? Colors.white60
-                                    : BrandColors.textSecondary,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 student.parentName,
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: isDark
-                                      ? Colors.white60
-                                      : BrandColors.textSecondary,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -268,9 +262,9 @@ class _StudentCard extends StatelessWidget {
                     ),
                     Icon(
                       PhosphorIconsRegular.caretRight,
-                      color: isDark
-                          ? Colors.white30
-                          : BrandColors.textSecondary.withValues(alpha: 0.3),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.3,
+                      ),
                     ),
                   ],
                 ),
@@ -449,14 +443,14 @@ class _StudentDetailsModal extends StatelessWidget {
             student.name,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : BrandColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'الصف الرابع - أ', // Placeholder class name
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: isDark ? Colors.white60 : BrandColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -519,14 +513,14 @@ class _StudentDetailsModal extends StatelessWidget {
                 Text(
                   label,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: isDark ? Colors.white60 : BrandColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 Text(
                   value,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : BrandColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -586,14 +580,14 @@ class _ConfirmationDialog extends StatelessWidget {
               'ملخص الحضور', // Attendance Summary
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : BrandColors.textPrimary,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'هل تريد إنهاء التحضير وإرسال التقرير؟', // Are you sure?
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDark ? Colors.white60 : BrandColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -686,9 +680,7 @@ class _ConfirmationDialog extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(
-                        color: isDark ? Colors.white24 : BrandColors.border,
-                      ),
+                      side: BorderSide(color: theme.colorScheme.outline),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -696,7 +688,7 @@ class _ConfirmationDialog extends StatelessWidget {
                     child: Text(
                       'إلغاء', // Cancel
                       style: TextStyle(
-                        color: isDark ? Colors.white : BrandColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -763,7 +755,7 @@ class _ConfirmationDialog extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: isDark ? Colors.white60 : BrandColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],

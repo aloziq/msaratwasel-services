@@ -165,12 +165,13 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Text(
       title,
       style: GoogleFonts.cairo(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: isDark ? Colors.white : BrandColors.primary,
+        color: theme.colorScheme.primary,
         height: 1.6,
       ),
     );
@@ -205,6 +206,7 @@ class _BulletPoint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0, right: 8.0, left: 8.0),
       child: Row(
@@ -215,7 +217,7 @@ class _BulletPoint extends StatelessWidget {
             child: Icon(
               Icons.circle,
               size: 6,
-              color: isDark ? Colors.white60 : Colors.black54,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 8),
@@ -224,7 +226,7 @@ class _BulletPoint extends StatelessWidget {
               text,
               style: GoogleFonts.cairo(
                 fontSize: 14,
-                color: isDark ? Colors.white70 : BrandColors.textPrimary,
+                color: theme.colorScheme.onSurface,
                 height: 1.6,
               ),
             ),

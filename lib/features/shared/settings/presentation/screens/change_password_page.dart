@@ -172,18 +172,19 @@ class _PasswordFieldState extends State<_PasswordField> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return TextFormField(
       controller: widget.controller,
       obscureText: _obscure,
       validator: widget.validator,
       style: GoogleFonts.cairo(
         fontWeight: FontWeight.w600,
-        color: widget.isDark ? Colors.white : BrandColors.textPrimary,
+        color: theme.colorScheme.onSurface,
       ),
       decoration: InputDecoration(
         labelText: widget.label,
         labelStyle: GoogleFonts.cairo(
-          color: widget.isDark ? Colors.white70 : BrandColors.textSecondary,
+          color: theme.colorScheme.onSurfaceVariant,
         ),
         filled: true,
         fillColor: widget.isDark
@@ -192,22 +193,18 @@ class _PasswordFieldState extends State<_PasswordField> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: widget.isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : BrandColors.border,
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: widget.isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : BrandColors.border,
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: BrandColors.primary, width: 1.5),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.all(20),
         suffixIcon: IconButton(

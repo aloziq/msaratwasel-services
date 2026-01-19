@@ -9,6 +9,7 @@ class BusPosition extends Equatable {
   final double speedKmh;
   final double distanceKm;
   final int etaMinutes;
+  final int studentsOnBoard;
   final BusState state;
   final DateTime updatedAt;
 
@@ -19,6 +20,7 @@ class BusPosition extends Equatable {
     required this.speedKmh,
     required this.distanceKm,
     required this.etaMinutes,
+    required this.studentsOnBoard,
     required this.state,
     required this.updatedAt,
   });
@@ -31,6 +33,7 @@ class BusPosition extends Equatable {
     speedKmh,
     distanceKm,
     etaMinutes,
+    studentsOnBoard,
     state,
     updatedAt,
   ];

@@ -201,5 +201,17 @@
     "light": "Light",
     "dark": "Dark",
     "notifications": "Notifications",
-    "chats": "Chats"
+    "chats": "Chats",
+    "location": "Location",
+    "speed": "Speed",
+    "distance": "Distance",
+    "remainingTime": "Remaining",
+    "busStateAtStation": "At Station",
+    "busStateEnRoute": "En Route",
+    "busStateArrived": "Arrived",
+    "kmPerHour": "km/h",
+    "km": "km",
+    "minutes": "min",
+    "refresh": "Refresh",
+    "updated": "Updated"
 }

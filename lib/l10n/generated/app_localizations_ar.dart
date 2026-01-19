@@ -589,4 +589,40 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chats => 'المحادثات';
+
+  @override
+  String get location => 'الموقع';
+
+  @override
+  String get speed => 'السرعة';
+
+  @override
+  String get distance => 'المسافة';
+
+  @override
+  String get remainingTime => 'المتبقي';
+
+  @override
+  String get busStateAtStation => 'في المحطة';
+
+  @override
+  String get busStateEnRoute => 'في الطريق';
+
+  @override
+  String get busStateArrived => 'وصل';
+
+  @override
+  String get kmPerHour => 'كم/س';
+
+  @override
+  String get km => 'كم';
+
+  @override
+  String get minutes => 'دقيقة';
+
+  @override
+  String get refresh => 'تحديث';
+
+  @override
+  String get updated => 'محدث منذ';
 }

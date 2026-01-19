@@ -7,7 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
+
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 
 /// Model for a conversation in the chats list
@@ -85,35 +85,31 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                       isArabic ? 'المحادثات' : 'Chats',
                       style: TextStyle(
                         height: 1.2,
-                        color: isDark ? Colors.white : BrandColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   )
                 : Text(
                     isArabic ? 'المحادثات' : 'Chats',
-                    style: TextStyle(
-                      color: isDark ? Colors.white : BrandColors.textPrimary,
-                    ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
                   ),
             backgroundColor: theme.scaffoldBackgroundColor,
             border: Border(
               bottom: BorderSide(
-                color: theme.dividerColor.withValues(alpha: 0.5),
+                color: theme.dividerColor.withOpacity(0.5),
                 width: 0.0,
               ),
             ),
             leading: Material(
               color: Colors.transparent,
-              child: BackButton(
-                color: isDark ? Colors.white : BrandColors.primary,
-              ),
+              child: BackButton(color: theme.colorScheme.primary),
             ),
             trailing: Material(
               color: Colors.transparent,
               child: IconButton(
                 icon: Icon(
                   PhosphorIconsFill.plusCircle,
-                  color: BrandColors.primary,
+                  color: theme.colorScheme.primary,
                   size: 28,
                 ),
                 onPressed: () => _showNewChatDialog(context),
@@ -131,7 +127,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                       size: 64,
                       color: isDark
                           ? Colors.white38
-                          : BrandColors.textSecondary,
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
@@ -139,7 +135,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: isDark
                             ? Colors.white54
-                            : BrandColors.textSecondary,
+                            : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -150,7 +146,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: isDark
                             ? Colors.white38
-                            : BrandColors.textSecondary,
+                            : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -219,13 +215,14 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: AppSpacing.md),
-              ...parents.map(
-                (parent) => ListTile(
+              ...parents.map((parent) {
+                final theme = Theme.of(ctx);
+                return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: BrandColors.primary.withValues(alpha: 0.1),
+                    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                     child: Icon(
                       PhosphorIconsRegular.user,
-                      color: BrandColors.primary,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                   title: Text(parent['name']!),
@@ -238,8 +235,8 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     Navigator.pop(ctx);
                     context.push(AppRoutes.messages, extra: parent['name']);
                   },
-                ),
-              ),
+                );
+              }),
               const SizedBox(height: AppSpacing.xl),
             ],
           ),
@@ -266,17 +263,17 @@ class _ConversationTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withValues(alpha: hasUnread ? 0.08 : 0.03)
+            ? Colors.white.withOpacity(hasUnread ? 0.08 : 0.03)
             : (hasUnread
-                  ? BrandColors.primary.withValues(alpha: 0.05)
-                  : Colors.white),
+                  ? theme.colorScheme.primary.withOpacity(0.05)
+                  : theme.colorScheme.surface),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.1)
+              ? Colors.white.withOpacity(0.1)
               : (hasUnread
-                    ? BrandColors.primary.withValues(alpha: 0.2)
-                    : BrandColors.border),
+                    ? theme.colorScheme.primary.withOpacity(0.2)
+                    : theme.colorScheme.outline),
         ),
       ),
       child: Material(
@@ -292,8 +289,8 @@ class _ConversationTile extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor: BrandColors.primary.withValues(
-                        alpha: 0.1,
+                      backgroundColor: theme.colorScheme.primary.withOpacity(
+                        0.1,
                       ),
                       backgroundImage: conversation.avatarUrl != null
                           ? NetworkImage(conversation.avatarUrl!)
@@ -301,7 +298,7 @@ class _ConversationTile extends StatelessWidget {
                       child: conversation.avatarUrl == null
                           ? Icon(
                               PhosphorIconsRegular.user,
-                              color: BrandColors.primary,
+                              color: theme.colorScheme.primary,
                               size: 28,
                             )
                           : null,
@@ -313,7 +310,7 @@ class _ConversationTile extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: BrandColors.error,
+                            color: theme.colorScheme.error,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isDark
@@ -362,10 +359,8 @@ class _ConversationTile extends StatelessWidget {
                             _formatTime(conversation.lastMessageTime, isArabic),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: hasUnread
-                                  ? BrandColors.primary
-                                  : (isDark
-                                        ? Colors.white54
-                                        : BrandColors.textSecondary),
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
                               fontWeight: hasUnread
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -381,7 +376,7 @@ class _ConversationTile extends StatelessWidget {
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isDark
                               ? Colors.white54
-                              : BrandColors.textSecondary,
+                              : theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -391,10 +386,8 @@ class _ConversationTile extends StatelessWidget {
                           color: hasUnread
                               ? (isDark
                                     ? Colors.white
-                                    : BrandColors.textPrimary)
-                              : (isDark
-                                    ? Colors.white54
-                                    : BrandColors.textSecondary),
+                                    : theme.colorScheme.onSurface)
+                              : theme.colorScheme.onSurfaceVariant,
                           fontWeight: hasUnread
                               ? FontWeight.w500
                               : FontWeight.normal,

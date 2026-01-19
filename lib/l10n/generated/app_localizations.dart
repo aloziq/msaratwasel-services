@@ -1189,6 +1189,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chats'**
   String get chats;
+
+  /// No description provided for @location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get location;
+
+  /// No description provided for @speed.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get speed;
+
+  /// No description provided for @distance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get distance;
+
+  /// No description provided for @remainingTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get remainingTime;
+
+  /// No description provided for @busStateAtStation.
+  ///
+  /// In en, this message translates to:
+  /// **'At Station'**
+  String get busStateAtStation;
+
+  /// No description provided for @busStateEnRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'En Route'**
+  String get busStateEnRoute;
+
+  /// No description provided for @busStateArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived'**
+  String get busStateArrived;
+
+  /// No description provided for @kmPerHour.
+  ///
+  /// In en, this message translates to:
+  /// **'km/h'**
+  String get kmPerHour;
+
+  /// No description provided for @km.
+  ///
+  /// In en, this message translates to:
+  /// **'km'**
+  String get km;
+
+  /// No description provided for @minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get minutes;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @updated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get updated;
 }
 
 class _AppLocalizationsDelegate

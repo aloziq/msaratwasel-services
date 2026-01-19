@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/theme/app_theme.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -36,7 +35,7 @@ class ProfileScreen extends StatelessWidget {
                   'الإحصائيات', // Statistics
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : BrandColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ).animate().fadeIn().slideX(begin: 0.2, end: 0),
                 const SizedBox(height: AppSpacing.md),
@@ -48,7 +47,7 @@ class ProfileScreen extends StatelessWidget {
                   'المعلومات الشخصية', // Personal Information
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : BrandColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ).animate().fadeIn(delay: 200.ms).slideX(begin: 0.2, end: 0),
                 const SizedBox(height: AppSpacing.md),
@@ -135,7 +134,7 @@ class ProfileScreen extends StatelessWidget {
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
-              : BrandColors.border.withValues(alpha: 0.5),
+              : theme.colorScheme.outline.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -153,13 +152,13 @@ class ProfileScreen extends StatelessWidget {
             value,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : BrandColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: isDark ? Colors.white60 : BrandColors.textSecondary,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -185,7 +184,7 @@ class ProfileScreen extends StatelessWidget {
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
-              : BrandColors.border.withValues(alpha: 0.5),
+              : theme.colorScheme.outline.withValues(alpha: 0.5),
         ),
         boxShadow: isDark
             ? []
@@ -204,14 +203,10 @@ class ProfileScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.05)
-                  : BrandColors.primary.withValues(alpha: 0.05),
+                  : theme.colorScheme.primary.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: isDark ? Colors.white70 : BrandColors.primary,
-              size: 24,
-            ),
+            child: Icon(icon, color: theme.colorScheme.primary, size: 24),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -221,7 +216,7 @@ class ProfileScreen extends StatelessWidget {
                 Text(
                   label,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: isDark ? Colors.white60 : BrandColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -229,7 +224,7 @@ class ProfileScreen extends StatelessWidget {
                   value,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : BrandColors.textPrimary,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],

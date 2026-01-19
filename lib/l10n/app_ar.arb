@@ -201,5 +201,17 @@
     "light": "فاتح",
     "dark": "داكن",
     "notifications": "الإشعارات",
-    "chats": "المحادثات"
+    "chats": "المحادثات",
+    "location": "الموقع",
+    "speed": "السرعة",
+    "distance": "المسافة",
+    "remainingTime": "المتبقي",
+    "busStateAtStation": "في المحطة",
+    "busStateEnRoute": "في الطريق",
+    "busStateArrived": "وصل",
+    "kmPerHour": "كم/س",
+    "km": "كم",
+    "minutes": "دقيقة",
+    "refresh": "تحديث",
+    "updated": "محدث منذ"
 }

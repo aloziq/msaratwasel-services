@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
 
 class AppSliverHeader extends StatelessWidget {
   const AppSliverHeader({
@@ -21,7 +20,6 @@ class AppSliverHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return CupertinoSliverNavigationBar(
       largeTitle: Platform.isAndroid
@@ -31,16 +29,11 @@ class AppSliverHeader extends StatelessWidget {
                 title,
                 style: TextStyle(
                   height: 1.2,
-                  color: isDark ? Colors.white : BrandColors.textPrimary,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             )
-          : Text(
-              title,
-              style: TextStyle(
-                color: isDark ? Colors.white : BrandColors.textPrimary,
-              ),
-            ),
+          : Text(title, style: TextStyle(color: theme.colorScheme.onSurface)),
       backgroundColor: theme.scaffoldBackgroundColor.withValues(alpha: 0.9),
       border: null,
       stretch: true,
@@ -49,9 +42,7 @@ class AppSliverHeader extends StatelessWidget {
           (hasLeading
               ? Material(
                   color: Colors.transparent,
-                  child: BackButton(
-                    color: isDark ? Colors.white : BrandColors.primary,
-                  ),
+                  child: BackButton(color: theme.colorScheme.primary),
                 )
               : null),
       trailing: trailing,

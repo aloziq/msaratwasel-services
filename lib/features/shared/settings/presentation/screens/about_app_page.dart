@@ -71,7 +71,7 @@ class AboutAppPage extends StatelessWidget {
                     style: GoogleFonts.cairo(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : BrandColors.textPrimary,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -82,7 +82,7 @@ class AboutAppPage extends StatelessWidget {
                       fontSize: 14,
                       color: isDark
                           ? Colors.white60
-                          : BrandColors.textSecondary,
+                          : theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -116,7 +116,7 @@ class AboutAppPage extends StatelessWidget {
                           fontSize: 12,
                           color: isDark
                               ? Colors.white54
-                              : BrandColors.textSecondary,
+                              : theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -183,6 +183,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -191,7 +192,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.1)
-              : BrandColors.border,
+              : theme.colorScheme.outline.withValues(alpha: 0.3),
         ),
         boxShadow: isDark
             ? []
@@ -220,7 +221,7 @@ class _SectionCard extends StatelessWidget {
             style: GoogleFonts.cairo(
               fontSize: 14,
               height: 1.6,
-              color: isDark ? Colors.white70 : BrandColors.textPrimary,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
