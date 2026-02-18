@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
-import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
-import 'package:msaratwasel_services/features/shared/presentation/widgets/app_sliver_header.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:math' as math;
 
 class ContactUsPage extends StatefulWidget {
   const ContactUsPage({super.key});
@@ -46,203 +45,259 @@ class _ContactUsPageState extends State<ContactUsPage> {
 
   void _submitComplaint() {
     if (_complaintController.text.trim().isEmpty) return;
-
-    // Simulate API call
+    FocusScope.of(context).unfocus();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(AppLocalizations.of(context)!.complaintSent),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
     _complaintController.clear();
-    FocusScope.of(context).unfocus();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Determine theme
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          AppSliverHeader(title: l10n.contactUs),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: AppSpacing.md),
-
-                  // --- Contact Methods Section ---
-                  _SectionHeader(title: l10n.contactMethods),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Phone
-                  _ContactCard(
-                    icon: PhosphorIcons.phoneCall(PhosphorIconsStyle.duotone),
-                    title: l10n.phoneNumber,
-                    value: '920000000', // Example number
-                    onTap: () => _makePhoneCall('920000000'),
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Email
-                  _ContactCard(
-                    icon: PhosphorIcons.envelopeSimple(
-                      PhosphorIconsStyle.duotone,
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // Custom Header
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Back Button (Start/Right in RTL)
+                    // Only show if we can pop
+                    if (Navigator.of(context).canPop())
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).pop(),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(
+                              Icons
+                                  .arrow_back_rounded, // Auto-mirrored: Points Left in LTR, Right in RTL (correct for Back)
+                              color: isDark ? Colors.white : AppColors.primary,
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      const SizedBox(
+                        width: 44,
+                      ), // Placeholder if no back button to keep title centered?
+                    // Spacer/Title
+                    Expanded(
+                      child: Text(
+                        l10n.contactUs,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.primary,
+                          fontSize:
+                              24, // Slightly smaller for better fit? Or keep 28.
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Google Sans',
+                        ),
+                      ),
                     ),
-                    title: l10n.email,
-                    value: 'info@msarat.sa', // Example email
-                    onTap: () => _sendEmail('info@msarat.sa'),
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
 
-                  // Website
-                  _ContactCard(
-                    icon: PhosphorIcons.globe(PhosphorIconsStyle.duotone),
-                    title: l10n.website,
-                    value: 'www.msarat.sa', // Example website
-                    onTap: () => _launchUrl('https://www.msarat.sa'),
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
+                    // Spacer to balance Back Button
+                    const SizedBox(width: 44),
+                  ],
+                ),
+              ),
+            ),
 
-                  // --- Social Media Section ---
-                  _SectionHeader(title: l10n.socialMedia),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _SocialButton(
-                        icon: PhosphorIcons.twitterLogo(
-                          PhosphorIconsStyle.fill,
-                        ),
-                        label: 'Twitter',
-                        color: const Color(0xFF1DA1F2),
-                        onTap: () => _launchUrl('https://twitter.com/msarat'),
-                        isDark: isDark,
-                      ),
-                      _SocialButton(
-                        icon: PhosphorIcons.instagramLogo(
-                          PhosphorIconsStyle.fill,
-                        ),
-                        label: 'Instagram',
-                        color: const Color(0xFFE1306C),
-                        onTap: () => _launchUrl('https://instagram.com/msarat'),
-                        isDark: isDark,
-                      ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // --- Contact Methods Section ---
+                    _SectionHeader(title: l10n.contactMethods),
+                    const SizedBox(height: 12),
 
-                      _SocialButton(
-                        icon: PhosphorIcons.facebookLogo(
-                          PhosphorIconsStyle.fill,
-                        ),
-                        label: 'Facebook',
-                        color: const Color(0xFF4267B2),
-                        onTap: () => _launchUrl('https://facebook.com/msarat'),
-                        isDark: isDark,
-                      ),
-                      _SocialButton(
-                        icon: PhosphorIcons.whatsappLogo(
-                          PhosphorIconsStyle.fill,
-                        ),
-                        label: 'WhatsApp',
-                        color: const Color(0xFF25D366),
-                        onTap: () => _launchUrl('https://wa.me/966500000000'),
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // --- Complaints Box Section ---
-                  _SectionHeader(title: l10n.complaintsBox),
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.05)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : theme.colorScheme.outline.withValues(alpha: 0.3),
-                      ),
-                      boxShadow: isDark
-                          ? []
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.03),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                    // Phone
+                    _ContactCard(
+                      icon: PhosphorIconsRegular.phoneCall,
+                      title: l10n.phoneNumber,
+                      value: '920000000',
+                      onTap: () => _makePhoneCall('920000000'),
+                      isDark: isDark,
+                      isRtl: isRtl,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    const SizedBox(height: 16),
+
+                    // Email
+                    _ContactCard(
+                      icon: PhosphorIconsRegular.envelopeSimple,
+                      title: l10n.email,
+                      value: 'info@msarat.sa',
+                      onTap: () => _sendEmail('info@msarat.sa'),
+                      isDark: isDark,
+                      isRtl: isRtl,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Website
+                    _ContactCard(
+                      icon: PhosphorIconsRegular.globe,
+                      title: l10n.website,
+                      value: 'www.msarat.sa',
+                      onTap: () => _launchUrl('https://www.msarat.sa'),
+                      isDark: isDark,
+                      isRtl: isRtl,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // --- Social Media Section ---
+                    _SectionHeader(title: l10n.socialMedia),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        TextField(
-                          controller: _complaintController,
-                          maxLines: 5,
-                          decoration: InputDecoration(
-                            hintText: l10n.complaintMessageHint,
-                            hintStyle: TextStyle(
-                              color: isDark ? Colors.white38 : Colors.grey,
-                              fontSize: 14,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: isDark
-                                ? Colors.black26
-                                : Colors.grey.withValues(alpha: 0.05),
-                            contentPadding: const EdgeInsets.all(16),
-                          ),
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
+                        _SocialButton(
+                          icon: FontAwesomeIcons.whatsapp,
+                          color: AppColors.whatsapp,
+                          onTap: () => _launchUrl('https://wa.me/966500000000'),
+                          isDark: isDark,
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        FilledButton.icon(
-                          onPressed: _submitComplaint,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: BrandColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.send_rounded, size: 20),
-                          label: Text(
-                            l10n.submit,
-                            style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        _SocialButton(
+                          icon: FontAwesomeIcons.facebook,
+                          color: AppColors.facebook,
+                          onTap: () =>
+                              _launchUrl('https://facebook.com/msarat'),
+                          isDark: isDark,
+                        ),
+                        _SocialButton(
+                          icon: FontAwesomeIcons.instagram,
+                          color: AppColors.instagram,
+                          onTap: () =>
+                              _launchUrl('https://instagram.com/msarat'),
+                          isDark: isDark,
+                        ),
+                        _SocialButton(
+                          icon: FontAwesomeIcons.xTwitter,
+                          color: isDark ? Colors.white : Colors.black,
+                          onTap: () => _launchUrl('https://twitter.com/msarat'),
+                          isDark: isDark,
                         ),
                       ],
                     ),
-                  ),
 
-                  // Extra padding at bottom
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
-                ],
+                    const SizedBox(height: 32),
+
+                    // --- Complaints Box Section ---
+                    _SectionHeader(title: l10n.complaintsBox),
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.cardDark : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.cardBorderDark
+                              : const Color(0xFFE5E7EB),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _complaintController,
+                            maxLines: 5,
+                            decoration: InputDecoration(
+                              hintText: l10n.complaintMessageHint,
+                              hintStyle: TextStyle(
+                                color: isDark
+                                    ? Colors.white38
+                                    : const Color(0xFF9CA3AF),
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.black12
+                                  : const Color(0xFFF9FAFB),
+                              contentPadding: const EdgeInsets.all(16),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: _submitComplaint,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              icon: Transform(
+                                alignment: Alignment.center,
+                                transform: isRtl
+                                    ? Matrix4.rotationY(math.pi)
+                                    : Matrix4.identity(),
+                                child: const Icon(Icons.send_rounded, size: 20),
+                              ),
+                              label: Text(
+                                l10n.submit,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -254,17 +309,15 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Text(
-        title,
-        style: GoogleFonts.cairo(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: theme.colorScheme.primary,
-          letterSpacing: 0.5,
-        ),
+    return Text(
+      title,
+      textAlign: TextAlign.start,
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : AppColors.primary,
       ),
     );
   }
@@ -277,6 +330,7 @@ class _ContactCard extends StatelessWidget {
     required this.value,
     required this.onTap,
     required this.isDark,
+    required this.isRtl,
   });
 
   final IconData icon;
@@ -284,83 +338,80 @@ class _ContactCard extends StatelessWidget {
   final String value;
   final VoidCallback onTap;
   final bool isDark;
+  final bool isRtl;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.3),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.cardBorderDark : const Color(0xFFE5E7EB),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? BrandColors.secondary.withValues(alpha: 0.1)
-                      : BrandColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: isDark ? BrandColors.secondary : BrandColors.primary,
-                  size: 24,
-                ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icon (Start/Right in RTL)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.cairo(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+              child: Icon(icon, color: AppColors.primary, size: 24),
+            ),
+            const SizedBox(width: 16),
+
+            // Text Content (Right Aligned implicit by Row/Column default in RTL)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      value,
-                      style: GoogleFonts.cairo(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurface,
-                      ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.3,
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 16),
+
+            // Trailing Chevron (End/Left in RTL)
+            Icon(
+              isRtl
+                  ? Icons
+                        .keyboard_arrow_left_rounded // Left in RTL (Forward)
+                  : Icons
+                        .keyboard_arrow_right_rounded, // Right in LTR (Forward)
+              size: 20,
+              color: const Color(0xFF9CA3AF),
+            ),
+          ],
         ),
       ),
     );
@@ -370,43 +421,39 @@ class _ContactCard extends StatelessWidget {
 class _SocialButton extends StatelessWidget {
   const _SocialButton({
     required this.icon,
-    required this.label,
     required this.color,
     required this.onTap,
     required this.isDark,
   });
 
   final IconData icon;
-  final String label;
   final Color color;
   final VoidCallback onTap;
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        width: 70,
+        height: 70,
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
+            color: isDark ? AppColors.cardBorderDark : const Color(0xFFE5E7EB),
           ),
-          boxShadow: isDark
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Icon(icon, color: color, size: 28),
+        child: Center(child: Icon(icon, color: color, size: 32)),
       ),
     );
   }

@@ -1,7 +1,10 @@
+import 'package:injectable/injectable.dart';
 import 'package:dartz/dartz.dart';
-import '../entities/classroom_entity.dart';
-import '../repositories/teacher_repository.dart';
+// import 'package:msaratwasel_services/core/error/failure.dart'; // Removed unused import
+import '../../domain/entities/classroom_entity.dart';
+import '../../domain/repositories/teacher_repository.dart';
 
+@lazySingleton
 class GetTeacherClassroomUseCase {
   final TeacherRepository repository;
 

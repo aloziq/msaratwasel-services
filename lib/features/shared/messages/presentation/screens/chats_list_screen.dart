@@ -1,13 +1,10 @@
-import 'dart:io';
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 
 /// Model for a conversation in the chats list
@@ -77,43 +74,31 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          CupertinoSliverNavigationBar(
-            largeTitle: Platform.isAndroid
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      isArabic ? 'المحادثات' : 'Chats',
-                      style: TextStyle(
-                        height: 1.2,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  )
-                : Text(
-                    isArabic ? 'المحادثات' : 'Chats',
-                    style: TextStyle(color: theme.colorScheme.onSurface),
-                  ),
-            backgroundColor: theme.scaffoldBackgroundColor,
-            border: Border(
-              bottom: BorderSide(
-                color: theme.dividerColor.withOpacity(0.5),
-                width: 0.0,
-              ),
-            ),
+          AdaptiveSliverAppBar(
+            title: isArabic ? 'المحادثات' : 'Chats',
             leading: Material(
               color: Colors.transparent,
-              child: BackButton(color: theme.colorScheme.primary),
+              child: IconButton(
+                icon: Icon(
+                  Icons.menu_rounded,
+                  color: theme.colorScheme.onSurface,
+                ),
+                onPressed: () => MainShell.of(context)?.openDrawer(),
+              ),
             ),
             trailing: Material(
               color: Colors.transparent,
               child: IconButton(
                 icon: Icon(
-                  PhosphorIconsFill.plusCircle,
+                  PhosphorIconsRegular.pencilSimple,
                   color: theme.colorScheme.primary,
-                  size: 28,
+                  size: 26,
                 ),
                 onPressed: () => _showNewChatDialog(context),
               ),
+            ),
+            backgroundColor: theme.scaffoldBackgroundColor.withValues(
+              alpha: 0.9,
             ),
           ),
           if (_conversations.isEmpty)
@@ -132,7 +117,8 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       isArabic ? 'لا توجد محادثات' : 'No conversations yet',
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: TextStyle(
+                        fontSize: 18,
                         color: isDark
                             ? Colors.white54
                             : theme.colorScheme.onSurfaceVariant,
@@ -141,9 +127,10 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       isArabic
-                          ? 'اضغط على + لبدء محادثة جديدة'
-                          : 'Tap + to start a new conversation',
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                          ? 'اضغط على ✏️ لبدء محادثة جديدة'
+                          : 'Tap ✏️ to start a new conversation',
+                      style: TextStyle(
+                        fontSize: 14,
                         color: isDark
                             ? Colors.white38
                             : theme.colorScheme.onSurfaceVariant,
@@ -154,20 +141,32 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               ),
             )
           else
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final conversation = _conversations[index];
-                  return _ConversationTile(
-                    conversation: conversation,
-                    onTap: () => context.push(
-                      AppRoutes.messages,
-                      extra: conversation.parentName,
-                    ),
-                  ).animate().fadeIn(delay: (index * 50).ms).slideX(begin: 0.1);
-                }, childCount: _conversations.length),
-              ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final conversation = _conversations[index];
+                return Column(
+                  children: [
+                    _ConversationTile(
+                          conversation: conversation,
+                          onTap: () => context.push(
+                            AppRoutes.messages,
+                            extra: conversation.parentName,
+                          ),
+                        )
+                        .animate()
+                        .fadeIn(delay: (index * 50).ms)
+                        .slideX(begin: 0.05),
+                    if (index < _conversations.length - 1)
+                      Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        indent: 76,
+                        endIndent: 16,
+                        color: theme.dividerColor.withValues(alpha: 0.3),
+                      ),
+                  ],
+                );
+              }, childCount: _conversations.length),
             ),
         ],
       ),
@@ -175,9 +174,12 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   }
 
   void _showNewChatDialog(BuildContext context) {
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    // ... items ...
+    _mockShowDialog(context); // Helper for brevity, keeping existing logic
+  }
 
-    // Mock list of parents to choose from
+  void _mockShowDialog(BuildContext context) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final parents = [
       {'name': 'أحمد محمد', 'student': 'يوسف أحمد'},
       {'name': 'فاطمة علي', 'student': 'سارة علي'},
@@ -210,26 +212,27 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 isArabic ? 'بدء محادثة جديدة' : 'Start New Chat',
-                style: Theme.of(
-                  ctx,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: AppSpacing.md),
               ...parents.map((parent) {
                 final theme = Theme.of(ctx);
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.1,
+                    ),
                     child: Icon(
                       PhosphorIconsRegular.user,
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  title: Text(parent['name']!),
+                  title: Text(parent['name']!, style: TextStyle()),
                   subtitle: Text(
                     isArabic
                         ? 'ولي أمر ${parent['student']}'
                         : 'Parent of ${parent['student']}',
+                    style: TextStyle(fontSize: 12),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -255,156 +258,126 @@ class _ConversationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    // final isDark = theme.brightness == Brightness.dark; // Unused in new design
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final hasUnread = conversation.unreadCount > 0;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(hasUnread ? 0.08 : 0.03)
-            : (hasUnread
-                  ? theme.colorScheme.primary.withOpacity(0.05)
-                  : theme.colorScheme.surface),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withOpacity(0.1)
-              : (hasUnread
-                    ? theme.colorScheme.primary.withOpacity(0.2)
-                    : theme.colorScheme.outline),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(
-                        0.1,
-                      ),
-                      backgroundImage: conversation.avatarUrl != null
-                          ? NetworkImage(conversation.avatarUrl!)
-                          : null,
-                      child: conversation.avatarUrl == null
-                          ? Icon(
-                              PhosphorIconsRegular.user,
-                              color: theme.colorScheme.primary,
-                              size: 28,
-                            )
-                          : null,
-                    ),
-                    if (hasUnread)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.error,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF1E293B)
-                                  : Colors.white,
-                              width: 2,
-                            ),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 20,
-                            minHeight: 20,
-                          ),
-                          child: Text(
-                            '${conversation.unreadCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // Avatar
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    backgroundImage: conversation.avatarUrl != null
+                        ? NetworkImage(conversation.avatarUrl!)
+                        : null,
+                    child: conversation.avatarUrl == null
+                        ? Text(
+                            conversation.parentName.characters.first,
+                            style: TextStyle(
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
                             ),
-                            textAlign: TextAlign.center,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            conversation.parentName,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              conversation.parentName,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: hasUnread
-                                    ? FontWeight.bold
-                                    : FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatTime(conversation.lastMessageTime, isArabic),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: hasUnread
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurfaceVariant,
+                            fontWeight: hasUnread
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
-                          Text(
-                            _formatTime(conversation.lastMessageTime, isArabic),
-                            style: theme.textTheme.bodySmall?.copyWith(
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            conversation.lastMessage,
+                            style: TextStyle(
+                              fontSize: 14,
                               color: hasUnread
-                                  ? theme.colorScheme.primary
+                                  ? theme.colorScheme.onSurface
                                   : theme.colorScheme.onSurfaceVariant,
                               fontWeight: hasUnread
-                                  ? FontWeight.bold
+                                  ? FontWeight.w500
                                   : FontWeight.normal,
+                              height: 1.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (hasUnread) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 22,
+                              minHeight: 22,
+                            ),
+                            child: Text(
+                              '${conversation.unreadCount}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                height: 1.0,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        isArabic
-                            ? 'ولي أمر ${conversation.studentName}'
-                            : 'Parent of ${conversation.studentName}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isDark
-                              ? Colors.white54
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        conversation.lastMessage,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: hasUnread
-                              ? (isDark
-                                    ? Colors.white
-                                    : theme.colorScheme.onSurface)
-                              : theme.colorScheme.onSurfaceVariant,
-                          fontWeight: hasUnread
-                              ? FontWeight.w500
-                              : FontWeight.normal,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: isDark ? Colors.white24 : Colors.grey[400],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -414,17 +387,24 @@ class _ConversationTile extends StatelessWidget {
   String _formatTime(DateTime time, bool isArabic) {
     final now = DateTime.now();
     final diff = now.difference(time);
+    final isYesterday = now.day - time.day == 1;
 
     if (diff.inMinutes < 1) {
       return isArabic ? 'الآن' : 'Now';
-    } else if (diff.inMinutes < 60) {
-      return isArabic ? '${diff.inMinutes} د' : '${diff.inMinutes}m';
-    } else if (diff.inHours < 24) {
-      return isArabic ? '${diff.inHours} س' : '${diff.inHours}h';
+    } else if (diff.inHours < 1 && diff.inMinutes > 0) {
+      // Just time "10:30" style usually better for today
+      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+    } else if (diff.inHours < 24 && now.day == time.day) {
+      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+    } else if (isYesterday) {
+      return isArabic ? 'أمس' : 'Yesterday';
     } else if (diff.inDays < 7) {
-      return isArabic ? '${diff.inDays} ي' : '${diff.inDays}d';
+      // Day name
+      return isArabic
+          ? '${diff.inDays} يوم'
+          : '${diff.inDays}d'; // Simplified for now
     } else {
-      return '${time.day}/${time.month}';
+      return '${time.day}/${time.month}/${time.year % 100}';
     }
   }
 }

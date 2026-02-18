@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
 
 class StudentMarkerWidget extends StatelessWidget {
   const StudentMarkerWidget({
@@ -49,7 +49,7 @@ class StudentMarkerWidget extends StatelessWidget {
       return Image.network(
         imageUrl!,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildInitials(),
+        errorBuilder: (context, error, stackTrace) => _buildInitials(),
       );
     }
     return _buildInitials();
@@ -62,7 +62,7 @@ class StudentMarkerWidget extends StatelessWidget {
       child: Text(
         name.isNotEmpty ? name[0].toUpperCase() : '?',
         style: const TextStyle(
-          color: BrandColors.primary,
+          color: AppColors.primary,
           fontWeight: FontWeight.bold,
           fontSize: 22,
         ),

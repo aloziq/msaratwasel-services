@@ -1,9 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/student_entity.dart';
 import '../../domain/usecases/get_students_usecase.dart';
 import '../../domain/usecases/mark_attendance_usecase.dart';
 import 'class_details_state.dart';
 
+@injectable
 class ClassDetailsCubit extends Cubit<ClassDetailsState> {
   final GetStudentsUseCase getStudentsUseCase;
   final MarkAttendanceUseCase markAttendanceUseCase;

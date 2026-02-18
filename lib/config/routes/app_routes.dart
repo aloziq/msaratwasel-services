@@ -24,6 +24,25 @@ abstract class AppRoutes {
   static const messages = '/messages';
   static const chats = '/chats';
 
+  // Field Supervisor routes
+  static const supervisorHome = '/supervisor';
+  static const supervisorBuses = '/supervisor/buses';
+  static const supervisorDrivers = '/supervisor/drivers';
+  static const supervisorAlerts = '/supervisor/alerts';
+  static const supervisorInspection = '/supervisor/inspection';
+  static const supervisorDelays = '/supervisor/delays';
+  static const supervisorTrips = '/supervisor/trips';
+  static const supervisorReports = '/supervisor/reports';
+
+  // Driver routes
+  static const driverHome = '/driver/home';
+  static const driverRoute = '/driver/route';
+  static const driverMaintenance = '/driver/maintenance';
+  static const driverFuel = '/driver/maintenance/fuel';
+  static const driverMaintenanceRequest = '/driver/maintenance/request';
+  static const driverEndTrip = '/driver/end-trip';
+  static const driverStudents = '/driver/students';
+
   /// Helper to generate class details path with classId
   static String classDetailsPath(String classId) => '/class/$classId';
 }

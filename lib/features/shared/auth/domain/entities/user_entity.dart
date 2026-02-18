@@ -1,13 +1,12 @@
 import 'package:equatable/equatable.dart';
 
 enum UserRole {
-  driver('سائق'),
-  busAssistant('مشرفة الباص'),
-  fieldSupervisor('مشرف ميداني'),
-  teacher('معلم');
+  driver,
+  busAssistant,
+  fieldSupervisor,
+  teacher;
 
-  final String displayName;
-  const UserRole(this.displayName);
+  const UserRole();
 
   static UserRole fromString(String role) {
     return UserRole.values.firstWhere(

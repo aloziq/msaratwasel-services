@@ -1,14 +1,17 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../../../core/domain/entities/bus_student_entity.dart';
 import '../../../core/presentation/cubit/bus_trip_cubit.dart';
+import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
+
+import 'package:url_launcher/url_launcher.dart';
 
 class BusStudentsScreen extends StatefulWidget {
   const BusStudentsScreen({super.key});
@@ -21,6 +24,19 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
   String _searchQuery = '';
   BusStudentStatus? _selectedStatus;
 
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch dialer')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -29,77 +45,101 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: BlocBuilder<BusTripCubit, BusTripState>(
-        builder: (context, state) {
-          if (state is BusTripLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [
+                    const Color(0xFF0F172A), // Midnight Blue
+                    const Color(0xFF1E293B), // Slate 800
+                  ]
+                : [
+                    const Color(0xFFF8FAFC), // Slate 50
+                    const Color(0xFFE2E8F0), // Slate 200
+                  ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: BlocBuilder<BusTripCubit, BusTripState>(
+          builder: (context, state) {
+            if (state is BusTripLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (state is BusTripError) {
-            return Center(child: Text(state.message));
-          }
+            if (state is BusTripError) {
+              return Center(child: Text(state.message));
+            }
 
-          if (state is BusTripLoaded) {
-            final filteredStudents = state.trip.students.where((student) {
-              final matchesSearch =
-                  student.name.toLowerCase().contains(
-                    _searchQuery.toLowerCase(),
-                  ) ||
-                  student.schoolId.contains(_searchQuery);
-              final matchesStatus =
-                  _selectedStatus == null || student.status == _selectedStatus;
-              return matchesSearch && matchesStatus;
-            }).toList();
+            if (state is BusTripLoaded) {
+              final filteredStudents = state.trip.students.where((student) {
+                final matchesSearch =
+                    student.name.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ||
+                    student.schoolId.contains(_searchQuery);
+                final matchesStatus =
+                    _selectedStatus == null ||
+                    student.status == _selectedStatus;
+                return matchesSearch && matchesStatus;
+              }).toList();
 
-            return CustomScrollView(
-              slivers: [
-                CupertinoSliverNavigationBar(
-                  leading: const BackButton(),
-                  largeTitle: Text(
-                    l10n.studentsList,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontFamily: theme.textTheme.titleLarge?.fontFamily,
+              return CustomScrollView(
+                slivers: [
+                  AdaptiveSliverAppBar(
+                    title: l10n.studentsList,
+                    leading: Material(
+                      color: Colors.transparent,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.menu_rounded,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        onPressed: () => MainShell.of(context)?.openDrawer(),
+                      ),
                     ),
+                    backgroundColor: Colors.transparent,
+                    stretch: true,
                   ),
-                  backgroundColor: Colors.transparent,
-                  border: null,
-                  stretch: true,
-                ),
-                SliverToBoxAdapter(
-                  child: _buildTripSummary(context, state.trip),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildSearchAndFilter(context, isDark),
-                ),
-                if (filteredStudents.isEmpty)
-                  const SliverFillRemaining(
-                    child: Center(child: Text('لا يوجد طلاب يطابقون البحث')),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final student = filteredStudents[index];
-                        return _StudentCard(student: student)
-                            .animate()
-                            .fadeIn(delay: (index * 50).ms)
-                            .slideX(begin: 0.1);
-                      }, childCount: filteredStudents.length),
-                    ),
+                  SliverToBoxAdapter(
+                    child: _buildTripSummary(context, state.trip),
                   ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: AppSpacing.xxl),
-                ),
-              ],
-            );
-          }
+                  SliverToBoxAdapter(
+                    child: _buildSearchAndFilter(context, isDark),
+                  ),
+                  if (filteredStudents.isEmpty)
+                    const SliverFillRemaining(
+                      child: Center(child: Text('لا يوجد طلاب يطابقون البحث')),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final student = filteredStudents[index];
+                          return _StudentCard(
+                                student: student,
+                                onCall: () =>
+                                    _makePhoneCall(student.parentPhone),
+                              )
+                              .animate()
+                              .fadeIn(delay: (index * 50).ms)
+                              .slideX(begin: 0.1);
+                        }, childCount: filteredStudents.length),
+                      ),
+                    ),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.xxl),
+                  ),
+                ],
+              );
+            }
 
-          return const SizedBox.shrink();
-        },
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }
@@ -305,8 +345,9 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
 
 class _StudentCard extends StatelessWidget {
   final BusStudentEntity student;
+  final VoidCallback? onCall;
 
-  const _StudentCard({required this.student});
+  const _StudentCard({required this.student, this.onCall});
 
   @override
   Widget build(BuildContext context) {
@@ -421,7 +462,7 @@ class _StudentCard extends StatelessWidget {
                         context,
                         PhosphorIconsFill.phone,
                         Colors.green,
-                        () {},
+                        onCall ?? () {},
                       ),
                       const SizedBox(width: 8),
                       _buildIconButton(

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:widget_to_marker/widget_to_marker.dart';
+
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:msaratwasel_services/features/teacher/students/domain/entities/student_entity.dart';
 
@@ -23,8 +25,6 @@ class _BusMapScreenState extends State<BusMapScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return BlocProvider(
       create: (context) => BusTrackingCubit()..startTracking(),
@@ -55,25 +55,7 @@ class _BusMapScreenState extends State<BusMapScreen> {
                     Positioned(
                       top: MediaQuery.of(context).padding.top + AppSpacing.sm,
                       right: AppSpacing.md,
-                      child: Material(
-                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                        shape: const CircleBorder(),
-                        elevation: 4,
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: () => Scaffold.of(context).openDrawer(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.sm),
-                            child: Icon(
-                              Icons.menu_rounded,
-                              color: isDark
-                                  ? Colors.white
-                                  : theme.colorScheme.primary,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ),
+                      child: const CustomMenuButton(),
                     ),
                     Positioned(
                       top: MediaQuery.of(context).padding.top + AppSpacing.lg,
@@ -102,6 +84,7 @@ class _BusMapScreenState extends State<BusMapScreen> {
                         ),
                         child: _BottomDetailsCard(
                           position: tracking,
+                          students: students,
                           l10n: l10n,
                           isOpen: _isDetailsExpanded,
                           onToggle: () => setState(
@@ -163,7 +146,7 @@ class _TrackingMapState extends State<_TrackingMap> {
             await StudentMarkerWidget(
               name: student.name,
               // Assuming photoUrl is handled inside StudentMarkerWidget or passed
-              // color: BrandColors.primary // if needed
+              // color: AppColors.primary // if needed
             ).toBitmapDescriptor(
               logicalSize: const Size(100, 100),
               imageSize: const Size(200, 200),
@@ -291,12 +274,14 @@ class _TrackingMapState extends State<_TrackingMap> {
 
 class _BottomDetailsCard extends StatelessWidget {
   final BusPosition position;
+  final List<StudentEntity> students;
   final AppLocalizations l10n;
   final bool isOpen;
   final VoidCallback onToggle;
 
   const _BottomDetailsCard({
     required this.position,
+    required this.students,
     required this.l10n,
     required this.isOpen,
     required this.onToggle,
@@ -307,6 +292,16 @@ class _BottomDetailsCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final paddingBottom = MediaQuery.of(context).padding.bottom;
+
+    final int totalStudents = students.length;
+    final int absentCount = students
+        .where((s) => s.status == AttendanceStatus.absent)
+        .length;
+    // Assuming remaining are those not absent and not on board yet?
+    // Or just Total - Absent - OnBoard.
+    // Let's use simple arithmetic as per plan.
+    final int remainingCount =
+        (totalStudents - absentCount - position.studentsOnBoard).clamp(0, 999);
 
     return Container(
       width: double.infinity,
@@ -428,31 +423,21 @@ class _BottomDetailsCard extends StatelessWidget {
                   Row(
                     children: [
                       _TrackingStat(
-                        icon: Icons.speed_rounded,
-                        label: l10n.speed,
-                        value: '${position.speedKmh.toInt()} ${l10n.kmPerHour}',
+                        icon: Icons.groups_rounded,
+                        label: l10n.remaining,
+                        value: remainingCount.toString(),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       _TrackingStat(
-                        icon: Icons.route_rounded, // or path
-                        label: l10n.distance,
-                        value: '${position.distanceKm} ${l10n.km}',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      _TrackingStat(
-                        icon: Icons.people_alt_rounded,
-                        label: 'الطلاب', // Localize
+                        icon: Icons.directions_bus_rounded,
+                        label: l10n.onBus,
                         value: position.studentsOnBoard.toString(),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       _TrackingStat(
-                        icon: Icons.timer_rounded,
-                        label: l10n.remainingTime,
-                        value: '${position.etaMinutes} ${l10n.minutes}',
+                        icon: Icons.person_off_rounded,
+                        label: l10n.absent,
+                        value: absentCount.toString(),
                       ),
                     ],
                   ),
@@ -507,7 +492,8 @@ class _TrackingStat extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
@@ -517,29 +503,25 @@ class _TrackingStat extends StatelessWidget {
                 ),
                 child: Icon(icon, color: theme.colorScheme.primary),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      value,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

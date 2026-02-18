@@ -1,80 +1,292 @@
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-import 'package:msaratwasel_services/config/theme/app_theme.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/app_drawer.dart'; // Added Import
+import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
+import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey =
+      GlobalKey<ScaffoldState>(); // Added Key
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      // Handle error if permissions are denied or other issues
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+    }
+  }
+
+  void _showImageSourceActionSheet(BuildContext context, bool isArabic) {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) => CupertinoActionSheet(
+        title: Text(isArabic ? 'تغيير الصورة الشخصية' : 'Change Profile Photo'),
+        actions: <CupertinoActionSheetAction>[
+          CupertinoActionSheetAction(
+            isDefaultAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.camera);
+            },
+            child: Text(isArabic ? 'التقاط صورة' : 'Take Photo'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.gallery);
+            },
+            child: Text(isArabic ? 'اختر من المعرض' : 'Choose from Gallery'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDestructiveAction: true,
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      key: _scaffoldKey, // Assigned Key
+      backgroundColor: theme.scaffoldBackgroundColor,
+      drawer: const AppDrawer(), // Added Drawer
       body: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _ShrinkingProfileHeaderDelegate(
-              maxExtent: 380,
-              minExtent: MediaQuery.of(context).padding.top + 80,
-              theme: theme,
-              isDark: isDark,
+          // Navigation Bar
+          AdaptiveSliverAppBar(
+            title: isArabic ? 'الملف الشخصي' : 'Profile',
+            backgroundColor: theme.scaffoldBackgroundColor,
+            leading: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Icon(
+                  Icons.menu_rounded,
+                  color: theme.colorScheme.onSurface,
+                ),
+                onPressed: () =>
+                    _scaffoldKey.currentState?.openDrawer(), // Updated Logic
+              ),
+            ),
+            trailing: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Icon(
+                  Icons.camera_alt_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                onPressed: () => _showImageSourceActionSheet(context, isArabic),
+              ),
             ),
           ),
+
+          // Content
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
+                const SizedBox(height: 10), // Extra headers spacing
+                // Profile Header Card
+                // Profile Header Card
+                Builder(
+                  builder: (context) {
+                    final authState = context.watch<AuthCubit>().state;
+                    String displayName = isArabic
+                        ? "عبدالله الأحمد"
+                        : "Abdullah Al-Ahmad";
+                    String displayRole = isArabic
+                        ? "مشرف حافلة"
+                        : "Bus Supervisor";
+                    String avatar = 'https://i.pravatar.cc/300?img=11';
+
+                    if (authState is AuthAuthenticated) {
+                      displayName = authState.user.name;
+                      displayRole = authState.user.role.getDisplayName(context);
+                      // TODO: Use real avatar from user entity when available
+                    }
+
+                    return _ProfileHeader(
+                      name: displayName,
+                      role: displayRole,
+                      isArabic: isArabic,
+                      isDark: isDark,
+                      avatarUrl: avatar,
+                      profileImage: _profileImage,
+                      onChangePhoto: () =>
+                          _showImageSourceActionSheet(context, isArabic),
+                    ).animate().fadeIn().slideY(begin: 0.1, end: 0);
+                  },
+                ),
+
                 const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'الإحصائيات', // Statistics
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ).animate().fadeIn().slideX(begin: 0.2, end: 0),
+
+                // Personal Information Section
+                _SectionTitle(
+                  title: isArabic
+                      ? "المعلومات الشخصية"
+                      : "Personal Information",
+                  icon: PhosphorIconsRegular.user,
+                  isDark: isDark,
+                ).animate().fadeIn(delay: 100.ms),
                 const SizedBox(height: AppSpacing.md),
-                _buildStatsRow(
-                  context,
-                ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'المعلومات الشخصية', // Personal Information
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ).animate().fadeIn(delay: 200.ms).slideX(begin: 0.2, end: 0),
-                const SizedBox(height: AppSpacing.md),
-                _buildInfoTile(
-                  context,
-                  icon: PhosphorIconsDuotone.identificationCard,
-                  label: 'الرقم المدني', // Civil ID
-                  value: '1234567890',
+
+                _InfoCard(
+                  icon: PhosphorIconsRegular.identificationCard,
+                  label: isArabic ? "الرقم المدني" : "Civil ID",
+                  value: "1234567890",
+                  isDark: isDark,
+                  delay: 200.ms,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                _InfoCard(
+                  icon: PhosphorIconsRegular.phone,
+                  label: isArabic ? "رقم الهاتف" : "Phone Number",
+                  value: "+966 50 123 4567",
+                  isDark: isDark,
                   delay: 300.ms,
                 ),
-                const SizedBox(height: AppSpacing.md),
-                _buildInfoTile(
-                  context,
-                  icon: PhosphorIconsDuotone.phone,
-                  label: 'رقم الهاتف', // Phone Number
-                  value: '+966 50 123 4567',
+                const SizedBox(height: AppSpacing.sm),
+
+                _InfoCard(
+                  icon: PhosphorIconsRegular.envelope,
+                  label: isArabic ? "البريد الإلكتروني" : "Email",
+                  value: "mohammed@wasel.edu.sa",
+                  isDark: isDark,
                   delay: 400.ms,
                 ),
-                const SizedBox(height: AppSpacing.md),
-                _buildInfoTile(
-                  context,
-                  icon: PhosphorIconsDuotone.envelope,
-                  label: 'البريد الإلكتروني', // Email
-                  value: 'mohammed@wasel.edu.sa',
-                  delay: 500.ms,
+
+                const SizedBox(height: AppSpacing.xl),
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // Role Based Information Section
+                Builder(
+                  builder: (context) {
+                    final authState = context.watch<AuthCubit>().state;
+                    final userRole = authState is AuthAuthenticated
+                        ? authState.user.role
+                        : null;
+
+                    if (userRole == UserRole.fieldSupervisor) {
+                      return const SizedBox.shrink();
+                    }
+
+                    if (userRole == UserRole.teacher) {
+                      return Column(
+                        children: [
+                          _SectionTitle(
+                            title: isArabic
+                                ? "معلومات المدرسة"
+                                : "School Information",
+                            icon: PhosphorIconsRegular.graduationCap,
+                            isDark: isDark,
+                          ).animate().fadeIn(delay: 500.ms),
+                          const SizedBox(height: AppSpacing.md),
+                          _InfoCard(
+                            icon: PhosphorIconsRegular.buildings,
+                            label: isArabic ? "اسم المدرسة" : "School Name",
+                            value: isArabic ? "مدرسة الأمل" : "Al-Amal School",
+                            isDark: isDark,
+                            delay: 600.ms,
+                          ),
+                        ],
+                      );
+                    }
+
+                    // Default (Driver/Assistant) - Bus Info
+                    return Column(
+                      children: [
+                        _SectionTitle(
+                          title: isArabic
+                              ? "معلومات الحافلة"
+                              : "Bus Information",
+                          icon: PhosphorIconsRegular.bus,
+                          isDark: isDark,
+                        ).animate().fadeIn(delay: 500.ms),
+                        const SizedBox(height: AppSpacing.md),
+                        _InfoCard(
+                          icon: PhosphorIconsRegular.hash,
+                          label: isArabic ? "رقم الحافلة" : "Bus Number",
+                          value: "15",
+                          isDark: isDark,
+                          delay: 600.ms,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _InfoCard(
+                          icon: PhosphorIconsRegular.columns,
+                          label: isArabic ? "رقم اللوحة" : "Plate Number",
+                          value: "أ ب ج 1234",
+                          isDark: isDark,
+                          delay: 700.ms,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _InfoCard(
+                          icon: PhosphorIconsRegular.usersThree,
+                          label: isArabic ? "السعة" : "Capacity",
+                          value: isArabic ? "25 طالب" : "25 Students",
+                          isDark: isDark,
+                          delay: 800.ms,
+                        ),
+                      ],
+                    );
+                  },
                 ),
-                const SizedBox(height: AppSpacing.xxl),
+
+                const SizedBox(height: AppSpacing.xl),
+
+                // Logout Button
+                _ProfileActionButton(
+                  icon: Icons.logout_rounded,
+                  label: isArabic ? "تسجيل الخروج" : "Logout",
+                  color: theme.colorScheme.error,
+                  isDark: isDark,
+                  isHorizontal: true,
+                  onTap: () {
+                    context.read<AuthCubit>().logout();
+                  },
+                ).animate().fadeIn(delay: 700.ms),
+
+                SizedBox(
+                  height: MediaQuery.of(context).padding.bottom + AppSpacing.xl,
+                ),
               ]),
             ),
           ),
@@ -82,119 +294,190 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildStatsRow(BuildContext context) {
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.name,
+    required this.role,
+    required this.isArabic,
+    required this.isDark,
+    required this.avatarUrl,
+    required this.onChangePhoto,
+    this.profileImage,
+  });
+
+  final String name;
+  final String role;
+  final bool isArabic;
+  final bool isDark;
+  final String avatarUrl;
+  final VoidCallback onChangePhoto;
+  final File? profileImage;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary,
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            AppColors.lightBlue,
+          ], // Blue Gradient
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 3,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  backgroundImage: profileImage != null
+                      ? FileImage(profileImage!) as ImageProvider
+                      : NetworkImage(avatarUrl),
+                ),
+              ),
+              Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: onChangePhoto,
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            name,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              role,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({
+    required this.title,
+    required this.icon,
+    required this.isDark,
+  });
+
+  final String title;
+  final IconData icon;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            context,
-            label: 'الفصول', // Classes
-            value: '4',
-            icon: PhosphorIconsDuotone.chalkboardTeacher,
-            color: Colors.blue,
-          ),
+        Icon(
+          icon,
+          color: isDark ? Colors.white : theme.colorScheme.primary,
+          size: 22,
         ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            label: 'الطلاب', // Students
-            value: '128',
-            icon: PhosphorIconsDuotone.student,
-            color: Colors.orange,
+        const SizedBox(width: AppSpacing.sm),
+        Text(
+          title,
+          style: TextStyle(
+            color: isDark ? Colors.white : theme.colorScheme.onSurface,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildStatCard(
-    BuildContext context, {
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isDark,
+    this.delay,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isDark;
+  final Duration? delay;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
+    Widget card = Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : theme.colorScheme.outline.withValues(alpha: 0.5),
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.2),
         ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoTile(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required Duration delay,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : theme.colorScheme.outline.withValues(alpha: 0.5),
-        ),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
       ),
       child: Row(
         children: [
@@ -202,11 +485,15 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : theme.colorScheme.primary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: theme.colorScheme.primary, size: 24),
+            child: Icon(
+              icon,
+              color: isDark ? Colors.white : theme.colorScheme.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -215,16 +502,21 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white70
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   value,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: TextStyle(
+                    color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -232,235 +524,93 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(delay: delay).slideX(begin: 0.2, end: 0);
+    );
+
+    if (delay != null) {
+      return card.animate().fadeIn(delay: delay).slideX(begin: 0.1, end: 0);
+    }
+    return card;
   }
 }
 
-class _ShrinkingProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final double maxExtent;
-  final double minExtent;
-  final ThemeData theme;
-  final bool isDark;
-
-  _ShrinkingProfileHeaderDelegate({
-    required this.maxExtent,
-    required this.minExtent,
-    required this.theme,
+class _ProfileActionButton extends StatelessWidget {
+  const _ProfileActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
     required this.isDark,
+    required this.onTap,
+    this.isHorizontal = false,
   });
 
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isDark;
+  final VoidCallback onTap;
+  final bool isHorizontal;
+
   @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    final progress = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final topPadding = MediaQuery.of(context).padding.top;
-
-    // Animation values
-    final avatarScale = 1.0 - (progress * 0.45); // Scales to ~0.55
-
-    // Horizontal positions
-    // Avatar: Start centered, end at left: 16
-    final initialAvatarLeft = (screenWidth / 2) - 60;
-    final finalAvatarLeft = 16.0;
-    final currentAvatarLeft =
-        initialAvatarLeft + (progress * (finalAvatarLeft - initialAvatarLeft));
-
-    // Vertical positions
-    final initialAvatarTop = 110.0;
-    final finalAvatarTop = topPadding + 6; // Center better in 80h bar
-    final currentAvatarTop =
-        initialAvatarTop + (progress * (finalAvatarTop - initialAvatarTop));
-
-    // Name position: Start centered below avatar, end at right: 72
-    final initialNameTop = initialAvatarTop + 120 + 16;
-    final finalNameTop = topPadding + 26; // Center better in 80h bar
-    final currentNameTop =
-        initialNameTop + (progress * (finalNameTop - initialNameTop));
-
-    final nameScale = 1.0 - (progress * 0.25);
-    final nameShadowAlpha = (1.0 - progress).clamp(0.0, 1.0);
-
-    final roleOpacity = (1.0 - progress * 4.0).clamp(0.0, 1.0);
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Background Gradient
-        ClipPath(
-          clipper: _HeaderClipper(progress: progress),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient(context),
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.grey.withValues(alpha: 0.2),
             ),
-          ),
-        ),
-
-        // Back Button
-        Positioned(
-          top: topPadding + 10,
-          right: 16,
-          child: const BackButton(color: Colors.white),
-        ),
-
-        // Avatar
-        Positioned(
-          top: currentAvatarTop,
-          left: currentAvatarLeft,
-          child: Transform.scale(
-            scale: avatarScale,
-            alignment: Alignment.topLeft,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2 * (1 - progress)),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.white,
-                child: Padding(
-                  padding: EdgeInsets.all(4),
-                  child: CircleAvatar(
-                    radius: 56,
-                    backgroundImage: NetworkImage(
-                      'https://i.pravatar.cc/300?img=11',
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                ),
-              ),
-            ),
+                  ],
           ),
-        ),
-
-        // Name
-        Positioned(
-          top: currentNameTop,
-          left: 0,
-          right: 0,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Transform.scale(
-              scale: nameScale,
-              alignment: Alignment.lerp(
-                Alignment.center,
-                Alignment.centerRight,
-                progress,
-              )!,
-              child: Container(
-                padding: EdgeInsets.only(
-                  right: progress * 64,
-                ), // Avoid overlapping back button
-                alignment: Alignment.lerp(
-                  Alignment.center,
-                  Alignment.centerRight,
-                  progress,
-                )!,
-                child: Text(
-                  'عبدالله الأحمد',
-                  textAlign: progress > 0.5
-                      ? TextAlign.right
-                      : TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withValues(
-                          alpha: 0.26 * nameShadowAlpha,
-                        ),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+          child: isHorizontal
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
-                    ],
-                  ),
+                      child: Icon(
+                        icon,
+                        color: isDark ? Colors.white : color,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    // ... Not used currently
+                  ],
                 ),
-              ),
-            ),
-          ),
         ),
-
-        // Role Badge
-        Positioned(
-          top: initialNameTop + 40,
-          left: 0,
-          right: 0,
-          child: Opacity(
-            opacity: roleOpacity,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: const Text(
-                  'معلم صف',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
-
-  @override
-  bool shouldRebuild(_ShrinkingProfileHeaderDelegate oldDelegate) {
-    return oldDelegate.maxExtent != maxExtent ||
-        oldDelegate.minExtent != minExtent ||
-        oldDelegate.theme != theme ||
-        oldDelegate.isDark != isDark;
-  }
-}
-
-class _HeaderClipper extends CustomClipper<Path> {
-  final double progress;
-
-  _HeaderClipper({this.progress = 0.0});
-
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    final curveHeight = 60.0 * (1.0 - progress);
-
-    path.lineTo(0, size.height - curveHeight);
-    if (curveHeight > 0) {
-      path.quadraticBezierTo(
-        size.width / 2,
-        size.height,
-        size.width,
-        size.height - curveHeight,
-      );
-    } else {
-      path.lineTo(size.width, size.height);
-    }
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(_HeaderClipper oldClipper) =>
-      oldClipper.progress != progress;
 }

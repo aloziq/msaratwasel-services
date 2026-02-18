@@ -1,5 +1,7 @@
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/user_entity.dart';
 import '../models/user_model.dart';
+import 'mock_auth_data.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> login({
@@ -11,6 +13,7 @@ abstract class AuthRemoteDataSource {
   Future<void> resetPassword({required String id});
 }
 
+@LazySingleton(as: AuthRemoteDataSource)
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<UserModel> login({
@@ -21,39 +24,33 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     // Mock API call
     await Future.delayed(const Duration(seconds: 1));
 
-    // Role-based credential mapping
-    final Map<UserRole, String> roleToId = {
-      UserRole.teacher: '1',
-      UserRole.busAssistant: '2',
-      UserRole.driver: '3',
-      UserRole.fieldSupervisor: '4',
-    };
+    // Role-based credential mapping (from mock data)
+    // See mock_auth_data.dart for values
+    final String? expectedId = kMockRoleToId[role];
 
-    final expectedId = roleToId[role];
-
-    if (id == expectedId && password == '123456') {
+    if (id == expectedId && password == kMockPassword) {
       return UserModel(
         id: id,
-        name: '${role.displayName} $id',
+        name: '${role.name} $id',
         role: role,
         token: 'mock_token_${role.name}_$id',
       );
-    } else if (password != '123456') {
-      throw Exception('كلمة المرور غير صحيحة');
+    } else if (password != kMockPassword) {
+      throw Exception('Password is incorrect');
     } else if (id != expectedId) {
       // Check if ID belongs to another role to provide better error message
-      final otherRole = roleToId.entries
+      final otherRole = kMockRoleToId.entries
           .where((entry) => entry.value == id)
           .map((entry) => entry.key)
           .firstOrNull;
 
       if (otherRole != null) {
-        throw Exception('هذا الرقم المدني مسجل كـ ${otherRole.displayName}');
+        throw Exception('This civil ID is registered as ${otherRole.name}');
       } else {
-        throw Exception('الرقم المدني غير مسجل');
+        throw Exception('This civil ID is not registered');
       }
     } else {
-      throw Exception('فشل تسجيل الدخول: بيانات غير صحيحة');
+      throw Exception('Login failed: Invalid credentials');
     }
   }
 

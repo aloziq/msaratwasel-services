@@ -1,17 +1,19 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
+import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../../../teacher/domain/entities/classroom_entity.dart';
 import '../../domain/entities/student_entity.dart';
 import '../cubit/class_details_cubit.dart';
 import '../cubit/class_details_state.dart';
+import '../../../../../../core/presentation/widgets/main_shell.dart';
 
 class ClassDetailsScreen extends StatefulWidget {
   final ClassroomEntity classroom;
@@ -35,27 +37,34 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          CupertinoSliverNavigationBar(
-            leading: const BackButton(),
-            largeTitle: Text(
-              widget.classroom.name,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontFamily: theme.textTheme.titleLarge?.fontFamily,
+          AdaptiveSliverAppBar(
+            title: widget.classroom.name,
+            leading: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Icon(
+                  PhosphorIconsRegular.list,
+                  color: theme.colorScheme.onSurface,
+                  size: 32,
+                ),
+                onPressed: () => MainShell.of(context)?.openDrawer(),
               ),
             ),
-            backgroundColor: Colors.transparent,
-            border: null,
-            stretch: true,
-            trailing: IconButton(
-              icon: Icon(
-                PhosphorIconsRegular.qrCode,
-                color: isDark ? Colors.white : BrandColors.primary,
+            trailing: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Icon(
+                  PhosphorIconsRegular.qrCode,
+                  color: isDark ? Colors.white : AppColors.primary,
+                ),
+                onPressed: () => context.push(AppRoutes.qrScan),
               ),
-              onPressed: () => context.push(AppRoutes.qrScan),
+            ),
+            backgroundColor: theme.scaffoldBackgroundColor.withValues(
+              alpha: 0.9,
             ),
           ),
           BlocBuilder<ClassDetailsCubit, ClassDetailsState>(
@@ -104,28 +113,42 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
+      margin: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark
+            ? const Color(0xFF1E293B).withValues(alpha: 0.9)
+            : Colors.white.withValues(alpha: 0.9),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.white.withValues(alpha: 0.5),
+        ),
       ),
       child: SafeArea(
-        child: PremiumButton(
-          text: 'إنهاء التحضير', // Finish Attendance
-          icon: PhosphorIconsRegular.paperPlaneRight,
-          onTap: () => _showConfirmationDialog(context),
+        child: Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context)!;
+            return PremiumButton(
+              text: l10n.finishAttendance,
+              icon: PhosphorIconsRegular.paperPlaneRight,
+              onTap: () => _showConfirmationDialog(context),
+            );
+          },
         ),
       ),
     );
   }
 
   void _showConfirmationDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final state = context.read<ClassDetailsCubit>().state;
     if (state is! ClassDetailsLoaded) return;
 
@@ -151,8 +174,8 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
         onConfirm: () {
           Navigator.of(dialogContext).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم إرسال التقرير اليومي بنجاح'),
+            SnackBar(
+              content: Text(l10n.dailyReportSentSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -175,18 +198,20 @@ class _StudentCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark
+            ? const Color(0xFF1E293B).withValues(alpha: 0.7)
+            : Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : theme.colorScheme.outline.withValues(alpha: 0.5),
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.2),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -194,7 +219,7 @@ class _StudentCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _showStudentDetails(context),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
@@ -207,9 +232,22 @@ class _StudentCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: _getStatusColor(context, student.status),
+                            color: _getStatusColor(
+                              context,
+                              student.status,
+                            ).withValues(alpha: 0.5),
                             width: 2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _getStatusColor(
+                                context,
+                                student.status,
+                              ).withValues(alpha: 0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: CircleAvatar(
                           radius: 28,
@@ -222,7 +260,9 @@ class _StudentCard extends StatelessWidget {
                           child: student.photoUrl == null
                               ? Icon(
                                   PhosphorIconsRegular.student,
-                                  color: theme.colorScheme.primary,
+                                  color: isDark
+                                      ? Colors.white
+                                      : theme.colorScheme.primary,
                                 )
                               : null,
                         ),
@@ -260,15 +300,25 @@ class _StudentCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Icon(
-                      PhosphorIconsRegular.caretRight,
-                      color: theme.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.3,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.05,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        PhosphorIconsRegular.caretLeft, // RTL Aware
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.lg),
                 _buildAttendanceButtons(context),
               ],
             ),
@@ -279,28 +329,37 @@ class _StudentCard extends StatelessWidget {
   }
 
   Widget _buildAttendanceButtons(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _AttendanceButton(
-            label: 'حاضر', // Present
-            icon: PhosphorIconsFill.checkCircle,
-            color: Colors.green,
-            isSelected: student.status == AttendanceStatus.present,
-            onTap: () => _updateStatus(context, AttendanceStatus.present),
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.black.withValues(alpha: 0.2)
+            : Colors.grey.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _AttendanceButton(
+              label: AppLocalizations.of(context)!.present, // Present
+              icon: PhosphorIconsFill.checkCircle,
+              color: AppColors.successGreen,
+              isSelected: student.status == AttendanceStatus.present,
+              onTap: () => _updateStatus(context, AttendanceStatus.present),
+            ),
           ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: _AttendanceButton(
-            label: 'غائب', // Absent
-            icon: PhosphorIconsFill.xCircle,
-            color: Colors.red,
-            isSelected: student.status == AttendanceStatus.absent,
-            onTap: () => _updateStatus(context, AttendanceStatus.absent),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _AttendanceButton(
+              label: AppLocalizations.of(context)!.absent, // Absent
+              icon: PhosphorIconsFill.xCircle,
+              color: AppColors.dangerRed,
+              isSelected: student.status == AttendanceStatus.absent,
+              onTap: () => _updateStatus(context, AttendanceStatus.absent),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -308,7 +367,7 @@ class _StudentCard extends StatelessWidget {
     context.read<ClassDetailsCubit>().markAttendance(
       student.id,
       status,
-      'class_id_placeholder', // In real app, pass classId
+      'class_id_placeholder',
     );
   }
 
@@ -324,11 +383,11 @@ class _StudentCard extends StatelessWidget {
   Color _getStatusColor(BuildContext context, AttendanceStatus status) {
     switch (status) {
       case AttendanceStatus.present:
-        return Colors.green;
+        return AppColors.successGreen;
       case AttendanceStatus.absent:
-        return Colors.red;
+        return AppColors.dangerRed;
       default:
-        return Colors.transparent;
+        return Colors.grey.withValues(alpha: 0.5);
     }
   }
 }
@@ -350,43 +409,48 @@ class _AttendanceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? color
-                : (isDark
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : color.withValues(alpha: 0.05)),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? color : color.withValues(alpha: 0.2),
-              width: isSelected ? 0 : 1,
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected
+                  ? color
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: isSelected ? Colors.white : color),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : color,
-                  fontWeight: FontWeight.bold,
-                ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? color
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 14,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -405,7 +469,7 @@ class _StudentDetailsModal extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? AppColors.cardDark : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -448,7 +512,9 @@ class _StudentDetailsModal extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'الصف الرابع - أ', // Placeholder class name
+            AppLocalizations.of(
+              context,
+            )!.classPlaceholder, // Placeholder class name
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -457,21 +523,21 @@ class _StudentDetailsModal extends StatelessWidget {
           _buildInfoRow(
             context,
             icon: PhosphorIconsDuotone.user,
-            label: 'ولي الأمر',
+            label: AppLocalizations.of(context)!.parentGuardian,
             value: student.parentName,
           ),
           const SizedBox(height: AppSpacing.md),
           _buildInfoRow(
             context,
             icon: PhosphorIconsDuotone.phone,
-            label: 'رقم الهاتف',
+            label: AppLocalizations.of(context)!.parentPhone,
             value: '050 123 4567',
           ),
           const SizedBox(height: AppSpacing.md),
           _buildInfoRow(
             context,
             icon: PhosphorIconsDuotone.whatsappLogo,
-            label: 'واتساب',
+            label: AppLocalizations.of(context)!.whatsapp,
             value: '050 123 4567',
           ),
           const SizedBox(height: AppSpacing.xxl),
@@ -501,7 +567,7 @@ class _StudentDetailsModal extends StatelessWidget {
             textDirection: TextDirection.ltr,
             child: Icon(
               icon,
-              color: isDark ? Colors.white70 : BrandColors.primary,
+              color: isDark ? Colors.white70 : AppColors.primary,
               size: 24,
             ),
           ),
@@ -550,6 +616,7 @@ class _ConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final isDark = theme.brightness == Brightness.dark;
 
     return Dialog(
@@ -557,7 +624,7 @@ class _ConfirmationDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          color: isDark ? AppColors.cardDark : Colors.white,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
@@ -566,18 +633,18 @@ class _ConfirmationDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: BrandColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 PhosphorIconsFill.clipboardText,
                 size: 48,
-                color: BrandColors.primary,
+                color: isDark ? Colors.white : AppColors.primary,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'ملخص الحضور', // Attendance Summary
+              l10n.attendanceSummary, // Attendance Summary
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
@@ -585,7 +652,7 @@ class _ConfirmationDialog extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'هل تريد إنهاء التحضير وإرسال التقرير؟', // Are you sure?
+              l10n.confirmSendReport, // Are you sure?
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -599,7 +666,7 @@ class _ConfirmationDialog extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     icon: PhosphorIconsDuotone.users,
-                    label: 'الإجمالي', // Total
+                    label: l10n.total, // Total
                     value: totalCount.toString(),
                     color: Colors.blue,
                   ),
@@ -609,9 +676,9 @@ class _ConfirmationDialog extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     icon: PhosphorIconsDuotone.checkCircle,
-                    label: 'حاضر', // Present
+                    label: l10n.present, // Present
                     value: presentCount.toString(),
-                    color: Colors.green,
+                    color: AppColors.successGreen,
                   ),
                 ),
               ],
@@ -623,9 +690,9 @@ class _ConfirmationDialog extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     icon: PhosphorIconsDuotone.xCircle,
-                    label: 'غائب', // Absent
+                    label: l10n.absent, // Absent
                     value: absentCount.toString(),
-                    color: Colors.red,
+                    color: AppColors.dangerRed,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -633,7 +700,7 @@ class _ConfirmationDialog extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     icon: PhosphorIconsDuotone.question,
-                    label: 'غير محدد', // Unmarked
+                    label: l10n.unmarked, // Unmarked
                     value: unmarkedCount.toString(),
                     color: Colors.grey,
                   ),
@@ -661,7 +728,7 @@ class _ConfirmationDialog extends StatelessWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
-                        'هناك $unmarkedCount طالب لم يتم تحديد حالتهم',
+                        l10n.unmarkedStudentsWarning(unmarkedCount),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.orange.shade800,
                         ),
@@ -686,7 +753,7 @@ class _ConfirmationDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      'إلغاء', // Cancel
+                      l10n.cancel, // Cancel
                       style: TextStyle(
                         color: theme.colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
@@ -700,13 +767,13 @@ class _ConfirmationDialog extends StatelessWidget {
                     onPressed: onConfirm,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: BrandColors.primary,
+                      backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'تأكيد الإرسال', // Confirm
+                    child: Text(
+                      l10n.confirmSend, // Confirm
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

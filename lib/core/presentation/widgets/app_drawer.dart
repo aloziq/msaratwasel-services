@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
+import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
@@ -12,6 +13,9 @@ import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:dartz/dartz.dart' hide State;
 import 'package:msaratwasel_services/features/teacher/teacher/domain/entities/classroom_entity.dart';
 import 'package:msaratwasel_services/features/teacher/teacher/domain/usecases/get_teacher_classrooms_usecase.dart';
+import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
+import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
+import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -33,14 +37,30 @@ class _AppDrawerState extends State<AppDrawer> {
     final subTextColor = isDark
         ? Colors.white70
         : theme.colorScheme.onSurface.withValues(alpha: 0.7);
-    final drawerBg = isDark ? theme.colorScheme.primary : Colors.white;
+    final drawerBg = isDark ? AppColors.darkSurface : Colors.white;
 
-    final currentLocation = GoRouterState.of(context).matchedLocation;
+    String currentLocation = '/';
+    try {
+      currentLocation = GoRouterState.of(context).uri.path;
+    } catch (e) {
+      // Fallback if GoRouterState is not available (e.g., when used in local Scaffold)
+      debugPrint('AppDrawer: Could not get GoRouterState: $e');
+    }
 
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         final user = authState is AuthAuthenticated ? authState.user : null;
         final role = user?.role ?? UserRole.teacher;
+
+        // If user is Field Supervisor, use their dedicated drawer
+        if (role == UserRole.fieldSupervisor) {
+          return SupervisorDrawer(
+            currentIndex: _getSupervisorIndex(currentLocation),
+            onSelect: (index) {
+              handleSupervisorNavigation(context, index, -1);
+            },
+          );
+        }
 
         return Drawer(
           elevation: 10,
@@ -97,11 +117,15 @@ class _AppDrawerState extends State<AppDrawer> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                          color: theme.colorScheme.error.withValues(alpha: 0.2),
+                          color: isDark
+                              ? AppColors.errorDark
+                              : theme.colorScheme.error.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
-                      backgroundColor: Colors.transparent,
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.transparent,
                     ),
                     icon: Icon(PhosphorIconsRegular.signOut, size: 22),
                     label: Text(
@@ -168,7 +192,7 @@ class _AppDrawerState extends State<AppDrawer> {
               color:
                   (currentLocation == AppRoutes.myClasses ||
                       currentLocation == AppRoutes.classDetails)
-                  ? (isDark ? BrandColors.secondary : BrandColors.primary)
+                  ? (isDark ? AppColors.secondary : AppColors.primary)
                   : (isDark
                         ? Colors.white70
                         : theme.colorScheme.onSurface.withValues(alpha: 0.7)),
@@ -208,8 +232,8 @@ class _AppDrawerState extends State<AppDrawer> {
       );
     }
 
-    // ---------------- ASSISTANT / DRIVER ROLE ----------------
-    if (role == UserRole.busAssistant || role == UserRole.driver) {
+    // ---------------- ASSISTANT ROLE ----------------
+    if (role == UserRole.busAssistant) {
       items.add(
         _DrawerItem(
           title: l10n.home,
@@ -249,7 +273,6 @@ class _AppDrawerState extends State<AppDrawer> {
         ),
       );
 
-      // Moved from home screen to drawer as per request
       items.add(
         _DrawerItem(
           title: l10n.incidentReportTitle,
@@ -290,30 +313,82 @@ class _AppDrawerState extends State<AppDrawer> {
       );
     }
 
-    // ---------------- FIELD SUPERVISOR ROLE ----------------
-    if (role == UserRole.fieldSupervisor) {
+    // ---------------- DRIVER ROLE ----------------
+    if (role == UserRole.driver) {
       items.add(
         _DrawerItem(
           title: l10n.home,
           icon: PhosphorIconsRegular.house,
-          isSelected: currentLocation == AppRoutes.teacherHome,
+          isSelected: currentLocation == AppRoutes.driverHome,
           isDark: isDark,
           onTap: () {
             Navigator.pop(context);
-            context.go(AppRoutes.teacherHome);
+            context.go(AppRoutes.driverHome);
           },
         ),
       );
 
       items.add(
         _DrawerItem(
-          title: l10n.reports,
-          icon: PhosphorIconsRegular.chartBar,
-          isSelected: currentLocation == AppRoutes.reports,
+          title: l10n.navigation,
+          icon: PhosphorIconsRegular.mapTrifold,
+          isSelected: currentLocation == AppRoutes.driverRoute,
           isDark: isDark,
           onTap: () {
             Navigator.pop(context);
-            context.go(AppRoutes.reports);
+            context.push(AppRoutes.driverRoute);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.myStudents,
+          icon: PhosphorIconsRegular.users,
+          isSelected: currentLocation == AppRoutes.driverStudents,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.driverStudents);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.maintenance,
+          icon: PhosphorIconsRegular.wrench,
+          isSelected: currentLocation == AppRoutes.driverMaintenance,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.driverMaintenance);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.endTrip,
+          icon: PhosphorIconsRegular.checkCircle,
+          isSelected: currentLocation == AppRoutes.driverEndTrip,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.driverEndTrip);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.chats,
+          icon: PhosphorIconsRegular.chats,
+          isSelected: currentLocation == AppRoutes.chats,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.push(AppRoutes.chats);
           },
         ),
       );
@@ -342,7 +417,7 @@ class _AppDrawerState extends State<AppDrawer> {
     bool isDark,
   ) {
     return FutureBuilder<Either<String, List<ClassroomEntity>>>(
-      future: context.read<GetTeacherClassroomsUseCase>()(),
+      future: getIt<GetTeacherClassroomsUseCase>()(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Padding(
@@ -355,7 +430,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: isDark ? Colors.white70 : BrandColors.primary,
+                    color: isDark ? Colors.white70 : AppColors.primary,
                   ),
                 ),
               ),
@@ -368,7 +443,7 @@ class _AppDrawerState extends State<AppDrawer> {
             (error) => Padding(
               padding: const EdgeInsetsDirectional.only(start: 32),
               child: _DrawerItem(
-                title: 'فصولي',
+                title: AppLocalizations.of(context)!.myStudents,
                 icon: PhosphorIconsRegular.chalkboardTeacher,
                 isSelected: currentLocation == AppRoutes.myClasses,
                 isDark: isDark,
@@ -417,8 +492,9 @@ class _AppDrawerState extends State<AppDrawer> {
     Color subTextColor,
     bool isDark,
   ) {
-    final name = user?.name ?? 'المستخدم';
-    final roleName = user?.role.displayName ?? 'زائر';
+    final l10n = AppLocalizations.of(context)!;
+    final name = user?.name ?? l10n.home;
+    final roleName = user?.role.getDisplayName(context) ?? '';
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -445,7 +521,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     border: Border.all(
                       color: isDark
                           ? Colors.white24
-                          : BrandColors.primary.withValues(alpha: 0.2),
+                          : AppColors.primary.withValues(alpha: 0.2),
                       width: 2,
                     ),
                   ),
@@ -459,7 +535,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: BrandColors.secondary,
+                    color: AppColors.secondary,
                     shape: BoxShape.circle,
                     boxShadow: const [
                       BoxShadow(
@@ -513,6 +589,19 @@ class _AppDrawerState extends State<AppDrawer> {
       ),
     );
   }
+
+  int _getSupervisorIndex(String location) {
+    if (location == AppRoutes.supervisorHome) return 0;
+    if (location.startsWith(AppRoutes.supervisorBuses)) return 1;
+    if (location.startsWith(AppRoutes.supervisorDrivers)) return 2;
+    if (location.startsWith(AppRoutes.supervisorAlerts)) return 4;
+    if (location.startsWith(AppRoutes.supervisorInspection)) return 5;
+    if (location.startsWith(AppRoutes.supervisorDelays)) return 6;
+    if (location.startsWith(AppRoutes.supervisorTrips)) return 7;
+    if (location.startsWith(AppRoutes.supervisorReports)) return 8;
+    if (location == AppRoutes.settings) return 9;
+    return -1;
+  }
 }
 
 class _DrawerItem extends StatelessWidget {
@@ -539,11 +628,11 @@ class _DrawerItem extends StatelessWidget {
     final Color backgroundColor = isSelected
         ? (isDark
               ? Colors.white.withValues(alpha: 0.1)
-              : BrandColors.primary.withValues(alpha: 0.08))
+              : AppColors.primary.withValues(alpha: 0.08))
         : Colors.transparent;
 
     final Color foregroundColor = isSelected
-        ? (isDark ? BrandColors.secondary : BrandColors.primary)
+        ? (isDark ? AppColors.secondary : AppColors.primary)
         : (isDark
               ? Colors.white70
               : theme.colorScheme.onSurface.withValues(alpha: 0.7));

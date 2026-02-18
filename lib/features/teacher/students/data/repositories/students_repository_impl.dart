@@ -1,7 +1,10 @@
+import 'package:injectable/injectable.dart';
 import 'package:dartz/dartz.dart';
+// import 'package:msaratwasel_services/core/error/failure.dart'; // Removed unused import
 import '../../domain/entities/student_entity.dart';
 import '../../domain/repositories/students_repository.dart';
 
+@LazySingleton(as: StudentsRepository)
 class StudentsRepositoryImpl implements StudentsRepository {
   // Mock Data
   final List<StudentEntity> _students = [

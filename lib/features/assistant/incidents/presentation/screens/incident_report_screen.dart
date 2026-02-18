@@ -1,9 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../../../../shared/presentation/widgets/hold_to_confirm_button.dart';
+import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
+import '../../../../../core/presentation/widgets/premium_text_field.dart';
 
 class IncidentReportScreen extends StatefulWidget {
   const IncidentReportScreen({super.key});
@@ -37,17 +39,19 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       backgroundColor: Colors.transparent,
       body: CustomScrollView(
         slivers: [
-          CupertinoSliverNavigationBar(
-            leading: const BackButton(),
-            largeTitle: Text(
-              l10n.incidentReportTitle,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontFamily: theme.textTheme.titleLarge?.fontFamily,
+          AdaptiveSliverAppBar(
+            title: l10n.incidentReportTitle,
+            leading: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Icon(
+                  Icons.menu_rounded,
+                  color: theme.colorScheme.onSurface,
+                ),
+                onPressed: () => MainShell.of(context)?.openDrawer(),
               ),
             ),
             backgroundColor: Colors.transparent,
-            border: null,
             stretch: true,
           ),
           SliverToBoxAdapter(
@@ -77,15 +81,13 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 12),
-                  TextField(
+                  PremiumTextField(
                     controller: _descriptionController,
                     maxLines: 5,
-                    decoration: InputDecoration(
-                      hintText: l10n.reportDetailsPlaceholder,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
+                    label: l10n.reportDetailsPlaceholder,
+                    keyboardType: TextInputType.multiline,
+                    alignLabelWithHint: true,
+                    icon: PhosphorIconsRegular.pencilSimple,
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
@@ -94,9 +96,17 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                     onPressed: () {}, // Mock image picker
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
-                      backgroundColor: theme.colorScheme.surface,
-                      foregroundColor: theme.colorScheme.primary,
-                      side: BorderSide(color: theme.colorScheme.primary),
+                      backgroundColor: theme.brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : theme.colorScheme.surface,
+                      foregroundColor: theme.brightness == Brightness.dark
+                          ? Colors.white
+                          : theme.colorScheme.primary,
+                      side: BorderSide(
+                        color: theme.brightness == Brightness.dark
+                            ? Colors.white.withValues(alpha: 0.2)
+                            : theme.colorScheme.primary,
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),

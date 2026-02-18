@@ -1,17 +1,19 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/app_drawer.dart'; // Added Import
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/config/settings/settings_controller.dart';
 import 'package:msaratwasel_services/config/theme/theme_controller.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
+import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 import 'about_app_page.dart';
 import 'change_password_page.dart';
@@ -26,6 +28,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey =
+      GlobalKey<ScaffoldState>(); // Added Key
   bool notificationsEnabled = true;
 
   @override
@@ -36,30 +40,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final settingsController = SettingsProvider.of(context);
     final l10n = AppLocalizations.of(context)!;
     bool isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final authState = context.watch<AuthCubit>().state;
 
     return Scaffold(
+      key: _scaffoldKey, // Assigned Key
       backgroundColor: theme.scaffoldBackgroundColor,
+      drawer: const AppDrawer(), // Added Drawer
       body: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          CupertinoSliverNavigationBar(
-            leading: BackButton(
-              style: ButtonStyle(
-                iconSize: WidgetStateProperty.all(24),
-                shadowColor: WidgetStateProperty.all(Colors.black),
-              ),
-            ),
-            largeTitle: Text(
-              l10n.settings,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 24,
+          AdaptiveSliverAppBar(
+            title: l10n.settings,
+            leading: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Icon(
+                  Icons.menu_rounded,
+                  color: theme.colorScheme.onSurface,
+                ),
+                onPressed: () =>
+                    _scaffoldKey.currentState?.openDrawer(), // Updated Logic
               ),
             ),
             backgroundColor: theme.scaffoldBackgroundColor.withValues(
               alpha: 0.9,
             ),
-            border: null,
             stretch: true,
           ),
           SliverToBoxAdapter(
@@ -93,17 +98,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                      _Divider(),
-                      _SettingsTile(
-                        icon: PhosphorIcons.users(PhosphorIconsStyle.duotone),
-                        title: l10n.myStudents,
-                        subtitle: l10n.manageKids,
-                        onTap: () {
-                          // Navigation to manage students/classes if available or keep generic
-                          // Original used AppRoutes.myClasses
-                          context.push(AppRoutes.myClasses);
-                        },
-                      ),
+                      if (authState is AuthAuthenticated &&
+                          authState.user.role != UserRole.teacher) ...[
+                        _Divider(),
+                        _SettingsTile(
+                          icon: PhosphorIcons.users(PhosphorIconsStyle.duotone),
+                          title: l10n.myStudents,
+                          subtitle: l10n.manageKids,
+                          onTap: () {
+                            if (authState.user.role == UserRole.driver ||
+                                authState.user.role == UserRole.busAssistant) {
+                              context.push(AppRoutes.driverStudents);
+                            } else {
+                              context.push(AppRoutes.myClasses);
+                            }
+                          },
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -120,20 +131,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               )
                             : PhosphorIcons.sun(PhosphorIconsStyle.duotone),
                         title: l10n.appearance,
-                        subtitle: isDark ? l10n.darkModeOn : l10n.darkModeOff,
-                        trailing: _SegmentedToggle(
-                          value: isDark,
-                          onChanged: (v) {
-                            themeController.setMode(
-                              v ? ThemeMode.dark : ThemeMode.light,
-                            );
+                        subtitle: themeController.mode == ThemeMode.system
+                            ? l10n.systemDefault
+                            : isDark
+                            ? l10n.darkModeOn
+                            : l10n.darkModeOff,
+                        trailing: _ThreeWayToggle(
+                          selectedIndex:
+                              themeController.mode == ThemeMode.system
+                              ? 0
+                              : themeController.mode == ThemeMode.light
+                              ? 1
+                              : 2,
+                          labels: [l10n.systemDefault, l10n.light, l10n.dark],
+                          icons: [
+                            PhosphorIcons.deviceMobile(PhosphorIconsStyle.bold),
+                            PhosphorIcons.sun(PhosphorIconsStyle.bold),
+                            PhosphorIcons.moonStars(PhosphorIconsStyle.bold),
+                          ],
+                          onChanged: (index) {
+                            final mode = [
+                              ThemeMode.system,
+                              ThemeMode.light,
+                              ThemeMode.dark,
+                            ][index];
+                            themeController.setMode(mode);
                           },
-                          leftLabel: l10n.light,
-                          rightLabel: l10n.dark,
-                          leftIcon: PhosphorIcons.sun(PhosphorIconsStyle.bold),
-                          rightIcon: PhosphorIcons.moonStars(
-                            PhosphorIconsStyle.bold,
-                          ),
                         ),
                       ),
                       _Divider(),
@@ -142,29 +165,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           PhosphorIconsStyle.duotone,
                         ),
                         title: l10n.languageTitle,
-                        subtitle: isArabic ? 'العربية' : 'English',
-                        trailing: _SegmentedToggle(
-                          value:
-                              !isArabic, // False (Left) = Arabic, True (Right) = English
-                          onChanged: (targetIsEnglish) {
-                            if (targetIsEnglish != !isArabic) {
-                              settingsController.setLocale(
-                                targetIsEnglish
-                                    ? const Locale('en')
-                                    : const Locale('ar'),
-                              );
-                            }
+                        subtitle: settingsController.isSystemLocale
+                            ? l10n.systemDefault
+                            : isArabic
+                            ? 'العربية'
+                            : 'English',
+                        trailing: _ThreeWayToggle(
+                          selectedIndex: settingsController.isSystemLocale
+                              ? 0
+                              : isArabic
+                              ? 1
+                              : 2,
+                          labels: [l10n.systemDefault, 'العربية', 'English'],
+                          icons: [
+                            PhosphorIcons.deviceMobile(PhosphorIconsStyle.bold),
+                            PhosphorIcons.translate(PhosphorIconsStyle.bold),
+                            PhosphorIcons.textAa(PhosphorIconsStyle.bold),
+                          ],
+                          onChanged: (index) {
+                            final locale = [
+                              null,
+                              const Locale('ar'),
+                              const Locale('en'),
+                            ][index];
+                            settingsController.setLocale(locale);
                           },
-                          leftLabel: 'العربية',
-                          rightLabel: 'English',
-                          leftIcon: PhosphorIcons.translate(
-                            PhosphorIconsStyle.bold,
-                          ),
-                          rightIcon: PhosphorIcons.textAa(
-                            PhosphorIconsStyle.bold,
-                          ),
                         ),
                       ),
+                      _Divider(),
+                      _FontSizeTile(settingsController: settingsController),
                       _Divider(),
                       _SettingsTile(
                         icon: PhosphorIcons.bellSimple(
@@ -174,7 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: l10n.activitiesSubtitle,
                         trailing: Switch.adaptive(
                           value: notificationsEnabled,
-                          activeTrackColor: BrandColors.primary,
+                          activeTrackColor: AppColors.primary,
                           onChanged: (v) =>
                               setState(() => notificationsEnabled = v),
                         ),
@@ -194,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         title: l10n.helpCenter,
                         onTap: () {
-                          // Placeholder
+                          // TODO(SUPPORT): Implement Help Center navigation
                         },
                       ),
                       _Divider(),
@@ -258,7 +287,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       icon: const Icon(Icons.logout_rounded),
                       label: Text(
                         l10n.logout,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -285,13 +314,16 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Text(
         title,
-        style: theme.textTheme.titleSmall?.copyWith(
+        style: TextStyle(
+          fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: theme.colorScheme.primary,
-          letterSpacing: 0.5,
+          color: theme.brightness == Brightness.dark
+              ? Colors.white70
+              : theme.colorScheme.primary,
+          height: 1.2,
         ),
       ),
     );
@@ -308,18 +340,21 @@ class _SettingsCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? AppColors.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.05),
         ),
         boxShadow: isDark
             ? []
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -4,
                 ),
               ],
       ),
@@ -353,18 +388,22 @@ class _SettingsTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.1)
                       : theme.colorScheme.primary.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+                child: Icon(
+                  icon,
+                  color: isDark ? Colors.white : theme.colorScheme.primary,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -373,7 +412,7 @@ class _SettingsTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.cairo(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: theme.colorScheme.onSurface,
@@ -384,7 +423,7 @@ class _SettingsTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle!,
-                        style: GoogleFonts.cairo(
+                        style: TextStyle(
                           fontSize: 13,
                           color: theme.colorScheme.onSurfaceVariant,
                           height: 1.2,
@@ -424,54 +463,43 @@ class _Divider extends StatelessWidget {
   }
 }
 
-class _SegmentedToggle extends StatelessWidget {
-  const _SegmentedToggle({
-    required this.value,
+class _ThreeWayToggle extends StatelessWidget {
+  const _ThreeWayToggle({
+    required this.selectedIndex,
+    required this.labels,
+    required this.icons,
     required this.onChanged,
-    required this.leftLabel,
-    required this.rightLabel,
-    required this.leftIcon,
-    required this.rightIcon,
   });
 
-  final bool value; // false = left, true = right
-  final ValueChanged<bool> onChanged;
-  final String leftLabel;
-  final String rightLabel;
-  final IconData leftIcon;
-  final IconData rightIcon;
+  final int selectedIndex;
+  final List<String> labels;
+  final List<IconData> icons;
+  final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.black.withValues(alpha: 0.3)
-            : const Color(0xFFF1F5F9), // Lighter, cleaner grey
-        borderRadius: BorderRadius.circular(16), // Softer corners
+            : AppColors.cardLightGray,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildSegment(
+        children: List.generate(labels.length, (index) {
+          final isSelected = selectedIndex == index;
+          return _buildSegment(
             context: context,
-            isSelected: !value,
-            label: leftLabel,
-            icon: leftIcon,
-            onTap: () => onChanged(false),
-          ),
-          const SizedBox(width: 4),
-          _buildSegment(
-            context: context,
-            isSelected: value,
-            label: rightLabel,
-            icon: rightIcon,
-            onTap: () => onChanged(true),
-          ),
-        ],
+            isSelected: isSelected,
+            label: labels[index],
+            icon: icons[index],
+            onTap: () => onChanged(index),
+          );
+        }),
       ),
     );
   }
@@ -490,16 +518,13 @@ class _SegmentedToggle extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        curve: Curves.fastOutSlowIn, // More responsive feel
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ), // More horizontal padding
+        curve: Curves.fastOutSlowIn,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? const Color(0xFF334155) : Colors.white)
+              ? (isDark ? AppColors.cardBorderDark : Colors.white)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(11),
           boxShadow: isSelected && !isDark
               ? [
                   BoxShadow(
@@ -514,20 +539,153 @@ class _SegmentedToggle extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 18, // Slightly larger
+              size: 14,
               color: isSelected
-                  ? theme.colorScheme.primary
+                  ? (isDark ? Colors.white : theme.colorScheme.primary)
                   : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Text(
               label,
-              style: GoogleFonts.cairo(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              style: TextStyle(
+                fontSize: 11,
                 color: isSelected
-                    ? theme.colorScheme.onSurface
+                    ? (isDark ? Colors.white : theme.colorScheme.onSurface)
                     : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FontSizeTile extends StatelessWidget {
+  const _FontSizeTile({required this.settingsController});
+
+  final SettingsController settingsController;
+
+  // Map scale values to indices: 0=small, 1=medium, 2=large
+  int _scaleToIndex(double scale) {
+    if (scale <= 0.9) return 0;
+    if (scale <= 1.1) return 1;
+    return 2;
+  }
+
+  double _indexToScale(int index) {
+    switch (index) {
+      case 0:
+        return 0.85;
+      case 2:
+        return 1.15;
+      default:
+        return 1.0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+    final selectedIndex = _scaleToIndex(settingsController.fontScale);
+
+    final labels = [
+      l10n.fontSizeSmall,
+      l10n.fontSizeMedium,
+      l10n.fontSizeLarge,
+    ];
+    final fontSizes = [11.0, 13.0, 15.0];
+
+    return Material(
+      color: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : theme.colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                PhosphorIcons.textAa(PhosphorIconsStyle.duotone),
+                color: isDark ? Colors.white : theme.colorScheme.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                l10n.fontSize,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                  height: 1.2,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : AppColors.cardLightGray,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (index) {
+                  final isSelected = selectedIndex == index;
+                  return GestureDetector(
+                    onTap: () =>
+                        settingsController.setFontScale(_indexToScale(index)),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.fastOutSlowIn,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? (isDark ? AppColors.cardBorderDark : Colors.white)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: isSelected && !isDark
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Text(
+                        labels[index],
+                        style: TextStyle(
+                          fontSize: fontSizes[index],
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? (isDark
+                                    ? Colors.white
+                                    : theme.colorScheme.primary)
+                              : theme.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.5,
+                                ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ),
             ),
           ],

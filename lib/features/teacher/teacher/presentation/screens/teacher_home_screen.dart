@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-
 import '../../../../../../config/routes/app_routes.dart';
-
-import '../../../../../../config/theme/app_spacing.dart';
-import '../../../../../../config/theme/app_theme.dart';
 import '../../../../../features/shared/auth/presentation/cubit/auth_cubit.dart';
 import '../../../../../features/shared/auth/presentation/cubit/auth_state.dart';
 import '../../../../../../core/presentation/widgets/main_shell.dart';
@@ -57,7 +52,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
         ),
         body: BlocBuilder<AuthCubit, AuthState>(
           builder: (context, authState) {
-            String teacherName = 'المعلم';
+            String teacherName = AppLocalizations.of(context)!.theTeacher;
             if (authState is AuthAuthenticated) {
               teacherName = authState.user.name;
             }
@@ -126,24 +121,46 @@ class _WelcomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final isDark = theme.brightness == Brightness.dark;
+
+    // Gradient from Image: Cyan/Blue to Dark Blue - now using AppColors
+    final gradient = LinearGradient(
+      colors: [AppColors.lightBlue, AppColors.primary],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient(context),
+        gradient: gradient,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: !isDark
-            ? [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ]
-            : null,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.lightBlue.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Row(
         children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 2,
+              ),
+            ),
+            child: const CircleAvatar(
+              radius: 32,
+              backgroundImage: NetworkImage(
+                "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,60 +168,32 @@ class _WelcomeHeader extends StatelessWidget {
                 Text(
                   l10n.welcome,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 16,
-                    color: isDark
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.8)
-                        : theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+                    fontSize: 14,
+                    color: Colors.white70,
                   ),
                 ),
                 Text(
                   teacherName,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isDark
-                        ? theme.colorScheme.onSurface
-                        : theme.colorScheme.onPrimary,
+                    color: Colors.white,
+                    height: 1.2,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: 4),
                 Text(
-                  _getGreeting(context),
+                  l10n.greetingAfternoon, // Dynamic greeting
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isDark
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.8)
-                        : theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+                    color: Colors.white70,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: theme.colorScheme.onPrimary.withValues(alpha: 0.5),
-                width: 2,
-              ),
-            ),
-            child: const CircleAvatar(
-              radius: 30,
-              backgroundImage: NetworkImage(
-                "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
-              ),
-            ),
-          ),
         ],
       ),
     ).animate().fadeIn().slideY(begin: -0.2);
-  }
-
-  String _getGreeting(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final hour = DateTime.now().hour;
-    if (hour < 12) return l10n.greetingMorning;
-    if (hour < 18) return l10n.greetingAfternoon;
-    return l10n.greetingEvening;
   }
 }
 
@@ -222,38 +211,43 @@ class _StatsSection extends StatelessWidget {
           (teacherState as TeacherClassLoaded).classroom.studentCount;
     }
 
+    // Colors using AppColors
+    const absentColor = AppColors.dangerRed;
+    const presentColor = AppColors.successGreen;
+    // const totalColor = AppColors.slateGray; // Removed as we use AppColors.lightBlue directly
+
     return Row(
       children: [
         Expanded(
           child: _StatCard(
-            icon: PhosphorIconsFill.users,
-            label: l10n.studentCount,
-            value: '$studentCount',
-            color: Theme.of(context).colorScheme.onSurface,
-            delay: 200,
+            icon: Icons.cancel_rounded, // X Icon
+            label: l10n.absentToday, // "غائبون اليوم"
+            value: '3',
+            color: absentColor,
+            isDarkBg: true,
+            delay: 400,
           ),
         ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: _StatCard(
-              icon: PhosphorIconsFill.checkCircle,
-              label: l10n.presentToday,
-              value: '22', // Placeholder
-              color: Colors.green,
-              delay: 300,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
+        const SizedBox(width: 12),
         Expanded(
           child: _StatCard(
-            icon: PhosphorIconsFill.xCircle,
-            label: l10n.absentToday,
-            value: '3', // Placeholder
-            color: Colors.red,
-            delay: 400,
+            icon: Icons.check_circle_rounded,
+            label: l10n.presentToday, // "حاضرون اليوم"
+            value: '22',
+            color: presentColor,
+            isDarkBg: true,
+            delay: 300,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.groups_rounded,
+            label: l10n.studentCount, // "عدد الطلاب"
+            value: '$studentCount',
+            color: AppColors.lightBlue, // Changed from slateGray to Blue
+            isDarkBg: true,
+            delay: 200,
           ),
         ),
       ],
@@ -266,6 +260,7 @@ class _StatCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final bool isDarkBg;
   final int delay;
 
   const _StatCard({
@@ -273,52 +268,77 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.isDarkBg = false,
     required this.delay,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: color.withValues(
-                  alpha: theme.brightness == Brightness.light ? 0.1 : 0.2,
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: theme.brightness == Brightness.light
-                    ? color
-                    : color.withValues(alpha: 0.9),
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+    // Dynamic Card Background based on Theme
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark
+        ? AppColors.cardDark.withValues(alpha: 0.6)
+        : Colors.white.withValues(alpha: 0.7); // Glassy White for Light Mode
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.white.withValues(
+                  alpha: 0.5,
+                ), // Lighter border in light mode
         ),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
-    ).animate().fadeIn(delay: delay.ms).scale(begin: const Offset(0.8, 0.8));
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark
+                  ? Colors.white
+                  : AppColors.textPrimary, // Dynamic Text Color
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark
+                  ? Colors.white70
+                  : AppColors.textSecondary, // Dynamic Subtitle Color
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: delay.ms).scale(begin: const Offset(0.9, 0.9));
   }
 }
 
@@ -329,29 +349,28 @@ class _QuickActionsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.md,
-      crossAxisSpacing: AppSpacing.md,
-      childAspectRatio: 1.3,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.4, // squarish but wide enough
       children: [
         _ActionCard(
           icon: PhosphorIconsFill.users,
-          label: l10n.myStudents,
-          color: Colors.tealAccent,
+          label: l10n.myStudents, // "طلابي"
+          color: AppColors.lightBlue, // Changed from teal to Blue
           onTap: () {
             context.push(AppRoutes.myClasses);
           },
           delay: 600,
         ),
         _ActionCard(
-          icon: PhosphorIconsFill.qrCode,
-          label: l10n.scanAttendance,
-          color: theme.colorScheme.onPrimaryContainer,
+          icon: PhosphorIconsFill.qrCode, // Grid icon kinda
+          label: l10n.scanAttendance, // "مسح الحضور"
+          color: AppColors.accent, // Changed from slateGray to Amber/Yellow
           onTap: () {
             context.push(AppRoutes.qrScan);
           },
@@ -359,8 +378,8 @@ class _QuickActionsGrid extends StatelessWidget {
         ),
         _ActionCard(
           icon: PhosphorIconsFill.clockCounterClockwise,
-          label: l10n.attendanceHistory,
-          color: Colors.green,
+          label: l10n.attendanceHistory, // "سجل الحضور"
+          color: AppColors.purple, // Changed from successGreen to Purple
           onTap: () {
             context.go(AppRoutes.attendanceHistory);
           },
@@ -368,8 +387,8 @@ class _QuickActionsGrid extends StatelessWidget {
         ),
         _ActionCard(
           icon: PhosphorIconsFill.chartBar,
-          label: l10n.reports,
-          color: theme.colorScheme.secondary,
+          label: l10n.reports, // "التقارير"
+          color: AppColors.pink, // Changed from skyBlue to Pink
           onTap: () {
             context.pushNamed('reports');
           },
@@ -397,44 +416,61 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: color.withValues(
-                    alpha: theme.brightness == Brightness.light ? 0.1 : 0.2,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: theme.brightness == Brightness.light
-                      ? color
-                      : color.withValues(alpha: 0.9),
-                  size: 28,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-            ],
+    // Dynamic Card Background based on Theme
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark
+        ? AppColors.cardDark.withValues(alpha: 0.6)
+        : Colors.white.withValues(alpha: 0.7); // Glassy White for Light Mode
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.white.withValues(alpha: 0.5),
           ),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 32, // Large icon
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+          ],
         ),
       ),
-    ).animate().fadeIn(delay: delay.ms).slideY(begin: 0.2);
+    ).animate().fadeIn(delay: delay.ms).slideY(begin: 0.1);
   }
 }

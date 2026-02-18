@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../domain/entities/attendance_history_entity.dart';
 import '../../domain/repositories/attendance_history_repository.dart';
@@ -24,7 +25,11 @@ class AttendanceHistoryRepositoryImpl implements AttendanceHistoryRepository {
         ),
       ];
       return Right(mockHistory);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint(
+        'AttendanceHistoryRepository.getTeacherAttendanceHistory failed: $e',
+      );
+      debugPrint('Stack trace: $stackTrace');
       return Left(e.toString());
     }
   }

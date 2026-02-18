@@ -10,12 +10,28 @@ class ReportEntity extends Equatable {
   List<Object?> get props => [date, attendancePercentage];
 }
 
+class StudentReportEntity extends Equatable {
+  final String name;
+  final int presentCount;
+  final int absentCount;
+
+  const StudentReportEntity({
+    required this.name,
+    required this.presentCount,
+    required this.absentCount,
+  });
+
+  @override
+  List<Object?> get props => [name, presentCount, absentCount];
+}
+
 class AttendanceStatsEntity extends Equatable {
   final int totalStudents;
   final int presentToday;
   final int absentToday;
   final double averageAttendance;
   final List<ReportEntity> weeklyTrend;
+  final List<StudentReportEntity> studentReports;
 
   const AttendanceStatsEntity({
     required this.totalStudents,
@@ -23,6 +39,7 @@ class AttendanceStatsEntity extends Equatable {
     required this.absentToday,
     required this.averageAttendance,
     required this.weeklyTrend,
+    required this.studentReports,
   });
 
   @override
@@ -32,5 +49,6 @@ class AttendanceStatsEntity extends Equatable {
     absentToday,
     averageAttendance,
     weeklyTrend,
+    studentReports,
   ];
 }

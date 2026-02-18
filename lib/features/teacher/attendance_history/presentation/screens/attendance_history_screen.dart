@@ -1,15 +1,17 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
+import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../cubit/attendance_history_cubit.dart';
 import '../cubit/attendance_history_state.dart';
 import '../../domain/entities/attendance_history_entity.dart';
 import '../../../students/domain/entities/student_entity.dart';
-import '../../../../../core/presentation/widgets/main_shell.dart';
+import '../../../../../../core/presentation/widgets/main_shell.dart';
+import '../../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 class AttendanceHistoryScreen extends StatefulWidget {
   const AttendanceHistoryScreen({super.key});
@@ -22,6 +24,8 @@ class AttendanceHistoryScreen extends StatefulWidget {
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   AttendanceHistoryEntity? selectedClass;
   AttendanceHistoryRecord? selectedRecord;
+  AttendanceStatus? _filterStatus;
+  DateTime? _selectedDate;
 
   @override
   void initState() {
@@ -32,8 +36,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: BlocBuilder<AttendanceHistoryCubit, AttendanceHistoryState>(
         builder: (context, state) {
           if (state is AttendanceHistoryLoading) {
@@ -43,15 +48,18 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
           } else if (state is AttendanceHistoryLoaded) {
             return CustomScrollView(
               slivers: [
-                CupertinoSliverNavigationBar(
+                AdaptiveSliverAppBar(
                   leading: selectedRecord != null || selectedClass != null
                       ? BackButton(
                           onPressed: () {
                             setState(() {
                               if (selectedRecord != null) {
                                 selectedRecord = null;
+                                _filterStatus = null;
                               } else if (selectedClass != null) {
                                 selectedClass = null;
+                                _selectedDate =
+                                    null; // Reset date filter when going back
                               }
                             });
                           },
@@ -66,15 +74,32 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                             MainShell.of(context)?.openDrawer();
                           },
                         ),
-                  largeTitle: Text(
-                    _getTitle(),
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontFamily: theme.textTheme.titleLarge?.fontFamily,
-                    ),
-                  ),
+                  title: _getTitle(context),
+                  trailing: (selectedClass != null && selectedRecord == null)
+                      ? IconButton(
+                          icon: Icon(
+                            _selectedDate != null
+                                ? PhosphorIconsFill.calendarX
+                                : PhosphorIconsRegular.calendarPlus,
+                            color: _selectedDate != null
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface,
+                          ),
+                          tooltip: _selectedDate != null
+                              ? AppLocalizations.of(context)!.clearFilter
+                              : AppLocalizations.of(context)!.searchByDate,
+                          onPressed: () {
+                            if (_selectedDate != null) {
+                              setState(() {
+                                _selectedDate = null;
+                              });
+                            } else {
+                              _pickDate(context);
+                            }
+                          },
+                        )
+                      : null,
                   backgroundColor: Colors.transparent,
-                  border: null,
                   stretch: true,
                 ),
                 if (selectedRecord != null)
@@ -92,13 +117,45 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     );
   }
 
-  String _getTitle() {
+  Future<void> _pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: DateTime(2023),
+      lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  String _getTitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (selectedRecord != null) {
-      return 'الطلاب الحاضرون';
+      if (_filterStatus == AttendanceStatus.present) return l10n.presentToday;
+      if (_filterStatus == AttendanceStatus.absent) return l10n.absentToday;
+      return l10n.studentCount;
     } else if (selectedClass != null) {
+      if (_selectedDate != null) {
+        return "${selectedClass!.className} (${_formatDate(_selectedDate!)})";
+      }
       return selectedClass!.className;
     }
-    return 'سجل الحضور';
+    return l10n.attendanceHistory;
   }
 
   Widget _buildClassesSliverList(List<AttendanceHistoryEntity> history) {
@@ -119,29 +176,112 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   }
 
   Widget _buildDailyRecordsSliverList(List<AttendanceHistoryRecord> records) {
+    final theme = Theme.of(context);
+
+    // Filter records by selected date if set
+    final filteredRecords = _selectedDate == null
+        ? records
+        : records.where((r) => isSameDay(r.date, _selectedDate!)).toList();
+
+    if (filteredRecords.isEmpty && _selectedDate != null) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                PhosphorIconsDuotone.calendarX,
+                size: 64,
+                color: theme.disabledColor,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context)!.noRecordsForDate,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => setState(() => _selectedDate = null),
+                icon: const Icon(Icons.refresh),
+                label: Text(AppLocalizations.of(context)!.showAllRecords),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SliverPadding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
-          final record = records[index];
+          final record = filteredRecords[index];
           return _HistoryCard(
             record: record,
             index: index,
-            onTap: () => setState(() => selectedRecord = record),
+            onTap: () => setState(() {
+              selectedRecord = record;
+              _filterStatus = null;
+            }),
+            onPresentTap: () => setState(() {
+              selectedRecord = record;
+              _filterStatus = AttendanceStatus.present;
+            }),
+            onAbsentTap: () => setState(() {
+              selectedRecord = record;
+              _filterStatus = AttendanceStatus.absent;
+            }),
           );
-        }, childCount: records.length),
+        }, childCount: filteredRecords.length),
       ),
     );
   }
 
+  bool isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}/${date.month}/${date.day}';
+  }
+
   Widget _buildStudentsSliverList(List<StudentEntity> students) {
+    // Filter students based on _filterStatus
+    final filteredStudents = _filterStatus == null
+        ? students
+        : students.where((s) => s.status == _filterStatus).toList();
+
+    if (filteredStudents.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                PhosphorIconsDuotone.userList,
+                size: 64,
+                color: Colors.grey.withValues(alpha: 0.6),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context)!.noStudentsInList,
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SliverPadding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
-          final student = students[index];
+          final student = filteredStudents[index];
           return _StudentHistoryCard(student: student, index: index);
-        }, childCount: students.length),
+        }, childCount: filteredStudents.length),
       ),
     );
   }
@@ -163,39 +303,86 @@ class _ClassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: theme.brightness == Brightness.dark
-            ? Border.all(color: theme.dividerColor)
-            : null,
+        color: isDark
+            ? const Color(0xFF1E293B).withValues(alpha: 0.7)
+            : Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.white, // Cleaner white border in light mode
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(AppSpacing.lg),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: 4,
+        ),
         leading: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(
             PhosphorIconsFill.chalkboardTeacher,
-            color: theme.colorScheme.primary,
+            color: isDark ? Colors.white : theme.colorScheme.primary,
+            size: 24,
           ),
         ),
         title: Text(
           className,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
         ),
-        subtitle: Text('$recordCount سجل يومي'),
-        trailing: Icon(
-          Icons.arrow_forward_ios_rounded,
-          size: 16,
-          color: theme.colorScheme.primary,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              Icon(
+                PhosphorIconsRegular.fileText,
+                size: 14,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                AppLocalizations.of(context)!.dailyRecordCount(recordCount),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Directionality.of(context) == TextDirection.rtl
+                ? PhosphorIconsRegular.caretLeft
+                : PhosphorIconsRegular.caretRight,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
         ),
         onTap: onTap,
       ),
@@ -207,28 +394,45 @@ class _HistoryCard extends StatelessWidget {
   final AttendanceHistoryRecord record;
   final int index;
   final VoidCallback onTap;
+  final VoidCallback onPresentTap;
+  final VoidCallback onAbsentTap;
 
   const _HistoryCard({
     required this.record,
     required this.index,
     required this.onTap,
+    required this.onPresentTap,
+    required this.onAbsentTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: theme.brightness == Brightness.dark
-            ? Border.all(color: theme.dividerColor)
-            : null,
+        color: isDark
+            ? const Color(0xFF1E293B).withValues(alpha: 0.7)
+            : Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -239,51 +443,129 @@ class _HistoryCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        PhosphorIconsFill.calendar,
-                        color: theme.colorScheme.primary,
-                        size: 20,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          PhosphorIconsFill.calendarBlank,
+                          color: isDark
+                              ? Colors.white
+                              : theme.colorScheme.primary,
+                          size: 20,
+                        ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
+                      const SizedBox(width: AppSpacing.md),
                       Text(
                         _formatDate(record.date),
-                        style: theme.textTheme.bodyLarge?.copyWith(
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
-                  Text(
-                    '${record.attendanceRate.toStringAsFixed(0)}%',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
                       color: _getAttendanceColor(
                         context,
                         record.attendanceRate,
+                      ).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _getAttendanceColor(
+                          context,
+                          record.attendanceRate,
+                        ).withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Text(
+                      '${record.attendanceRate.toStringAsFixed(0)}%',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: _getAttendanceColor(
+                          context,
+                          record.attendanceRate,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+
+              // Visual Progress Bar
+              Stack(
                 children: [
-                  _StatItem(
-                    label: 'حاضر',
-                    value: record.presentCount,
-                    color: Colors.green,
+                  Container(
+                    height: 6,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.grey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
-                  _StatItem(
-                    label: 'غائب',
-                    value: record.absentCount,
-                    color: Colors.red,
+                  FractionallySizedBox(
+                    widthFactor: record.attendanceRate / 100,
+                    child: Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: _getAttendanceColor(
+                          context,
+                          record.attendanceRate,
+                        ),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
                   ),
-                  _StatItem(
-                    label: 'تأخير',
-                    value: record.lateCount,
-                    color: Colors.orange,
+                ],
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: onPresentTap,
+                      child: _StatItem(
+                        label: AppLocalizations.of(context)!.present,
+                        value: record.presentCount,
+                        color: AppColors.successGreen,
+                        isPill: true,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: onAbsentTap,
+                      child: _StatItem(
+                        label: AppLocalizations.of(context)!.absent,
+                        value: record.absentCount,
+                        color: AppColors.dangerRed,
+                        isPill: true,
+                      ),
+                    ),
+                  ),
+                  // const SizedBox(width: 8),
+                  // Expanded(
+                  //   child: _StatItem(
+                  //     label: 'تأخير',
+                  //     value: record.lateCount,
+                  //     color: Colors.orange,
+                  //     isPill: true,
+                  //   ),
+                  // ),
                 ],
               ),
             ],
@@ -298,9 +580,9 @@ class _HistoryCard extends StatelessWidget {
   }
 
   Color _getAttendanceColor(BuildContext context, double rate) {
-    if (rate >= 90) return Colors.green;
+    if (rate >= 90) return AppColors.successGreen;
     if (rate >= 75) return Colors.orange;
-    return Colors.red;
+    return AppColors.dangerRed;
   }
 }
 
@@ -308,16 +590,53 @@ class _StatItem extends StatelessWidget {
   final String label;
   final int value;
   final Color color;
+  final bool isPill;
 
   const _StatItem({
     required this.label,
     required this.value,
     required this.color,
+    this.isPill = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    if (isPill) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '$value',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.8,
+                ),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         Text(
@@ -351,11 +670,24 @@ class _StudentHistoryCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.cardTheme.color,
+        color: theme.brightness == Brightness.dark
+            ? const Color(0xFF1E293B).withValues(alpha: 0.7)
+            : Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(16),
-        border: theme.brightness == Brightness.dark
-            ? Border.all(color: theme.dividerColor)
-            : null,
+        border: Border.all(
+          color: theme.brightness == Brightness.dark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.white,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -364,7 +696,9 @@ class _StudentHistoryCard extends StatelessWidget {
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
             child: Icon(
               PhosphorIconsRegular.student,
-              color: theme.colorScheme.primary,
+              color: theme.brightness == Brightness.dark
+                  ? Colors.white
+                  : theme.colorScheme.primary,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -379,7 +713,9 @@ class _StudentHistoryCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'ولي الأمر: ${student.parentName}',
+                  AppLocalizations.of(
+                    context,
+                  )!.parentNameLabel(student.parentName),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),

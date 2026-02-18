@@ -134,7 +134,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get remaining => 'المتبقي';
+  String get remaining => 'متبقي';
 
   @override
   String get percentage => 'النسبة';
@@ -294,6 +294,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get appearance => 'المظهر';
+
+  @override
+  String get systemDefault => 'النظام';
 
   @override
   String get activitiesSubtitle => 'آخر إعلانات وتحديثات المدرسة.';
@@ -625,4 +628,743 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get updated => 'محدث منذ';
+
+  @override
+  String get driversAndSupervisors => 'السائقين والمشرفات';
+
+  @override
+  String get drivers => 'السائقين';
+
+  @override
+  String get supervisors => 'المشرفات';
+
+  @override
+  String get bus => 'الحافلة';
+
+  @override
+  String get fieldSupervisor => 'المشرف الميداني';
+
+  @override
+  String get supervisorRole => 'مشرف ميداني';
+
+  @override
+  String get incidentsAndEmergencies => 'الحوادث والطوارئ';
+
+  @override
+  String get fieldInspection => 'التفتيش الميداني';
+
+  @override
+  String get registerDelays => 'تسجيل التأخيرات';
+
+  @override
+  String get dailyTrips => 'الرحلات اليومية';
+
+  @override
+  String get selectBus => 'اختر الحافلة';
+
+  @override
+  String get inspectionChecklist => 'قائمة الفحص';
+
+  @override
+  String get takePhotos => 'التقاط صور';
+
+  @override
+  String get inspectionSaved => 'تم حفظ الفحص بنجاح';
+
+  @override
+  String get saveInspection => 'حفظ الفحص';
+
+  @override
+  String get completedTrips => 'الرحلات المكتملة';
+
+  @override
+  String get issues => 'المشاكل';
+
+  @override
+  String get delays => 'التأخيرات';
+
+  @override
+  String get violations => 'المخالفات';
+
+  @override
+  String get reportCategories => 'تصنيف البلاغات';
+
+  @override
+  String get viewAllTrips => 'عرض كل الرحلات';
+
+  @override
+  String get viewAllIssues => 'عرض كل المشاكل';
+
+  @override
+  String get viewAllDelays => 'عرض كل التأخيرات';
+
+  @override
+  String get viewAllViolations => 'عرض كل المخالفات';
+
+  @override
+  String get fieldTrips => 'الرحلات الميدانية';
+
+  @override
+  String get viewFieldTrips => 'عرض الرحلات الميدانية';
+
+  @override
+  String get todayTrips => 'رحلات اليوم';
+
+  @override
+  String get trips => 'الرحلات';
+
+  @override
+  String get addNote => 'إضافة ملاحظة';
+
+  @override
+  String get viewOnMap => 'عرض على الخريطة';
+
+  @override
+  String get trafficJam => 'ازدحام مروري';
+
+  @override
+  String get technicalIssue => 'خلل فني';
+
+  @override
+  String get studentLate => 'تأخر طالب';
+
+  @override
+  String get other => 'أخرى';
+
+  @override
+  String get delaySavedAndReported => 'تم حفظ والبلاغ عن التأخير';
+
+  @override
+  String get saveAndSend => 'حفظ وإرسال';
+
+  @override
+  String get upcomingTrips => 'الرحلات القادمة';
+
+  @override
+  String get driver => 'السائق';
+
+  @override
+  String get communication => 'التواصل';
+
+  @override
+  String get activeBuses => 'حافلات نشطة';
+
+  @override
+  String get activeDrivers => 'سائقين نشطين';
+
+  @override
+  String get activeTrips => 'رحلات نشطة';
+
+  @override
+  String get activeEmergency => 'حالة طوارئ نشطة';
+
+  @override
+  String get respond => 'استجابة';
+
+  @override
+  String get allIncidents => 'كل الحوادث';
+
+  @override
+  String get newIncident => 'حادث جديد';
+
+  @override
+  String get incidentDescription => 'وصف الحادث';
+
+  @override
+  String get attachPhoto => 'إرفاق صورة';
+
+  @override
+  String get incidentReported => 'تم الإبلاغ عن الحادث بنجاح';
+
+  @override
+  String get pendingInspections => 'فحوصات معلقة';
+
+  @override
+  String get busesNeedInspection => 'حافلات تحتاج فحص';
+
+  @override
+  String get recentInspections => 'فحوصات حديثة';
+
+  @override
+  String get newInspection => 'فحص جديد';
+
+  @override
+  String get totalBuses => 'مجموع الحافلات';
+
+  @override
+  String get stoppedBuses => 'حافلات متوقفة';
+
+  @override
+  String get online => 'متصل';
+
+  @override
+  String get offline => 'غير متصل';
+
+  @override
+  String get broadcastMessage => 'رسالة جماعية';
+
+  @override
+  String get sendToAll => 'إرسال للكل';
+
+  @override
+  String get recentChats => 'المحادثات الأخيرة';
+
+  @override
+  String get studentDelays => 'تأخيرات الطلاب';
+
+  @override
+  String get busDelays => 'تأخيرات الحافلات';
+
+  @override
+  String get reportSent => 'تم إرسال البلاغ بنجاح';
+
+  @override
+  String get registerNewDelay => 'تسجيل تأخير جديد';
+
+  @override
+  String get student => 'طالب';
+
+  @override
+  String get selectStudent => 'اختر الطالب';
+
+  @override
+  String get delayDuration => 'مدة التأخير (دقيقة)';
+
+  @override
+  String get delayReason => 'سبب التأخير';
+
+  @override
+  String get present => 'حاضر';
+
+  @override
+  String get finishAttendance => 'إنهاء التحضير';
+
+  @override
+  String get attendanceSummary => 'ملخص الحضور';
+
+  @override
+  String get confirmSendReport => 'هل تريد إنهاء التحضير وإرسال التقرير؟';
+
+  @override
+  String get total => 'الإجمالي';
+
+  @override
+  String get unmarked => 'غير محدد';
+
+  @override
+  String unmarkedStudentsWarning(int count) {
+    return 'هناك $count طالب لم يتم تحديد حالتهم';
+  }
+
+  @override
+  String get confirmSend => 'تأكيد الإرسال';
+
+  @override
+  String get dailyReportSentSuccess => 'تم إرسال التقرير اليومي بنجاح';
+
+  @override
+  String get classPlaceholder => 'الصف الرابع - أ';
+
+  @override
+  String get parentGuardian => 'ولي الأمر';
+
+  @override
+  String get whatsapp => 'واتساب';
+
+  @override
+  String get sosAlertsTitle => 'بلاغ عن حادث';
+
+  @override
+  String get sosAlertsStatusPending => 'قيد المعالجة';
+
+  @override
+  String get sosAlertsStatusResolved => 'تم الحل';
+
+  @override
+  String get sosAlertsStatusActive => 'نشط';
+
+  @override
+  String sosAlertsTimeAgo(String time) {
+    return 'منذ $time';
+  }
+
+  @override
+  String get login => 'تسجيل الدخول';
+
+  @override
+  String get welcomeBack => 'مرحباً بعودتك';
+
+  @override
+  String get civilId => 'الرقم المدني';
+
+  @override
+  String get password => 'كلمة المرور';
+
+  @override
+  String get forgotPassword => 'نسيت كلمة المرور؟';
+
+  @override
+  String get enterCivilId => 'الرجاء إدخال الرقم المدني';
+
+  @override
+  String get enterPassword => 'الرجاء إدخال كلمة المرور';
+
+  @override
+  String get unexpectedError => 'حدث خطأ غير متوقع';
+
+  @override
+  String get selectCorrectRole => 'يرجى اختيار الدور الصحيح للدخول';
+
+  @override
+  String get resetPasswordSuccess =>
+      'تم إرسال رابط إعادة تعيين كلمة المرور بنجاح!';
+
+  @override
+  String get maintenance => 'الصيانة';
+
+  @override
+  String get fuelRefill => 'تعبئة الوقود';
+
+  @override
+  String get maintenanceRequest => 'طلب صيانة';
+
+  @override
+  String get statusActive => 'نشط';
+
+  @override
+  String get statusStopped => 'متوقف';
+
+  @override
+  String get statusCompleted => 'مكتملة';
+
+  @override
+  String get statusInProgress => 'جارية';
+
+  @override
+  String get statusScheduled => 'مجدولة';
+
+  @override
+  String get statusMaintenance => 'صيانة';
+
+  @override
+  String get statusExcellent => 'ممتاز';
+
+  @override
+  String get statusGood => 'جيد';
+
+  @override
+  String get statusPending => 'معلق';
+
+  @override
+  String get typeTechnical => 'تقني';
+
+  @override
+  String get typeBehavioral => 'سلوكي';
+
+  @override
+  String get typeHealth => 'صحي';
+
+  @override
+  String get typeTraffic => 'مروري';
+
+  @override
+  String get typeSOS => 'SOS';
+
+  @override
+  String get roleAdmin => 'الإدارة';
+
+  @override
+  String get roleDriver => 'سائق';
+
+  @override
+  String get late => 'تأخير';
+
+  @override
+  String get myClasses => 'فصولي';
+
+  @override
+  String busNumber(int number) {
+    return 'حافلة $number';
+  }
+
+  @override
+  String get call => 'اتصال';
+
+  @override
+  String get sendMessage => 'إرسال رسالة';
+
+  @override
+  String get details => 'التفاصيل';
+
+  @override
+  String get notes => 'ملاحظات';
+
+  @override
+  String get date => 'التاريخ';
+
+  @override
+  String get time => 'الوقت';
+
+  @override
+  String get status => 'الحالة';
+
+  @override
+  String get type => 'النوع';
+
+  @override
+  String get description => 'الوصف';
+
+  @override
+  String get actions => 'الإجراءات';
+
+  @override
+  String get todayAttendance => 'حضور اليوم';
+
+  @override
+  String get classAttendance => 'حضور الفصل';
+
+  @override
+  String get takeAttendance => 'تسجيل الحضور';
+
+  @override
+  String get markPresent => 'تسجيل حاضر';
+
+  @override
+  String get markAbsent => 'تسجيل غائب';
+
+  @override
+  String get noDataFound => 'لا توجد بيانات';
+
+  @override
+  String get loadingData => 'جاري تحميل البيانات...';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String get confirm => 'تأكيد';
+
+  @override
+  String get back => 'رجوع';
+
+  @override
+  String get next => 'التالي';
+
+  @override
+  String get done => 'تم';
+
+  @override
+  String get close => 'إغلاق';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get edit => 'تعديل';
+
+  @override
+  String get add => 'إضافة';
+
+  @override
+  String get save => 'حفظ';
+
+  @override
+  String get search => 'بحث';
+
+  @override
+  String get filter => 'تصفية';
+
+  @override
+  String get sort => 'ترتيب';
+
+  @override
+  String get morning => 'صباحاً';
+
+  @override
+  String get afternoon => 'مساءً';
+
+  @override
+  String get today => 'اليوم';
+
+  @override
+  String get yesterday => 'أمس';
+
+  @override
+  String get thisWeek => 'هذا الأسبوع';
+
+  @override
+  String get thisMonth => 'هذا الشهر';
+
+  @override
+  String get errorOccurred => 'حدث خطأ';
+
+  @override
+  String get connectionError => 'خطأ في الاتصال';
+
+  @override
+  String get tryAgain => 'حاول مرة أخرى';
+
+  @override
+  String get noInternet => 'لا يوجد اتصال بالإنترنت';
+
+  @override
+  String get successMessage => 'تمت العملية بنجاح';
+
+  @override
+  String get savedSuccessfully => 'تم الحفظ بنجاح';
+
+  @override
+  String get deletedSuccessfully => 'تم الحذف بنجاح';
+
+  @override
+  String get sentSuccessfully => 'تم الإرسال بنجاح';
+
+  @override
+  String get navigation => 'الملاحة';
+
+  @override
+  String get endTrip => 'إنهاء الرحلة';
+
+  @override
+  String get roleBusAssistant => 'مشرفة الحافلة';
+
+  @override
+  String get roleFieldSupervisor => 'مشرف ميداني';
+
+  @override
+  String get roleTeacher => 'معلم';
+
+  @override
+  String get driverLogin => 'تسجيل دخول سائق';
+
+  @override
+  String get assistantLogin => 'تسجيل دخول مشرفة';
+
+  @override
+  String get supervisorLogin => 'تسجيل دخول مشرف';
+
+  @override
+  String get teacherLogin => 'تسجيل دخول معلم';
+
+  @override
+  String get maintenanceLog => 'سجل الصيانة';
+
+  @override
+  String get theDriver => 'السائق';
+
+  @override
+  String get driversGroup => 'مجموعة السائقين';
+
+  @override
+  String get dailyRecord => 'سجل يومي';
+
+  @override
+  String get presentStudents => 'الطلاب الحاضرون';
+
+  @override
+  String get parentPhone => 'رقم الهاتف';
+
+  @override
+  String get parentGuardianLabel => 'ولي الأمر';
+
+  @override
+  String get students => 'الطلاب';
+
+  @override
+  String get sos => 'طوارئ';
+
+  @override
+  String get camera => 'الكاميرا';
+
+  @override
+  String get gallery => 'الاستديو';
+
+  @override
+  String get amount => 'المبلغ';
+
+  @override
+  String get boarded => 'صعدوا';
+
+  @override
+  String get pleaseEnterCivilId => 'الرجاء إدخال الرقم المدني';
+
+  @override
+  String get pleaseEnterPassword => 'الرجاء إدخال كلمة المرور';
+
+  @override
+  String get readyToStart => 'جاهز للانطلاق';
+
+  @override
+  String get departureTime => 'وقت المغادرة';
+
+  @override
+  String get startTrip => 'بدء الرحلة';
+
+  @override
+  String get endTripTitle => 'إنهاء الرحلة';
+
+  @override
+  String get confirmEndTrip => 'هل أنت متأكد من إنهاء الرحلة؟';
+
+  @override
+  String get tripEndedSuccess => 'انتهت الرحلة! جميع الطلاب وصلوا.';
+
+  @override
+  String get scanFrontCode => 'مسح رمز المقدمة';
+
+  @override
+  String get scanBackCode => 'مسح رمز المؤخرة';
+
+  @override
+  String get scanFrontDesc =>
+      'قم بمسح رمز الاستجابة السريع الموجود في مقدمة الحافلة';
+
+  @override
+  String get scanBackDesc =>
+      'قم بمسح رمز الاستجابة السريع الموجود في مؤخرة الحافلة';
+
+  @override
+  String get recordVideo => 'تصوير الحافلة';
+
+  @override
+  String get recordVideoDesc =>
+      'قم بتصوير فيديو من مقدمة الحافلة إلى نهايتها للتأكد من خلوها';
+
+  @override
+  String get nextStop => 'الوجهة التالية';
+
+  @override
+  String get arriveAtStudent => 'الوصول للطالب';
+
+  @override
+  String get nextDestination => 'الوجهة التالية';
+
+  @override
+  String get probableAbsence => 'غياب محتمل';
+
+  @override
+  String get fuelRefillTitle => 'تعبئة وقود';
+
+  @override
+  String get attachReceipt => 'إرفاق صورة الفاتورة';
+
+  @override
+  String get odometerReading => 'قراءة العداد (كم)';
+
+  @override
+  String get recentLogs => 'السجلات السابقة';
+
+  @override
+  String get fuelEntry => 'تعبئة وقود';
+
+  @override
+  String get requestMaintenance => 'طلب صيانة';
+
+  @override
+  String get maintenanceRequestSubmitted => 'تم تقديم طلب الصيانة بنجاح';
+
+  @override
+  String get reRecord => 'إعادة التصوير';
+
+  @override
+  String get videoRecorded => 'تم تسجيل الفيديو';
+
+  @override
+  String get busEmptyCheck => 'التأكد من خلو الحافلة';
+
+  @override
+  String get maintenanceRequestTitle => 'طلب صيانة';
+
+  @override
+  String get estimatedCost => 'التكلفة المتوقعة';
+
+  @override
+  String get requestSentSuccess => 'تم إرسال الطلب بنجاح';
+
+  @override
+  String get dataSavedSuccess => 'تم حفظ البيانات بنجاح';
+
+  @override
+  String get pleaseAttachPhoto => 'يرجى إرفاق صورة';
+
+  @override
+  String get enterValidNumber => 'يرجى إدخال رقم صحيح';
+
+  @override
+  String get enterAmount => 'يرجى إدخال المبلغ';
+
+  @override
+  String get enterOdometer => 'يرجى إدخال قراءة العداد';
+
+  @override
+  String get describeProblem => 'يرجى وصف المشكلة';
+
+  @override
+  String get submitRequest => 'إرسال الطلب';
+
+  @override
+  String get studentStatistics => 'إحصائيات الطلاب';
+
+  @override
+  String get noResultsFound => 'لا يوجد نتائج';
+
+  @override
+  String get searchStudentPlaceholder => 'بحث عن طالب...';
+
+  @override
+  String get fontSize => 'حجم الخط';
+
+  @override
+  String get fontSizeSmall => 'صغير';
+
+  @override
+  String get fontSizeMedium => 'متوسط';
+
+  @override
+  String get fontSizeLarge => 'كبير';
+
+  @override
+  String get incorrectPassword => 'كلمة المرور غير صحيحة';
+
+  @override
+  String get civilIdNotRegistered => 'الرقم المدني غير مسجل';
+
+  @override
+  String civilIdRegisteredAs(String role) {
+    return 'هذا الرقم المدني مسجل كـ $role';
+  }
+
+  @override
+  String get loginFailed => 'فشل تسجيل الدخول: بيانات غير صحيحة';
+
+  @override
+  String get guest => 'زائر';
+
+  @override
+  String get clearFilter => 'مسح الفلتر';
+
+  @override
+  String get searchByDate => 'بحث بالتاريخ';
+
+  @override
+  String get noRecordsForDate => 'لا توجد سجلات لهذا التاريخ';
+
+  @override
+  String get noStudentsInList => 'لا يوجد طلاب في هذه القائمة';
+
+  @override
+  String get showAllRecords => 'عرض الكل';
+
+  @override
+  String get theTeacher => 'المعلم';
+
+  @override
+  String dailyRecordCount(int count) {
+    return '$count سجل يومي';
+  }
+
+  @override
+  String parentNameLabel(String name) {
+    return 'ولي الأمر: $name';
+  }
 }

@@ -39,12 +39,19 @@ dependencies:
   google_maps_flutter: ^2.14.0
   widget_to_marker: ^1.0.6
   permission_handler: ^11.3.1
+  flutter_svg: ^2.0.10
+  get_it: ^9.2.0
+  injectable: ^2.7.1+4
+  font_awesome_flutter: ^10.12.0
+  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.1
+  build_runner: ^2.11.0
+  injectable_generator: ^2.12.0
 
 flutter:
   uses-material-design: true
@@ -52,10 +59,32 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/icons/msarticon/
+  fonts:
+    - family: Google Sans
+      fonts:
+        - asset: assets/fonts/Google_Sans/static/GoogleSans-Regular.ttf
+        - asset: assets/fonts/Google_Sans/static/GoogleSans-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Google_Sans/static/GoogleSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Google_Sans/static/GoogleSans-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/Google_Sans/static/GoogleSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Google_Sans/static/GoogleSans-SemiBoldItalic.ttf
+          weight: 600
+          style: italic
+        - asset: assets/fonts/Google_Sans/static/GoogleSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Google_Sans/static/GoogleSans-BoldItalic.ttf
+          weight: 700
+          style: italic
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/msaratwasel_services.png"
+  image_path: "assets/images/icon 4.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/msaratwasel_services.png"
+  adaptive_icon_foreground: "assets/images/icon 4.png"

@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 import '../../../../../core/usecases/usecase.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
@@ -7,6 +8,7 @@ import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/reset_password_usecase.dart';
 import 'auth_state.dart';
 
+@lazySingleton
 class AuthCubit extends Cubit<AuthState> {
   final LoginUseCase loginUseCase;
   final LogoutUseCase logoutUseCase;
@@ -38,11 +40,12 @@ class AuthCubit extends Cubit<AuthState> {
       LoginParams(id: id, password: password, role: role),
     );
     result.fold(
-      (failure) => emit(AuthError(failure.message ?? 'حدث خطأ غير متوقع')),
+      (failure) =>
+          emit(AuthError(failure.message ?? 'An unexpected error occurred')),
       (user) {
         // Validate that user's actual role matches the selected role
         if (user.role != role) {
-          emit(AuthError('يرجى اختيار الدور الصحيح للدخول'));
+          emit(AuthError('Please select the correct role to login'));
           return;
         }
         emit(AuthAuthenticated(user));
@@ -54,7 +57,8 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     final result = await logoutUseCase(NoParams());
     result.fold(
-      (failure) => emit(AuthError(failure.message ?? 'حدث خطأ غير متوقع')),
+      (failure) =>
+          emit(AuthError(failure.message ?? 'An unexpected error occurred')),
       (_) => emit(AuthUnauthenticated()),
     );
   }
@@ -63,7 +67,8 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     final result = await resetPasswordUseCase(ResetPasswordParams(id: id));
     result.fold(
-      (failure) => emit(AuthError(failure.message ?? 'حدث خطأ غير متوقع')),
+      (failure) =>
+          emit(AuthError(failure.message ?? 'An unexpected error occurred')),
       (_) => emit(AuthPasswordResetSent()),
     );
   }

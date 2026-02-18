@@ -29,7 +29,7 @@ class MainShellState extends State<MainShell> {
         Scaffold(
           key: scaffoldKey,
           backgroundColor: Colors.transparent,
-          drawer: const AppDrawer(),
+          drawer: AppDrawer(),
           body: widget.child,
         ),
       ],

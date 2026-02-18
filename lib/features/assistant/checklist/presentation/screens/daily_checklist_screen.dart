@@ -1,6 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
+import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 class DailyChecklistScreen extends StatefulWidget {
@@ -43,21 +46,24 @@ class _DailyChecklistScreenState extends State<DailyChecklistScreen> {
     final items = _getItems(l10n);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          CupertinoSliverNavigationBar(
-            leading: const BackButton(),
-            largeTitle: Text(
-              l10n.dailyChecklistTitle,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontFamily: theme.textTheme.titleLarge?.fontFamily,
+          AdaptiveSliverAppBar(
+            title: l10n.dailyChecklistTitle,
+            leading: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Icon(
+                  Icons.menu_rounded,
+                  color: theme.colorScheme.onSurface,
+                ),
+                onPressed: () => MainShell.of(context)?.openDrawer(),
               ),
             ),
-            backgroundColor: Colors.transparent,
-            border: null,
-            stretch: true,
+            backgroundColor: theme.scaffoldBackgroundColor.withValues(
+              alpha: 0.9,
+            ),
           ),
           SliverPadding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -92,7 +98,16 @@ class _DailyChecklistScreenState extends State<DailyChecklistScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(l10n.tasksSavedSuccessfully)),
             );
-            Navigator.pop(context);
+            // Navigate back to home instead of popping, as this might be a root route
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              // Ensure we don't crash if there's no history
+              // Assuming this screen is mostly used by Bus Assistant
+              // We should import AppRoutes first or use magic string if import missing
+              // But we can just use GoRouter
+              GoRouter.of(context).go(AppRoutes.assistantHome);
+            }
           },
           child: Text(l10n.confirmAndSendReport),
         ),

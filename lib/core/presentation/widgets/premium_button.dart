@@ -29,7 +29,7 @@ class PremiumButton extends StatelessWidget {
           onPressed: isLoading ? null : onTap,
           style: ElevatedButton.styleFrom(
             backgroundColor: theme.colorScheme.primary,
-            foregroundColor: theme.colorScheme.onSurface,
+            foregroundColor: Colors.white, // Ensure white text on primary color
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(48),
             ),
@@ -41,7 +41,7 @@ class PremiumButton extends StatelessWidget {
                   height: 24,
                   width: 24,
                   child: CircularProgressIndicator(
-                    color: theme.colorScheme.onSurface,
+                    color: Colors.white,
                     strokeWidth: 2,
                   ),
                 )
@@ -53,12 +53,12 @@ class PremiumButton extends StatelessWidget {
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
+                        color: Colors.white,
                       ),
                     ),
                     if (icon != null) ...[
                       const SizedBox(width: AppSpacing.sm),
-                      Icon(icon, size: 20),
+                      Icon(icon, size: 20, color: Colors.white),
                     ],
                   ],
                 ),

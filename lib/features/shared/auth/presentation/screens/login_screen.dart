@@ -8,12 +8,16 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
+
 import '../../../../../core/presentation/widgets/background_widget.dart';
 import '../../../../../core/presentation/widgets/premium_button.dart';
 import '../../../../../core/presentation/widgets/premium_text_field.dart';
 import '../../domain/entities/user_entity.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
+import '../../../../../config/theme/theme_controller.dart';
+import '../../../../../config/settings/settings_controller.dart';
+import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -50,12 +54,17 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleLogin() async {
+    debugPrint('Login button pressed');
     if (!(_formKey.currentState?.validate() ?? false)) {
+      debugPrint('Form validation failed');
       _animC.forward(from: 0);
       return;
     }
     FocusScope.of(context).unfocus();
 
+    debugPrint(
+      'Form valid, attempting login with ID: ${_idController.text}, Role: $_selectedRole',
+    );
     context.read<AuthCubit>().login(
       id: _idController.text.trim(),
       password: _passwordController.text.trim(),
@@ -81,40 +90,58 @@ class _LoginScreenState extends State<LoginScreen>
       },
       builder: (context, state) {
         final isLoading = state is AuthLoading;
+        final theme = Theme.of(context);
 
-        return Stack(
-          children: [
-            const BackgroundWidget(),
-            GestureDetector(
-              onTap: () => FocusScope.of(context).unfocus(),
-              child: Scaffold(
-                backgroundColor: Colors.transparent,
-                resizeToAvoidBottomInset: true,
-                body: SafeArea(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(AppSpacing.xl),
-                      physics: AlwaysScrollableScrollPhysics(),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildHeader(),
-                            const SizedBox(height: 20),
-                            // Role Selection Row
-                            _buildRoleSelectionRow(),
-                            const SizedBox(height: 18),
-                            _buildGlassCard(isLoading),
-                          ],
+        return Theme(
+          data: theme,
+          child: Stack(
+            children: [
+              const BackgroundWidget(),
+              GestureDetector(
+                onTap: () => FocusScope.of(context).unfocus(),
+                child: Scaffold(
+                  backgroundColor: Colors.transparent,
+                  resizeToAvoidBottomInset: true,
+                  body: SafeArea(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        physics: AlwaysScrollableScrollPhysics(),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildHeader(),
+                              const SizedBox(height: 20),
+                              // Role Selection Row
+                              _buildRoleSelectionRow(),
+                              const SizedBox(height: 18),
+                              _buildGlassCard(isLoading),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                    child: _buildTopControls(),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -122,59 +149,78 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildHeader() {
     final theme = Theme.of(context);
+
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: Image.asset(
-            'assets/images/msaratwasel_services.png',
-            width: 80,
-            height: 80,
-            fit: BoxFit.contain,
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/icon 4.png',
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'واصل',
-          style: theme.textTheme.displaySmall?.copyWith(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
-            color: theme.colorScheme.onSurface,
-            height: 1.1,
-          ),
+        const SizedBox(height: AppSpacing.md),
+        Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context)!;
+            return Text(
+              l10n.appTitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+                height: 1.2,
+              ),
+            );
+          },
         ),
       ],
-    ).animate().fadeIn().scale();
+    ).animate().fadeIn().scale(duration: 400.ms, curve: Curves.easeOutBack);
   }
 
   Widget _buildRoleSelectionRow() {
     return Container(
-      height: 90,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-      child: Row(
-        children: UserRole.values.map((role) {
-          final isSelected = role == _selectedRole;
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-              child: _RoleItem(
-                role: role,
-                isSelected: isSelected,
-                onTap: () {
-                  setState(() {
-                    _selectedRole = role;
-                  });
-                },
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0);
+          height: 115, // Fixed height sufficient for 2 lines
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child: Row(
+            crossAxisAlignment:
+                CrossAxisAlignment.stretch, // Force all items to be same height
+            children: UserRole.values.map((role) {
+              final isSelected = role == _selectedRole;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: _RoleItem(
+                    role: role,
+                    isSelected: isSelected,
+                    onTap: () {
+                      setState(() {
+                        _selectedRole = role;
+                      });
+                    },
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        )
+        .animate()
+        .fadeIn(delay: 150.ms)
+        .slideY(begin: 0.3, end: 0, curve: Curves.easeOut);
   }
 
   Widget _buildGlassCard(bool isLoading) {
@@ -182,76 +228,86 @@ class _LoginScreenState extends State<LoginScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppSpacing.xxl),
+      borderRadius: BorderRadius.circular(32),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
         child: Container(
           decoration: BoxDecoration(
             color: isDark
-                ? theme.colorScheme.surface.withValues(alpha: 0.4)
-                : theme.shadowColor.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(AppSpacing.xxl),
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(32),
             border: Border.all(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
+              color: Colors.white.withValues(alpha: 0.2),
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: theme.shadowColor.withValues(alpha: 0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
             ],
           ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.xxl,
-          ),
+          padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildTitle(),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: 32),
               PremiumTextField(
                 controller: _idController,
-                label: 'الرقم المدني',
+                label: AppLocalizations.of(context)!.civilId,
                 icon: PhosphorIconsRegular.identificationCard,
                 keyboardType: TextInputType.number,
-                validator: (v) =>
-                    v?.isNotEmpty == true ? null : 'الرجاء إدخال الرقم المدني',
-              ).animate().fadeIn(delay: 150.ms).scale(),
-              const SizedBox(height: AppSpacing.lg),
+                fillColor: isDark
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.05),
+                validator: (v) => v?.isNotEmpty == true
+                    ? null
+                    : AppLocalizations.of(context)!.pleaseEnterCivilId,
+              ).animate().fadeIn(delay: 200.ms).moveY(begin: 20, end: 0),
+              const SizedBox(height: 16),
               PremiumTextField(
                 controller: _passwordController,
-                label: 'كلمة المرور',
+                label: AppLocalizations.of(context)!.password,
                 icon: PhosphorIconsRegular.lock,
                 keyboardType: TextInputType.visiblePassword,
                 isPassword: true,
-                validator: (v) =>
-                    v?.isNotEmpty == true ? null : 'الرجاء إدخال كلمة المرور',
-              ).animate().fadeIn(delay: 250.ms).scale(),
-              const SizedBox(height: AppSpacing.sm),
+                fillColor: isDark
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.05),
+                validator: (v) => v?.isNotEmpty == true
+                    ? null
+                    : AppLocalizations.of(context)!.pleaseEnterPassword,
+              ).animate().fadeIn(delay: 300.ms).moveY(begin: 20, end: 0),
+              const SizedBox(height: 8),
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: TextButton(
                   onPressed: () {
                     context.push(AppRoutes.resetPassword);
                   },
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.colorScheme.tertiary,
+                  ),
                   child: Text(
-                    'نسيت كلمة المرور؟',
+                    AppLocalizations.of(context)!.forgotPassword,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.tertiary,
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               PremiumButton(
-                text: 'تسجيل الدخول',
+                text: AppLocalizations.of(context)!.login,
                 onTap: _handleLogin,
                 isLoading: isLoading,
                 icon: Icons.arrow_forward_rounded,
-              ),
+              ).animate().fadeIn(delay: 400.ms).scale(),
             ],
           ),
         ),
@@ -261,32 +317,118 @@ class _LoginScreenState extends State<LoginScreen>
 
   Widget _buildTitle() {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
+    String getRoleLoginText(UserRole role) {
+      switch (role) {
+        case UserRole.driver:
+          return l10n.driverLogin;
+        case UserRole.busAssistant:
+          return l10n.assistantLogin;
+        case UserRole.fieldSupervisor:
+          return l10n.supervisorLogin;
+        case UserRole.teacher:
+          return l10n.teacherLogin;
+      }
+    }
+
     return Column(
       children: [
         Text(
-          'مرحباً بعودتك',
+          l10n.welcomeBack,
           textAlign: TextAlign.center,
-          style: theme.textTheme.headlineSmall?.copyWith(
+          style: theme.textTheme.headlineLarge?.copyWith(
             fontSize: 26,
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          'سجل الدخول للمتابعة كـ ${_selectedRole.displayName}',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontSize: 14,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            getRoleLoginText(_selectedRole),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.primary,
+            ),
           ),
         ),
       ],
     ).animate().fadeIn().moveY(begin: 10, end: 0);
   }
-}
+  /* ==================== Widgets ==================== */
 
-/* ==================== Widgets ==================== */
+  Widget _buildTopControls() {
+    final themeController = ThemeProvider.of(context);
+    final settingsController = SettingsProvider.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // Theme Toggle
+        _buildCircularButton(
+          onTap: () {
+            final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
+            themeController.setMode(newMode);
+          },
+          icon: isDark ? PhosphorIconsRegular.sun : PhosphorIconsRegular.moon,
+        ),
+        // Language Toggle
+        _buildCircularButton(
+          onTap: () {
+            final currentLocale = Localizations.localeOf(context);
+            final newLocale = currentLocale.languageCode == 'ar'
+                ? const Locale('en')
+                : const Locale('ar');
+            settingsController.setLocale(newLocale);
+          },
+          icon: PhosphorIconsRegular.globe,
+        ),
+      ],
+    ).animate().fadeIn(delay: 300.ms).slideY(begin: -1, end: 0);
+  }
+
+  Widget _buildCircularButton({
+    required VoidCallback onTap,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(50),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.05),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Icon(icon, color: theme.colorScheme.onSurface, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _RoleItem extends StatelessWidget {
   final UserRole role;
@@ -307,49 +449,67 @@ class _RoleItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xs,
-          vertical: AppSpacing.sm,
-        ),
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.fastOutSlowIn,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
               ? theme.colorScheme.primary
               : isDark
-              ? theme.colorScheme.surface.withValues(alpha: 0.7)
-              : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppSpacing.md),
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.white.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? theme.colorScheme.secondary.withValues(alpha: 0.8)
-                : theme.colorScheme.onSurface.withValues(alpha: 0.1),
-            width: isSelected ? 1.5 : 0.5,
+            color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+            width: 1.5,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
                     color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
-                ]
-              : [],
+                ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(_getRoleIcon(role), color: Colors.white, size: 24),
-            const SizedBox(height: AppSpacing.xs),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : theme.colorScheme.surface.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _getRoleIcon(role),
+                color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(
-              role.displayName,
+              _getRoleName(context, role),
               textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+              overflow: TextOverflow.visible,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.white,
+                color: isSelected
+                    ? Colors.white
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.8),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 fontSize: 10,
+                height: 1.1,
               ),
             ),
           ],
@@ -368,6 +528,20 @@ class _RoleItem extends StatelessWidget {
         return PhosphorIconsRegular.userList;
       case UserRole.teacher:
         return PhosphorIconsRegular.chalkboardTeacher;
+    }
+  }
+
+  String _getRoleName(BuildContext context, UserRole role) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (role) {
+      case UserRole.driver:
+        return l10n.roleDriver;
+      case UserRole.busAssistant:
+        return l10n.roleBusAssistant;
+      case UserRole.fieldSupervisor:
+        return l10n.roleFieldSupervisor;
+      case UserRole.teacher:
+        return l10n.roleTeacher;
     }
   }
 }

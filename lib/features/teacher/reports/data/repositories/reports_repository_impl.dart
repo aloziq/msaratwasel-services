@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import '../../domain/entities/report_entity.dart';
 import '../../domain/repositories/reports_repository.dart';
@@ -18,6 +19,16 @@ class ReportsRepositoryImpl implements ReportsRepository {
         );
       });
 
+      final studentReports = List.generate(30, (index) {
+        final present = 40 + (index % 10);
+        final absent = index % 5;
+        return StudentReportEntity(
+          name: 'Student ${index + 1}',
+          presentCount: present,
+          absentCount: absent,
+        );
+      });
+
       return Right(
         AttendanceStatsEntity(
           totalStudents: 120,
@@ -25,9 +36,12 @@ class ReportsRepositoryImpl implements ReportsRepository {
           absentToday: 15,
           averageAttendance: 88.5,
           weeklyTrend: weeklyTrend,
+          studentReports: studentReports,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('ReportsRepository.getAttendanceStats failed: $e');
+      debugPrint('Stack trace: $stackTrace');
       return Left(e.toString());
     }
   }

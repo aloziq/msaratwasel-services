@@ -1,3 +1,4 @@
+import 'package:injectable/injectable.dart';
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 
@@ -5,6 +6,7 @@ import '../../../../../core/error/failure.dart';
 import '../../../../../core/usecases/usecase.dart';
 import '../repositories/auth_repository.dart';
 
+@lazySingleton
 class ResetPasswordUseCase implements UseCase<void, ResetPasswordParams> {
   final AuthRepository repository;
 

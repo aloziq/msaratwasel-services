@@ -467,7 +467,7 @@ abstract class AppLocalizations {
   /// No description provided for @attachPhotoOptional.
   ///
   /// In en, this message translates to:
-  /// **'Attach photo (optional)'**
+  /// **'Attach Photo (Optional)'**
   String get attachPhotoOptional;
 
   /// No description provided for @reportSentSuccessfully.
@@ -649,6 +649,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Appearance'**
   String get appearance;
+
+  /// No description provided for @systemDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get systemDefault;
 
   /// No description provided for @activitiesSubtitle.
   ///
@@ -1261,6 +1267,1452 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Updated'**
   String get updated;
+
+  /// No description provided for @driversAndSupervisors.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers & Supervisors'**
+  String get driversAndSupervisors;
+
+  /// No description provided for @drivers.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers'**
+  String get drivers;
+
+  /// No description provided for @supervisors.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisors'**
+  String get supervisors;
+
+  /// No description provided for @bus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus'**
+  String get bus;
+
+  /// No description provided for @fieldSupervisor.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Supervisor'**
+  String get fieldSupervisor;
+
+  /// No description provided for @supervisorRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Supervisor'**
+  String get supervisorRole;
+
+  /// No description provided for @incidentsAndEmergencies.
+  ///
+  /// In en, this message translates to:
+  /// **'Incidents & Emergencies'**
+  String get incidentsAndEmergencies;
+
+  /// No description provided for @fieldInspection.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Inspection'**
+  String get fieldInspection;
+
+  /// No description provided for @registerDelays.
+  ///
+  /// In en, this message translates to:
+  /// **'Register Delays'**
+  String get registerDelays;
+
+  /// No description provided for @dailyTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Trips'**
+  String get dailyTrips;
+
+  /// No description provided for @selectBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Bus'**
+  String get selectBus;
+
+  /// No description provided for @inspectionChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspection Checklist'**
+  String get inspectionChecklist;
+
+  /// No description provided for @takePhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photos'**
+  String get takePhotos;
+
+  /// No description provided for @inspectionSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspection Saved Successfully'**
+  String get inspectionSaved;
+
+  /// No description provided for @saveInspection.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Inspection'**
+  String get saveInspection;
+
+  /// No description provided for @completedTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Trips'**
+  String get completedTrips;
+
+  /// No description provided for @issues.
+  ///
+  /// In en, this message translates to:
+  /// **'Issues'**
+  String get issues;
+
+  /// No description provided for @delays.
+  ///
+  /// In en, this message translates to:
+  /// **'Delays'**
+  String get delays;
+
+  /// No description provided for @violations.
+  ///
+  /// In en, this message translates to:
+  /// **'Violations'**
+  String get violations;
+
+  /// No description provided for @reportCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Categories'**
+  String get reportCategories;
+
+  /// No description provided for @viewAllTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Trips'**
+  String get viewAllTrips;
+
+  /// No description provided for @viewAllIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Issues'**
+  String get viewAllIssues;
+
+  /// No description provided for @viewAllDelays.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Delays'**
+  String get viewAllDelays;
+
+  /// No description provided for @viewAllViolations.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Violations'**
+  String get viewAllViolations;
+
+  /// No description provided for @fieldTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Trips'**
+  String get fieldTrips;
+
+  /// No description provided for @viewFieldTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'View Field Trips'**
+  String get viewFieldTrips;
+
+  /// No description provided for @todayTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Trips'**
+  String get todayTrips;
+
+  /// No description provided for @trips.
+  ///
+  /// In en, this message translates to:
+  /// **'Trips'**
+  String get trips;
+
+  /// No description provided for @addNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Note'**
+  String get addNote;
+
+  /// No description provided for @viewOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'View on Map'**
+  String get viewOnMap;
+
+  /// No description provided for @trafficJam.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic Jam'**
+  String get trafficJam;
+
+  /// No description provided for @technicalIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Issue'**
+  String get technicalIssue;
+
+  /// No description provided for @studentLate.
+  ///
+  /// In en, this message translates to:
+  /// **'Student Late'**
+  String get studentLate;
+
+  /// No description provided for @other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get other;
+
+  /// No description provided for @delaySavedAndReported.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay Saved and Reported'**
+  String get delaySavedAndReported;
+
+  /// No description provided for @saveAndSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Save and Send'**
+  String get saveAndSend;
+
+  /// No description provided for @upcomingTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Trips'**
+  String get upcomingTrips;
+
+  /// No description provided for @driver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get driver;
+
+  /// No description provided for @communication.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication'**
+  String get communication;
+
+  /// No description provided for @activeBuses.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Buses'**
+  String get activeBuses;
+
+  /// No description provided for @activeDrivers.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Drivers'**
+  String get activeDrivers;
+
+  /// No description provided for @activeTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Trips'**
+  String get activeTrips;
+
+  /// No description provided for @activeEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Emergency'**
+  String get activeEmergency;
+
+  /// No description provided for @respond.
+  ///
+  /// In en, this message translates to:
+  /// **'Respond'**
+  String get respond;
+
+  /// No description provided for @allIncidents.
+  ///
+  /// In en, this message translates to:
+  /// **'All Incidents'**
+  String get allIncidents;
+
+  /// No description provided for @newIncident.
+  ///
+  /// In en, this message translates to:
+  /// **'New Incident'**
+  String get newIncident;
+
+  /// No description provided for @incidentDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident Description'**
+  String get incidentDescription;
+
+  /// No description provided for @attachPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach Photo'**
+  String get attachPhoto;
+
+  /// No description provided for @incidentReported.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident Reported Successfully'**
+  String get incidentReported;
+
+  /// No description provided for @pendingInspections.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Inspections'**
+  String get pendingInspections;
+
+  /// No description provided for @busesNeedInspection.
+  ///
+  /// In en, this message translates to:
+  /// **'Buses Need Inspection'**
+  String get busesNeedInspection;
+
+  /// No description provided for @recentInspections.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Inspections'**
+  String get recentInspections;
+
+  /// No description provided for @newInspection.
+  ///
+  /// In en, this message translates to:
+  /// **'New Inspection'**
+  String get newInspection;
+
+  /// No description provided for @totalBuses.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Buses'**
+  String get totalBuses;
+
+  /// No description provided for @stoppedBuses.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped Buses'**
+  String get stoppedBuses;
+
+  /// No description provided for @online.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get online;
+
+  /// No description provided for @offline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get offline;
+
+  /// No description provided for @broadcastMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Broadcast Message'**
+  String get broadcastMessage;
+
+  /// No description provided for @sendToAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to All'**
+  String get sendToAll;
+
+  /// No description provided for @recentChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Chats'**
+  String get recentChats;
+
+  /// No description provided for @studentDelays.
+  ///
+  /// In en, this message translates to:
+  /// **'Student Delays'**
+  String get studentDelays;
+
+  /// No description provided for @busDelays.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus Delays'**
+  String get busDelays;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Sent Successfully'**
+  String get reportSent;
+
+  /// No description provided for @registerNewDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Register New Delay'**
+  String get registerNewDelay;
+
+  /// No description provided for @student.
+  ///
+  /// In en, this message translates to:
+  /// **'Student'**
+  String get student;
+
+  /// No description provided for @selectStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Student'**
+  String get selectStudent;
+
+  /// No description provided for @delayDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay Duration (min)'**
+  String get delayDuration;
+
+  /// No description provided for @delayReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay Reason'**
+  String get delayReason;
+
+  /// No description provided for @present.
+  ///
+  /// In en, this message translates to:
+  /// **'Present'**
+  String get present;
+
+  /// No description provided for @finishAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish Attendance'**
+  String get finishAttendance;
+
+  /// No description provided for @attendanceSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance Summary'**
+  String get attendanceSummary;
+
+  /// No description provided for @confirmSendReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want to finish attendance and send the report?'**
+  String get confirmSendReport;
+
+  /// No description provided for @total.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get total;
+
+  /// No description provided for @unmarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmarked'**
+  String get unmarked;
+
+  /// No description provided for @unmarkedStudentsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'There are {count} students whose status is unmarked'**
+  String unmarkedStudentsWarning(int count);
+
+  /// No description provided for @confirmSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Send'**
+  String get confirmSend;
+
+  /// No description provided for @dailyReportSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily report sent successfully'**
+  String get dailyReportSentSuccess;
+
+  /// No description provided for @classPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'4th Grade - A'**
+  String get classPlaceholder;
+
+  /// No description provided for @parentGuardian.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent/Guardian'**
+  String get parentGuardian;
+
+  /// No description provided for @whatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get whatsapp;
+
+  /// No description provided for @sosAlertsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident Report'**
+  String get sosAlertsTitle;
+
+  /// No description provided for @sosAlertsStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get sosAlertsStatusPending;
+
+  /// No description provided for @sosAlertsStatusResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get sosAlertsStatusResolved;
+
+  /// No description provided for @sosAlertsStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get sosAlertsStatusActive;
+
+  /// No description provided for @sosAlertsTimeAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} ago'**
+  String sosAlertsTimeAgo(String time);
+
+  /// No description provided for @login.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get login;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome Back'**
+  String get welcomeBack;
+
+  /// No description provided for @civilId.
+  ///
+  /// In en, this message translates to:
+  /// **'Civil ID'**
+  String get civilId;
+
+  /// No description provided for @password.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get password;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password?'**
+  String get forgotPassword;
+
+  /// No description provided for @enterCivilId.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter Civil ID'**
+  String get enterCivilId;
+
+  /// No description provided for @enterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter password'**
+  String get enterPassword;
+
+  /// No description provided for @unexpectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred'**
+  String get unexpectedError;
+
+  /// No description provided for @selectCorrectRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the correct role to login'**
+  String get selectCorrectRole;
+
+  /// No description provided for @resetPasswordSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset link sent successfully!'**
+  String get resetPasswordSuccess;
+
+  /// No description provided for @maintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get maintenance;
+
+  /// No description provided for @fuelRefill.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel Refill'**
+  String get fuelRefill;
+
+  /// No description provided for @maintenanceRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance Request'**
+  String get maintenanceRequest;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get statusActive;
+
+  /// No description provided for @statusStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get statusStopped;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get statusScheduled;
+
+  /// No description provided for @statusMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get statusMaintenance;
+
+  /// No description provided for @statusExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get statusExcellent;
+
+  /// No description provided for @statusGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get statusGood;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @typeTechnical.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical'**
+  String get typeTechnical;
+
+  /// No description provided for @typeBehavioral.
+  ///
+  /// In en, this message translates to:
+  /// **'Behavioral'**
+  String get typeBehavioral;
+
+  /// No description provided for @typeHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get typeHealth;
+
+  /// No description provided for @typeTraffic.
+  ///
+  /// In en, this message translates to:
+  /// **'Traffic'**
+  String get typeTraffic;
+
+  /// No description provided for @typeSOS.
+  ///
+  /// In en, this message translates to:
+  /// **'SOS'**
+  String get typeSOS;
+
+  /// No description provided for @roleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Administration'**
+  String get roleAdmin;
+
+  /// No description provided for @roleDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get roleDriver;
+
+  /// No description provided for @late.
+  ///
+  /// In en, this message translates to:
+  /// **'Late'**
+  String get late;
+
+  /// No description provided for @myClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'My Classes'**
+  String get myClasses;
+
+  /// No description provided for @busNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus {number}'**
+  String busNumber(int number);
+
+  /// No description provided for @call.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get call;
+
+  /// No description provided for @sendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Message'**
+  String get sendMessage;
+
+  /// No description provided for @details.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get details;
+
+  /// No description provided for @notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notes;
+
+  /// No description provided for @date.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get date;
+
+  /// No description provided for @time.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get time;
+
+  /// No description provided for @status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get status;
+
+  /// No description provided for @type.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get type;
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actions;
+
+  /// No description provided for @todayAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Attendance'**
+  String get todayAttendance;
+
+  /// No description provided for @classAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Class Attendance'**
+  String get classAttendance;
+
+  /// No description provided for @takeAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Attendance'**
+  String get takeAttendance;
+
+  /// No description provided for @markPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Present'**
+  String get markPresent;
+
+  /// No description provided for @markAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Absent'**
+  String get markAbsent;
+
+  /// No description provided for @noDataFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No data found'**
+  String get noDataFound;
+
+  /// No description provided for @loadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading data...'**
+  String get loadingData;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filter;
+
+  /// No description provided for @sort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sort;
+
+  /// No description provided for @morning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get morning;
+
+  /// No description provided for @afternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon'**
+  String get afternoon;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @thisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This Week'**
+  String get thisWeek;
+
+  /// No description provided for @thisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This Month'**
+  String get thisMonth;
+
+  /// No description provided for @errorOccurred.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred'**
+  String get errorOccurred;
+
+  /// No description provided for @connectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection error'**
+  String get connectionError;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @noInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection'**
+  String get noInternet;
+
+  /// No description provided for @successMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation successful'**
+  String get successMessage;
+
+  /// No description provided for @savedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved successfully'**
+  String get savedSuccessfully;
+
+  /// No description provided for @deletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted successfully'**
+  String get deletedSuccessfully;
+
+  /// No description provided for @sentSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent successfully'**
+  String get sentSuccessfully;
+
+  /// No description provided for @navigation.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigation'**
+  String get navigation;
+
+  /// No description provided for @endTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'End Trip'**
+  String get endTrip;
+
+  /// No description provided for @roleBusAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus Assistant'**
+  String get roleBusAssistant;
+
+  /// No description provided for @roleFieldSupervisor.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Supervisor'**
+  String get roleFieldSupervisor;
+
+  /// No description provided for @roleTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'Teacher'**
+  String get roleTeacher;
+
+  /// No description provided for @driverLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Login'**
+  String get driverLogin;
+
+  /// No description provided for @assistantLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant Login'**
+  String get assistantLogin;
+
+  /// No description provided for @supervisorLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor Login'**
+  String get supervisorLogin;
+
+  /// No description provided for @teacherLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Teacher Login'**
+  String get teacherLogin;
+
+  /// No description provided for @maintenanceLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance Log'**
+  String get maintenanceLog;
+
+  /// No description provided for @theDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get theDriver;
+
+  /// No description provided for @driversGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers Group'**
+  String get driversGroup;
+
+  /// No description provided for @dailyRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Record'**
+  String get dailyRecord;
+
+  /// No description provided for @presentStudents.
+  ///
+  /// In en, this message translates to:
+  /// **'Present Students'**
+  String get presentStudents;
+
+  /// No description provided for @parentPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get parentPhone;
+
+  /// No description provided for @parentGuardianLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent/Guardian'**
+  String get parentGuardianLabel;
+
+  /// No description provided for @students.
+  ///
+  /// In en, this message translates to:
+  /// **'Students'**
+  String get students;
+
+  /// No description provided for @sos.
+  ///
+  /// In en, this message translates to:
+  /// **'SOS'**
+  String get sos;
+
+  /// No description provided for @camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get camera;
+
+  /// No description provided for @gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get gallery;
+
+  /// No description provided for @amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get amount;
+
+  /// No description provided for @boarded.
+  ///
+  /// In en, this message translates to:
+  /// **'Boarded'**
+  String get boarded;
+
+  /// No description provided for @pleaseEnterCivilId.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter civil ID'**
+  String get pleaseEnterCivilId;
+
+  /// No description provided for @pleaseEnterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter password'**
+  String get pleaseEnterPassword;
+
+  /// No description provided for @readyToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to Start'**
+  String get readyToStart;
+
+  /// No description provided for @departureTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Departure'**
+  String get departureTime;
+
+  /// No description provided for @startTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Trip'**
+  String get startTrip;
+
+  /// No description provided for @endTripTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'End Trip'**
+  String get endTripTitle;
+
+  /// No description provided for @confirmEndTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to end the trip?'**
+  String get confirmEndTrip;
+
+  /// No description provided for @tripEndedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip ended successfully!'**
+  String get tripEndedSuccess;
+
+  /// No description provided for @scanFrontCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Front Code'**
+  String get scanFrontCode;
+
+  /// No description provided for @scanBackCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Back Code'**
+  String get scanBackCode;
+
+  /// No description provided for @scanFrontDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the QR code located at the front of the bus.'**
+  String get scanFrontDesc;
+
+  /// No description provided for @scanBackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the QR code located at the back of the bus.'**
+  String get scanBackDesc;
+
+  /// No description provided for @recordVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Video'**
+  String get recordVideo;
+
+  /// No description provided for @recordVideoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a video walking from front to back to ensure bus is empty.'**
+  String get recordVideoDesc;
+
+  /// No description provided for @nextStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Stop'**
+  String get nextStop;
+
+  /// No description provided for @arriveAtStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrive at Student'**
+  String get arriveAtStudent;
+
+  /// No description provided for @nextDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Destination'**
+  String get nextDestination;
+
+  /// No description provided for @probableAbsence.
+  ///
+  /// In en, this message translates to:
+  /// **'Probable Absence'**
+  String get probableAbsence;
+
+  /// No description provided for @fuelRefillTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel Refill'**
+  String get fuelRefillTitle;
+
+  /// No description provided for @attachReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach Receipt Photo'**
+  String get attachReceipt;
+
+  /// No description provided for @odometerReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Odometer Reading (km)'**
+  String get odometerReading;
+
+  /// No description provided for @recentLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Logs'**
+  String get recentLogs;
+
+  /// No description provided for @fuelEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel Entry'**
+  String get fuelEntry;
+
+  /// No description provided for @requestMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Maintenance'**
+  String get requestMaintenance;
+
+  /// No description provided for @maintenanceRequestSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance request submitted successfully'**
+  String get maintenanceRequestSubmitted;
+
+  /// No description provided for @reRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-record'**
+  String get reRecord;
+
+  /// No description provided for @videoRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Recorded'**
+  String get videoRecorded;
+
+  /// No description provided for @busEmptyCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus Empty Check'**
+  String get busEmptyCheck;
+
+  /// No description provided for @maintenanceRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance Request'**
+  String get maintenanceRequestTitle;
+
+  /// No description provided for @estimatedCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Cost'**
+  String get estimatedCost;
+
+  /// No description provided for @requestSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent successfully'**
+  String get requestSentSuccess;
+
+  /// No description provided for @dataSavedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Data saved successfully'**
+  String get dataSavedSuccess;
+
+  /// No description provided for @pleaseAttachPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Please attach a photo'**
+  String get pleaseAttachPhoto;
+
+  /// No description provided for @enterValidNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter valid number'**
+  String get enterValidNumber;
+
+  /// No description provided for @enterAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter amount'**
+  String get enterAmount;
+
+  /// No description provided for @enterOdometer.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter odometer reading'**
+  String get enterOdometer;
+
+  /// No description provided for @describeProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the problem'**
+  String get describeProblem;
+
+  /// No description provided for @submitRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Request'**
+  String get submitRequest;
+
+  /// No description provided for @studentStatistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Student Statistics'**
+  String get studentStatistics;
+
+  /// No description provided for @noResultsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found'**
+  String get noResultsFound;
+
+  /// No description provided for @searchStudentPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a student...'**
+  String get searchStudentPlaceholder;
+
+  /// No description provided for @fontSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Font Size'**
+  String get fontSize;
+
+  /// No description provided for @fontSizeSmall.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get fontSizeSmall;
+
+  /// No description provided for @fontSizeMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get fontSizeMedium;
+
+  /// No description provided for @fontSizeLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get fontSizeLarge;
+
+  /// No description provided for @incorrectPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect password'**
+  String get incorrectPassword;
+
+  /// No description provided for @civilIdNotRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'This civil ID is not registered'**
+  String get civilIdNotRegistered;
+
+  /// No description provided for @civilIdRegisteredAs.
+  ///
+  /// In en, this message translates to:
+  /// **'This civil ID is registered as {role}'**
+  String civilIdRegisteredAs(String role);
+
+  /// No description provided for @loginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed: Invalid credentials'**
+  String get loginFailed;
+
+  /// No description provided for @guest.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest'**
+  String get guest;
+
+  /// No description provided for @clearFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Filter'**
+  String get clearFilter;
+
+  /// No description provided for @searchByDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by Date'**
+  String get searchByDate;
+
+  /// No description provided for @noRecordsForDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No records for this date'**
+  String get noRecordsForDate;
+
+  /// No description provided for @noStudentsInList.
+  ///
+  /// In en, this message translates to:
+  /// **'No students in this list'**
+  String get noStudentsInList;
+
+  /// No description provided for @showAllRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'Show All'**
+  String get showAllRecords;
+
+  /// No description provided for @theTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'Teacher'**
+  String get theTeacher;
+
+  /// No description provided for @dailyRecordCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Daily Records'**
+  String dailyRecordCount(int count);
+
+  /// No description provided for @parentNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent: {name}'**
+  String parentNameLabel(String name);
 }
 
 class _AppLocalizationsDelegate

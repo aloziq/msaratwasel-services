@@ -1,3 +1,4 @@
+import 'package:injectable/injectable.dart';
 import '../models/classroom_model.dart';
 
 abstract class TeacherLocalDataSource {
@@ -5,6 +6,7 @@ abstract class TeacherLocalDataSource {
   Future<List<ClassroomModel>> getTeacherClassrooms();
 }
 
+@LazySingleton(as: TeacherLocalDataSource)
 class TeacherLocalDataSourceImpl implements TeacherLocalDataSource {
   // Mock Data
   final List<ClassroomModel> _classes = [

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
-import 'package:msaratwasel_services/features/shared/presentation/widgets/app_sliver_header.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
@@ -168,7 +167,7 @@ class _SectionTitle extends StatelessWidget {
     final theme = Theme.of(context);
     return Text(
       title,
-      style: GoogleFonts.cairo(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
         color: theme.colorScheme.primary,
@@ -189,7 +188,7 @@ class _SubTitle extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
       child: Text(
         title,
-        style: GoogleFonts.cairo(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: isDark ? Colors.white : Colors.black87,
@@ -224,7 +223,7 @@ class _BulletPoint extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.cairo(
+              style: TextStyle(
                 fontSize: 14,
                 color: theme.colorScheme.onSurface,
                 height: 1.6,
@@ -268,16 +267,16 @@ class _QuestionAnswer extends StatelessWidget {
         children: [
           Text(
             question,
-            style: GoogleFonts.cairo(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: isDark ? BrandColors.secondary : BrandColors.primary,
+              color: isDark ? AppColors.secondary : AppColors.primary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             answer,
-            style: GoogleFonts.cairo(
+            style: TextStyle(
               fontSize: 14,
               color: isDark ? Colors.white70 : Colors.black87,
               height: 1.6,

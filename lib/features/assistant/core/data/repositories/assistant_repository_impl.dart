@@ -36,7 +36,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       parentPhone: '97777777',
       status: BusStudentStatus.atSchool,
       photoUrl:
-          'https://images.unsplash.com/photo-1544717297-fa95b3ee51f3?w=400',
+          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
     ),
     const BusStudentEntity(
       id: 's4',

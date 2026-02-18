@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-import 'package:msaratwasel_services/config/theme/brand_colors.dart';
-import 'package:msaratwasel_services/features/shared/presentation/widgets/app_sliver_header.dart';
+import 'package:msaratwasel_services/config/theme/app_colors.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -34,7 +33,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Integrate with AuthRepository.changePassword when available
+    // Note: Integrate with AuthRepository.changePassword when available
     // Simulate API call
     await Future.delayed(const Duration(seconds: 2));
 
@@ -45,7 +44,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       SnackBar(
         content: Text(
           AppLocalizations.of(context)!.passwordUpdatedSuccess,
-          style: GoogleFonts.cairo(color: Colors.white),
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.green,
       ),
@@ -114,7 +113,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: BrandColors.primary,
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -132,7 +131,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               )
                             : Text(
                                 l10n.saveChanges,
-                                style: GoogleFonts.cairo(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -177,15 +176,13 @@ class _PasswordFieldState extends State<_PasswordField> {
       controller: widget.controller,
       obscureText: _obscure,
       validator: widget.validator,
-      style: GoogleFonts.cairo(
+      style: TextStyle(
         fontWeight: FontWeight.w600,
         color: theme.colorScheme.onSurface,
       ),
       decoration: InputDecoration(
         labelText: widget.label,
-        labelStyle: GoogleFonts.cairo(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+        labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
         filled: true,
         fillColor: widget.isDark
             ? Colors.white.withValues(alpha: 0.05)

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../core/presentation/widgets/main_shell.dart';
-
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
 import '../../features/shared/auth/presentation/cubit/auth_state.dart';
 import '../../features/shared/auth/presentation/screens/login_screen.dart';
@@ -35,7 +33,22 @@ import '../../features/assistant/core/presentation/cubit/bus_trip_cubit.dart';
 import '../../features/assistant/core/data/repositories/assistant_repository_impl.dart';
 import '../../features/shared/messages/presentation/screens/messages_screen.dart';
 import '../../features/shared/messages/presentation/screens/chats_list_screen.dart';
+import '../../features/field_supervisor/home/presentation/screens/supervisor_home_screen.dart';
+import '../../features/field_supervisor/reports/presentation/screens/reports_screen.dart'
+    as supervisor_reports;
+import '../../features/driver/home/presentation/screens/driver_home_screen.dart';
+import '../../features/driver/route/presentation/screens/route_navigation_screen.dart';
+import '../../features/driver/maintenance/presentation/screens/maintenance_entry_screen.dart';
+import '../../features/driver/maintenance/presentation/screens/fuel_refill_screen.dart';
+import '../../features/driver/maintenance/presentation/screens/maintenance_request_screen.dart';
+import '../../features/driver/trip/presentation/screens/end_trip_screen.dart';
 import 'app_routes.dart';
+import '../../features/field_supervisor/buses/presentation/screens/buses_list_screen.dart';
+import '../../features/field_supervisor/staff/presentation/screens/drivers_list_screen.dart';
+import '../../features/field_supervisor/incidents/presentation/screens/sos_alerts_screen.dart';
+import '../../features/field_supervisor/inspection/presentation/screens/field_inspection_screen.dart';
+import '../../features/field_supervisor/delays/presentation/screens/delays_screen.dart';
+import '../../features/field_supervisor/field_trips/presentation/screens/field_trips_screen.dart';
 
 /// Application router configuration using GoRouter.
 ///
@@ -181,6 +194,93 @@ class AppRouter {
             name: 'chats',
             builder: (context, state) => const ChatsListScreen(),
           ),
+
+          // Driver Routes
+          GoRoute(
+            path: AppRoutes.driverHome,
+            name: 'driverHome',
+            builder: (context, state) => const DriverHomeScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverRoute,
+            name: 'driverRoute',
+            builder: (context, state) => const RouteNavigationScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverMaintenance,
+            name: 'driverMaintenance',
+            builder: (context, state) => const MaintenanceEntryScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverFuel,
+            name: 'driverFuel',
+            builder: (context, state) => const FuelRefillScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverMaintenanceRequest,
+            name: 'driverMaintenanceRequest',
+            builder: (context, state) => const MaintenanceRequestScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverEndTrip,
+            name: 'driverEndTrip',
+            builder: (context, state) => const EndTripScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverStudents,
+            name: 'driverStudents',
+            builder: (context, state) => BlocProvider(
+              create: (context) =>
+                  BusTripCubit(repository: AssistantRepositoryImpl())
+                    ..loadTrip(),
+              child: const BusStudentsScreen(),
+            ),
+          ),
+        ],
+      ),
+
+      // Field Supervisor Routes
+      GoRoute(
+        path: AppRoutes.supervisorHome,
+        name: 'supervisorHome',
+        builder: (context, state) => const SupervisorHomeScreen(),
+        routes: [
+          GoRoute(
+            path: 'buses',
+            name: 'supervisorBuses',
+            builder: (context, state) => const BusesListScreen(),
+          ),
+          GoRoute(
+            path: 'drivers',
+            name: 'supervisorDrivers',
+            builder: (context, state) => const DriversListScreen(),
+          ),
+          GoRoute(
+            path: 'alerts',
+            name: 'supervisorAlerts',
+            builder: (context, state) => const SosAlertsScreen(),
+          ),
+          GoRoute(
+            path: 'inspection',
+            name: 'supervisorInspection',
+            builder: (context, state) => const FieldInspectionScreen(),
+          ),
+          GoRoute(
+            path: 'delays',
+            name: 'supervisorDelays',
+            builder: (context, state) => const DelaysScreen(),
+          ),
+          GoRoute(
+            path: 'trips',
+            name: 'supervisorTrips',
+            builder: (context, state) => const FieldTripsScreen(),
+          ),
+          GoRoute(
+            path: 'reports',
+            name: 'supervisorReports',
+            builder: (context, state) =>
+                const supervisor_reports.ReportsScreen(),
+          ),
         ],
       ),
     ],
@@ -203,8 +303,22 @@ class AppRouter {
     if (isAuthenticated && state.matchedLocation == AppRoutes.login) {
       if (authState.user.role == UserRole.busAssistant) {
         return AppRoutes.assistantHome;
+      } else if (authState.user.role == UserRole.driver) {
+        return AppRoutes.driverHome;
+      } else if (authState.user.role == UserRole.fieldSupervisor) {
+        return AppRoutes.supervisorHome;
       }
       return AppRoutes.teacherHome;
+    }
+
+    // Role-based route protection
+    if (isAuthenticated) {
+      // Prevent Field Supervisors from accessing Teacher Home
+      if (authState.user.role == UserRole.fieldSupervisor &&
+          (state.matchedLocation == AppRoutes.teacherHome ||
+              state.matchedLocation == '/')) {
+        return AppRoutes.supervisorHome;
+      }
     }
 
     return null; // No redirect needed

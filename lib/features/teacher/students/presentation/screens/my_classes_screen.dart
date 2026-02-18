@@ -1,13 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
+import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../../../teacher/domain/entities/classroom_entity.dart';
 import '../cubit/my_classes_cubit.dart';
 import '../cubit/my_classes_state.dart';
@@ -30,7 +31,7 @@ class _MyClassesScreenState extends State<MyClassesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: BlocBuilder<MyClassesCubit, MyClassesState>(
         builder: (context, state) {
           if (state is MyClassesLoading) {
@@ -38,30 +39,28 @@ class _MyClassesScreenState extends State<MyClassesScreen> {
           } else if (state is MyClassesError) {
             return Center(child: Text(state.message));
           } else if (state is MyClassesLoaded) {
+            final l10n = AppLocalizations.of(context)!;
             final classrooms = state.classrooms;
             return CustomScrollView(
               slivers: [
-                CupertinoSliverNavigationBar(
-                  leading: IconButton(
-                    icon: Icon(
-                      PhosphorIconsRegular.list,
-                      color: theme.colorScheme.onSurface,
-                      size: 32,
-                    ),
-                    onPressed: () {
-                      MainShell.of(context)?.openDrawer();
-                    },
-                  ),
-                  largeTitle: Text(
-                    'فصولي',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontFamily: theme.textTheme.titleLarge?.fontFamily,
+                AdaptiveSliverAppBar(
+                  title: l10n.myClasses,
+                  leading: Material(
+                    color: Colors.transparent,
+                    child: IconButton(
+                      icon: Icon(
+                        PhosphorIconsRegular.list,
+                        color: theme.colorScheme.onSurface,
+                        size: 32,
+                      ),
+                      onPressed: () {
+                        MainShell.of(context)?.openDrawer();
+                      },
                     ),
                   ),
-                  backgroundColor: Colors.transparent,
-                  border: null,
-                  stretch: true,
+                  backgroundColor: theme.scaffoldBackgroundColor.withValues(
+                    alpha: 0.9,
+                  ),
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.all(AppSpacing.lg),

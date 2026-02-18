@@ -1,7 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 import '../../domain/usecases/get_teacher_classroom_usecase.dart';
 import 'teacher_state.dart';
 
+@injectable
 class TeacherCubit extends Cubit<TeacherState> {
   final GetTeacherClassroomUseCase getTeacherClassroomUseCase;
 

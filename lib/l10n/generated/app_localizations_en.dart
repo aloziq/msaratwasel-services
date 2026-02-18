@@ -198,7 +198,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportDetailsPlaceholder => 'Write report details here...';
 
   @override
-  String get attachPhotoOptional => 'Attach photo (optional)';
+  String get attachPhotoOptional => 'Attach Photo (Optional)';
 
   @override
   String get reportSentSuccessfully => 'Report sent to management immediately';
@@ -296,6 +296,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appearance => 'Appearance';
+
+  @override
+  String get systemDefault => 'System';
 
   @override
   String get activitiesSubtitle => 'Latest school updates and announcements.';
@@ -634,4 +637,743 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updated => 'Updated';
+
+  @override
+  String get driversAndSupervisors => 'Drivers & Supervisors';
+
+  @override
+  String get drivers => 'Drivers';
+
+  @override
+  String get supervisors => 'Supervisors';
+
+  @override
+  String get bus => 'Bus';
+
+  @override
+  String get fieldSupervisor => 'Field Supervisor';
+
+  @override
+  String get supervisorRole => 'Field Supervisor';
+
+  @override
+  String get incidentsAndEmergencies => 'Incidents & Emergencies';
+
+  @override
+  String get fieldInspection => 'Field Inspection';
+
+  @override
+  String get registerDelays => 'Register Delays';
+
+  @override
+  String get dailyTrips => 'Daily Trips';
+
+  @override
+  String get selectBus => 'Select Bus';
+
+  @override
+  String get inspectionChecklist => 'Inspection Checklist';
+
+  @override
+  String get takePhotos => 'Take Photos';
+
+  @override
+  String get inspectionSaved => 'Inspection Saved Successfully';
+
+  @override
+  String get saveInspection => 'Save Inspection';
+
+  @override
+  String get completedTrips => 'Completed Trips';
+
+  @override
+  String get issues => 'Issues';
+
+  @override
+  String get delays => 'Delays';
+
+  @override
+  String get violations => 'Violations';
+
+  @override
+  String get reportCategories => 'Report Categories';
+
+  @override
+  String get viewAllTrips => 'View All Trips';
+
+  @override
+  String get viewAllIssues => 'View All Issues';
+
+  @override
+  String get viewAllDelays => 'View All Delays';
+
+  @override
+  String get viewAllViolations => 'View All Violations';
+
+  @override
+  String get fieldTrips => 'Field Trips';
+
+  @override
+  String get viewFieldTrips => 'View Field Trips';
+
+  @override
+  String get todayTrips => 'Today\'s Trips';
+
+  @override
+  String get trips => 'Trips';
+
+  @override
+  String get addNote => 'Add Note';
+
+  @override
+  String get viewOnMap => 'View on Map';
+
+  @override
+  String get trafficJam => 'Traffic Jam';
+
+  @override
+  String get technicalIssue => 'Technical Issue';
+
+  @override
+  String get studentLate => 'Student Late';
+
+  @override
+  String get other => 'Other';
+
+  @override
+  String get delaySavedAndReported => 'Delay Saved and Reported';
+
+  @override
+  String get saveAndSend => 'Save and Send';
+
+  @override
+  String get upcomingTrips => 'Upcoming Trips';
+
+  @override
+  String get driver => 'Driver';
+
+  @override
+  String get communication => 'Communication';
+
+  @override
+  String get activeBuses => 'Active Buses';
+
+  @override
+  String get activeDrivers => 'Active Drivers';
+
+  @override
+  String get activeTrips => 'Active Trips';
+
+  @override
+  String get activeEmergency => 'Active Emergency';
+
+  @override
+  String get respond => 'Respond';
+
+  @override
+  String get allIncidents => 'All Incidents';
+
+  @override
+  String get newIncident => 'New Incident';
+
+  @override
+  String get incidentDescription => 'Incident Description';
+
+  @override
+  String get attachPhoto => 'Attach Photo';
+
+  @override
+  String get incidentReported => 'Incident Reported Successfully';
+
+  @override
+  String get pendingInspections => 'Pending Inspections';
+
+  @override
+  String get busesNeedInspection => 'Buses Need Inspection';
+
+  @override
+  String get recentInspections => 'Recent Inspections';
+
+  @override
+  String get newInspection => 'New Inspection';
+
+  @override
+  String get totalBuses => 'Total Buses';
+
+  @override
+  String get stoppedBuses => 'Stopped Buses';
+
+  @override
+  String get online => 'Online';
+
+  @override
+  String get offline => 'Offline';
+
+  @override
+  String get broadcastMessage => 'Broadcast Message';
+
+  @override
+  String get sendToAll => 'Send to All';
+
+  @override
+  String get recentChats => 'Recent Chats';
+
+  @override
+  String get studentDelays => 'Student Delays';
+
+  @override
+  String get busDelays => 'Bus Delays';
+
+  @override
+  String get reportSent => 'Report Sent Successfully';
+
+  @override
+  String get registerNewDelay => 'Register New Delay';
+
+  @override
+  String get student => 'Student';
+
+  @override
+  String get selectStudent => 'Select Student';
+
+  @override
+  String get delayDuration => 'Delay Duration (min)';
+
+  @override
+  String get delayReason => 'Delay Reason';
+
+  @override
+  String get present => 'Present';
+
+  @override
+  String get finishAttendance => 'Finish Attendance';
+
+  @override
+  String get attendanceSummary => 'Attendance Summary';
+
+  @override
+  String get confirmSendReport =>
+      'Do you want to finish attendance and send the report?';
+
+  @override
+  String get total => 'Total';
+
+  @override
+  String get unmarked => 'Unmarked';
+
+  @override
+  String unmarkedStudentsWarning(int count) {
+    return 'There are $count students whose status is unmarked';
+  }
+
+  @override
+  String get confirmSend => 'Confirm Send';
+
+  @override
+  String get dailyReportSentSuccess => 'Daily report sent successfully';
+
+  @override
+  String get classPlaceholder => '4th Grade - A';
+
+  @override
+  String get parentGuardian => 'Parent/Guardian';
+
+  @override
+  String get whatsapp => 'WhatsApp';
+
+  @override
+  String get sosAlertsTitle => 'Incident Report';
+
+  @override
+  String get sosAlertsStatusPending => 'Pending';
+
+  @override
+  String get sosAlertsStatusResolved => 'Resolved';
+
+  @override
+  String get sosAlertsStatusActive => 'Active';
+
+  @override
+  String sosAlertsTimeAgo(String time) {
+    return '$time ago';
+  }
+
+  @override
+  String get login => 'Login';
+
+  @override
+  String get welcomeBack => 'Welcome Back';
+
+  @override
+  String get civilId => 'Civil ID';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get forgotPassword => 'Forgot Password?';
+
+  @override
+  String get enterCivilId => 'Please enter Civil ID';
+
+  @override
+  String get enterPassword => 'Please enter password';
+
+  @override
+  String get unexpectedError => 'An unexpected error occurred';
+
+  @override
+  String get selectCorrectRole => 'Please select the correct role to login';
+
+  @override
+  String get resetPasswordSuccess => 'Password reset link sent successfully!';
+
+  @override
+  String get maintenance => 'Maintenance';
+
+  @override
+  String get fuelRefill => 'Fuel Refill';
+
+  @override
+  String get maintenanceRequest => 'Maintenance Request';
+
+  @override
+  String get statusActive => 'Active';
+
+  @override
+  String get statusStopped => 'Stopped';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusInProgress => 'In Progress';
+
+  @override
+  String get statusScheduled => 'Scheduled';
+
+  @override
+  String get statusMaintenance => 'Maintenance';
+
+  @override
+  String get statusExcellent => 'Excellent';
+
+  @override
+  String get statusGood => 'Good';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get typeTechnical => 'Technical';
+
+  @override
+  String get typeBehavioral => 'Behavioral';
+
+  @override
+  String get typeHealth => 'Health';
+
+  @override
+  String get typeTraffic => 'Traffic';
+
+  @override
+  String get typeSOS => 'SOS';
+
+  @override
+  String get roleAdmin => 'Administration';
+
+  @override
+  String get roleDriver => 'Driver';
+
+  @override
+  String get late => 'Late';
+
+  @override
+  String get myClasses => 'My Classes';
+
+  @override
+  String busNumber(int number) {
+    return 'Bus $number';
+  }
+
+  @override
+  String get call => 'Call';
+
+  @override
+  String get sendMessage => 'Send Message';
+
+  @override
+  String get details => 'Details';
+
+  @override
+  String get notes => 'Notes';
+
+  @override
+  String get date => 'Date';
+
+  @override
+  String get time => 'Time';
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get type => 'Type';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get actions => 'Actions';
+
+  @override
+  String get todayAttendance => 'Today\'s Attendance';
+
+  @override
+  String get classAttendance => 'Class Attendance';
+
+  @override
+  String get takeAttendance => 'Take Attendance';
+
+  @override
+  String get markPresent => 'Mark Present';
+
+  @override
+  String get markAbsent => 'Mark Absent';
+
+  @override
+  String get noDataFound => 'No data found';
+
+  @override
+  String get loadingData => 'Loading data...';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get add => 'Add';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get filter => 'Filter';
+
+  @override
+  String get sort => 'Sort';
+
+  @override
+  String get morning => 'Morning';
+
+  @override
+  String get afternoon => 'Afternoon';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get thisWeek => 'This Week';
+
+  @override
+  String get thisMonth => 'This Month';
+
+  @override
+  String get errorOccurred => 'An error occurred';
+
+  @override
+  String get connectionError => 'Connection error';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get noInternet => 'No internet connection';
+
+  @override
+  String get successMessage => 'Operation successful';
+
+  @override
+  String get savedSuccessfully => 'Saved successfully';
+
+  @override
+  String get deletedSuccessfully => 'Deleted successfully';
+
+  @override
+  String get sentSuccessfully => 'Sent successfully';
+
+  @override
+  String get navigation => 'Navigation';
+
+  @override
+  String get endTrip => 'End Trip';
+
+  @override
+  String get roleBusAssistant => 'Bus Assistant';
+
+  @override
+  String get roleFieldSupervisor => 'Field Supervisor';
+
+  @override
+  String get roleTeacher => 'Teacher';
+
+  @override
+  String get driverLogin => 'Driver Login';
+
+  @override
+  String get assistantLogin => 'Assistant Login';
+
+  @override
+  String get supervisorLogin => 'Supervisor Login';
+
+  @override
+  String get teacherLogin => 'Teacher Login';
+
+  @override
+  String get maintenanceLog => 'Maintenance Log';
+
+  @override
+  String get theDriver => 'Driver';
+
+  @override
+  String get driversGroup => 'Drivers Group';
+
+  @override
+  String get dailyRecord => 'Daily Record';
+
+  @override
+  String get presentStudents => 'Present Students';
+
+  @override
+  String get parentPhone => 'Phone Number';
+
+  @override
+  String get parentGuardianLabel => 'Parent/Guardian';
+
+  @override
+  String get students => 'Students';
+
+  @override
+  String get sos => 'SOS';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get gallery => 'Gallery';
+
+  @override
+  String get amount => 'Amount';
+
+  @override
+  String get boarded => 'Boarded';
+
+  @override
+  String get pleaseEnterCivilId => 'Please enter civil ID';
+
+  @override
+  String get pleaseEnterPassword => 'Please enter password';
+
+  @override
+  String get readyToStart => 'Ready to Start';
+
+  @override
+  String get departureTime => 'Departure';
+
+  @override
+  String get startTrip => 'Start Trip';
+
+  @override
+  String get endTripTitle => 'End Trip';
+
+  @override
+  String get confirmEndTrip => 'Are you sure you want to end the trip?';
+
+  @override
+  String get tripEndedSuccess => 'Trip ended successfully!';
+
+  @override
+  String get scanFrontCode => 'Scan Front Code';
+
+  @override
+  String get scanBackCode => 'Scan Back Code';
+
+  @override
+  String get scanFrontDesc =>
+      'Scan the QR code located at the front of the bus.';
+
+  @override
+  String get scanBackDesc => 'Scan the QR code located at the back of the bus.';
+
+  @override
+  String get recordVideo => 'Record Video';
+
+  @override
+  String get recordVideoDesc =>
+      'Record a video walking from front to back to ensure bus is empty.';
+
+  @override
+  String get nextStop => 'Next Stop';
+
+  @override
+  String get arriveAtStudent => 'Arrive at Student';
+
+  @override
+  String get nextDestination => 'Next Destination';
+
+  @override
+  String get probableAbsence => 'Probable Absence';
+
+  @override
+  String get fuelRefillTitle => 'Fuel Refill';
+
+  @override
+  String get attachReceipt => 'Attach Receipt Photo';
+
+  @override
+  String get odometerReading => 'Odometer Reading (km)';
+
+  @override
+  String get recentLogs => 'Recent Logs';
+
+  @override
+  String get fuelEntry => 'Fuel Entry';
+
+  @override
+  String get requestMaintenance => 'Request Maintenance';
+
+  @override
+  String get maintenanceRequestSubmitted =>
+      'Maintenance request submitted successfully';
+
+  @override
+  String get reRecord => 'Re-record';
+
+  @override
+  String get videoRecorded => 'Video Recorded';
+
+  @override
+  String get busEmptyCheck => 'Bus Empty Check';
+
+  @override
+  String get maintenanceRequestTitle => 'Maintenance Request';
+
+  @override
+  String get estimatedCost => 'Estimated Cost';
+
+  @override
+  String get requestSentSuccess => 'Request sent successfully';
+
+  @override
+  String get dataSavedSuccess => 'Data saved successfully';
+
+  @override
+  String get pleaseAttachPhoto => 'Please attach a photo';
+
+  @override
+  String get enterValidNumber => 'Please enter valid number';
+
+  @override
+  String get enterAmount => 'Please enter amount';
+
+  @override
+  String get enterOdometer => 'Please enter odometer reading';
+
+  @override
+  String get describeProblem => 'Please describe the problem';
+
+  @override
+  String get submitRequest => 'Submit Request';
+
+  @override
+  String get studentStatistics => 'Student Statistics';
+
+  @override
+  String get noResultsFound => 'No results found';
+
+  @override
+  String get searchStudentPlaceholder => 'Search for a student...';
+
+  @override
+  String get fontSize => 'Font Size';
+
+  @override
+  String get fontSizeSmall => 'Small';
+
+  @override
+  String get fontSizeMedium => 'Medium';
+
+  @override
+  String get fontSizeLarge => 'Large';
+
+  @override
+  String get incorrectPassword => 'Incorrect password';
+
+  @override
+  String get civilIdNotRegistered => 'This civil ID is not registered';
+
+  @override
+  String civilIdRegisteredAs(String role) {
+    return 'This civil ID is registered as $role';
+  }
+
+  @override
+  String get loginFailed => 'Login failed: Invalid credentials';
+
+  @override
+  String get guest => 'Guest';
+
+  @override
+  String get clearFilter => 'Clear Filter';
+
+  @override
+  String get searchByDate => 'Search by Date';
+
+  @override
+  String get noRecordsForDate => 'No records for this date';
+
+  @override
+  String get noStudentsInList => 'No students in this list';
+
+  @override
+  String get showAllRecords => 'Show All';
+
+  @override
+  String get theTeacher => 'Teacher';
+
+  @override
+  String dailyRecordCount(int count) {
+    return '$count Daily Records';
+  }
+
+  @override
+  String parentNameLabel(String name) {
+    return 'Parent: $name';
+  }
 }
