@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
-import '../../domain/entities/driver_entities.dart';
-import '../../domain/repositories/driver_repository.dart';
+import '../../domain/entities/trip_status.dart';
+import '../../domain/repositories/home_repository.dart';
 
 // States
 abstract class DriverHomeState extends Equatable {
@@ -32,7 +32,7 @@ class DriverHomeError extends DriverHomeState {
 // Cubit
 @injectable
 class DriverHomeCubit extends Cubit<DriverHomeState> {
-  final DriverRepository _repository;
+  final HomeRepository _repository;
 
   DriverHomeCubit(this._repository) : super(DriverHomeInitial());
 

@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
-import '../../domain/repositories/driver_repository.dart';
+import '../../domain/repositories/maintenance_repository.dart';
 
 // States
 abstract class MaintenanceState extends Equatable {
@@ -31,7 +31,7 @@ class MaintenanceError extends MaintenanceState {
 // Cubit
 @injectable
 class MaintenanceCubit extends Cubit<MaintenanceState> {
-  final DriverRepository _repository;
+  final MaintenanceRepository _repository;
 
   MaintenanceCubit(this._repository) : super(MaintenanceInitial());
 

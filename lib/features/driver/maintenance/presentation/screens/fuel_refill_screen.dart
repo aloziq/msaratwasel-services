@@ -12,7 +12,7 @@ import 'package:msaratwasel_services/core/presentation/widgets/image_picker_widg
 import 'package:msaratwasel_services/core/presentation/widgets/omani_rial_icon.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_text_field.dart';
-import 'package:msaratwasel_services/features/driver/presentation/manager/maintenance_cubit.dart';
+import 'package:msaratwasel_services/features/driver/maintenance/presentation/manager/maintenance_cubit.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 class FuelRefillScreen extends StatelessWidget {

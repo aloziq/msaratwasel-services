@@ -2,8 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:injectable/injectable.dart';
-import '../../domain/entities/driver_entities.dart';
-import 'package:msaratwasel_services/features/driver/domain/repositories/driver_repository.dart';
+import '../../domain/entities/student_stop.dart';
+import '../../domain/repositories/route_repository.dart';
 
 // States
 abstract class RouteNavigationState extends Equatable {
@@ -67,7 +67,7 @@ class RouteNavigationCompleted extends RouteNavigationState {}
 // Cubit
 @injectable
 class RouteNavigationCubit extends Cubit<RouteNavigationState> {
-  final DriverRepository _repository;
+  final RouteRepository _repository;
 
   RouteNavigationCubit(this._repository) : super(RouteNavigationInitial());
 

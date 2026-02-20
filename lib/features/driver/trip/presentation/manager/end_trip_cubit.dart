@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
-import '../../domain/repositories/driver_repository.dart';
+import '../../domain/repositories/trip_repository.dart';
 
 // States
 abstract class EndTripState extends Equatable {
@@ -32,7 +32,7 @@ class EndTripError extends EndTripState {
 // Cubit
 @injectable
 class EndTripCubit extends Cubit<EndTripState> {
-  final DriverRepository _repository;
+  final TripRepository _repository;
 
   EndTripCubit(this._repository) : super(EndTripInitial());
 
