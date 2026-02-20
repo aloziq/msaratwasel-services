@@ -8,4 +8,11 @@ final Map<UserRole, String> kMockRoleToId = {
   UserRole.fieldSupervisor: '4',
 };
 
+final Map<UserRole, String> kMockAvatars = {
+  UserRole.teacher: 'https://i.pravatar.cc/300?img=5',
+  UserRole.busAssistant: 'https://i.pravatar.cc/300?img=12',
+  UserRole.driver: 'https://i.pravatar.cc/300?img=11',
+  UserRole.fieldSupervisor: 'https://i.pravatar.cc/300?img=3',
+};
+
 const String kMockPassword = '123456';

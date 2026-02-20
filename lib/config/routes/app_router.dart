@@ -9,6 +9,7 @@ import '../../features/shared/auth/presentation/screens/reset_password_screen.da
 import '../../features/shared/auth/domain/entities/user_entity.dart';
 import '../../features/teacher/teacher/domain/entities/classroom_entity.dart';
 import '../../features/shared/settings/presentation/screens/settings_screen.dart';
+import '../../features/shared/settings/presentation/screens/help_center_screen.dart';
 import '../../features/teacher/attendance_history/presentation/screens/attendance_history_screen.dart';
 import '../../features/teacher/attendance_history/presentation/cubit/attendance_history_cubit.dart';
 import '../../features/teacher/attendance_history/domain/usecases/get_attendance_history_usecase.dart';
@@ -123,6 +124,11 @@ class AppRouter {
             path: AppRoutes.settings,
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.helpCenter,
+            name: 'helpCenter',
+            builder: (context, state) => const HelpCenterScreen(),
           ),
           GoRoute(
             path: AppRoutes.qrScan,

@@ -929,6 +929,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetPasswordSuccess => 'Password reset link sent successfully!';
 
   @override
+  String get resetPasswordTitle => 'Reset Password';
+
+  @override
+  String get resetPasswordSubtitle => 'Enter your ID to recover your account';
+
+  @override
+  String get sendResetLink => 'Send Reset Link';
+
+  @override
   String get maintenance => 'Maintenance';
 
   @override

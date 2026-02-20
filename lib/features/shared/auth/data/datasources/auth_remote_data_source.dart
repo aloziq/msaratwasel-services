@@ -34,6 +34,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         name: '${role.name} $id',
         role: role,
         token: 'mock_token_${role.name}_$id',
+        avatar: kMockAvatars[role],
       );
     } else if (password != kMockPassword) {
       throw Exception('Password is incorrect');

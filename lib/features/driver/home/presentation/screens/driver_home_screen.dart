@@ -12,6 +12,9 @@ import 'package:msaratwasel_services/features/driver/home/presentation/widgets/t
 import 'package:msaratwasel_services/features/driver/home/presentation/manager/driver_home_cubit.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:intl/intl.dart';
 
 class DriverHomeScreen extends StatelessWidget {
   const DriverHomeScreen({super.key});
@@ -35,6 +38,13 @@ class _DriverHomeContent extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final authState = context.watch<AuthCubit>().state;
+    final userName = authState is AuthAuthenticated
+        ? authState.user.name
+        : 'Driver';
+    final date = DateFormat.MMMMEEEEd(
+      isArabic ? 'ar' : 'en',
+    ).format(DateTime.now());
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -72,10 +82,8 @@ class _DriverHomeContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Welcome Section
-                  // TODO: Get actual user name
                   Text(
-                    '${l10n.welcome} Mohammed 👋',
+                    '${l10n.welcome} $userName 👋',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -83,8 +91,7 @@ class _DriverHomeContent extends StatelessWidget {
                     ),
                   ).animate().fadeIn().slideX(begin: 0.1, end: 0),
                   Text(
-                    // TODO: Format date properly
-                    'Wednesday, 22 Jan',
+                    date,
                     style: TextStyle(
                       fontSize: 14,
                       color: theme.colorScheme.onSurfaceVariant,

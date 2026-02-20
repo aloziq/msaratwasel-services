@@ -13,6 +13,8 @@ import '../../../../../core/presentation/widgets/premium_text_field.dart';
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
 
+import '../../../../../l10n/generated/app_localizations.dart';
+
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
 
@@ -65,8 +67,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
           );
         } else if (state is AuthPasswordResetSent) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم إرسال رابط إعادة تعيين كلمة المرور بنجاح!'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.resetPasswordSuccess),
               backgroundColor: Colors.green,
             ),
           );
@@ -136,7 +138,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         ),
         const SizedBox(height: 16),
         Text(
-          'استعادة كلمة المرور',
+          AppLocalizations.of(context)!.resetPasswordTitle,
           style: theme.textTheme.headlineMedium?.copyWith(
             fontSize: 28,
             fontWeight: FontWeight.w900,
@@ -146,7 +148,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         ),
         const SizedBox(height: 8),
         Text(
-          'أدخل الرقم التعريفي لاستعادة حسابك',
+          AppLocalizations.of(context)!.resetPasswordSubtitle,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontSize: 14,
@@ -188,17 +190,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             children: [
               PremiumTextField(
                 controller: _idController,
-                label: 'الرقم المدني',
+                label: AppLocalizations.of(context)!.civilId,
                 icon: PhosphorIconsRegular.identificationCard,
                 keyboardType: TextInputType.number,
                 textColor: theme.colorScheme.onSurface,
                 iconColor: theme.colorScheme.onSurface,
-                validator: (v) =>
-                    v?.isNotEmpty == true ? null : 'الرجاء إدخال الرقم المدني',
+                validator: (v) => v?.isNotEmpty == true
+                    ? null
+                    : AppLocalizations.of(context)!.pleaseEnterCivilId,
               ).animate().fadeIn(delay: 150.ms).scale(),
               const SizedBox(height: 32),
               PremiumButton(
-                text: 'إرسال رابط الاستعادة',
+                text: AppLocalizations.of(context)!.sendResetLink,
                 onTap: _handleReset,
                 isLoading: isLoading,
                 icon: Icons.send_rounded,

@@ -20,6 +20,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   static const String _userNameKey = 'USER_NAME';
   static const String _userRoleKey = 'USER_ROLE';
   static const String _userTokenKey = 'USER_TOKEN';
+  static const String _userAvatarKey = 'USER_AVATAR';
 
   @override
   Future<UserModel> getCachedUser() async {
@@ -27,6 +28,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     final name = sharedPreferences.getString(_userNameKey);
     final roleString = sharedPreferences.getString(_userRoleKey);
     final token = sharedPreferences.getString(_userTokenKey);
+    final avatar = sharedPreferences.getString(_userAvatarKey);
 
     if (id != null && name != null && roleString != null && token != null) {
       return UserModel(
@@ -34,6 +36,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
         name: name,
         role: UserRole.fromString(roleString),
         token: token,
+        avatar: avatar,
       );
     } else {
       throw Exception('No cached user found');
@@ -46,6 +49,11 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     await sharedPreferences.setString(_userNameKey, user.name);
     await sharedPreferences.setString(_userRoleKey, user.role.name);
     await sharedPreferences.setString(_userTokenKey, user.token);
+    if (user.avatar != null) {
+      await sharedPreferences.setString(_userAvatarKey, user.avatar!);
+    } else {
+      await sharedPreferences.remove(_userAvatarKey);
+    }
   }
 
   @override
@@ -54,5 +62,6 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     await sharedPreferences.remove(_userNameKey);
     await sharedPreferences.remove(_userRoleKey);
     await sharedPreferences.remove(_userTokenKey);
+    await sharedPreferences.remove(_userAvatarKey);
   }
 }

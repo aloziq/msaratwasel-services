@@ -920,6 +920,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'تم إرسال رابط إعادة تعيين كلمة المرور بنجاح!';
 
   @override
+  String get resetPasswordTitle => 'استعادة كلمة المرور';
+
+  @override
+  String get resetPasswordSubtitle => 'أدخل الرقم التعريفي لاستعادة حسابك';
+
+  @override
+  String get sendResetLink => 'إرسال رابط الاستعادة';
+
+  @override
   String get maintenance => 'الصيانة';
 
   @override

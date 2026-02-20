@@ -161,38 +161,42 @@ class AssistantHomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'الرحلة النشطة - حافلة ${trip.busNumber}',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? Colors.white
-                          : theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        PhosphorIconsRegular.steeringWheel,
-                        size: 14,
-                        color: theme.colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'الرحلة النشطة - حافلة ${trip.busNumber}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? Colors.white
+                            : theme.colorScheme.onSurface,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        trip.driverName,
-                        style: theme.textTheme.bodySmall?.copyWith(
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          PhosphorIconsRegular.steeringWheel,
+                          size: 14,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 4),
+                        Text(
+                          trip.driverName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               _StatusBadge(label: 'قيد التنفيذ', color: Colors.green),
             ],
           ),

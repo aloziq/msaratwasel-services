@@ -1838,6 +1838,24 @@ abstract class AppLocalizations {
   /// **'Password reset link sent successfully!'**
   String get resetPasswordSuccess;
 
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your ID to recover your account'**
+  String get resetPasswordSubtitle;
+
+  /// No description provided for @sendResetLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Reset Link'**
+  String get sendResetLink;
+
   /// No description provided for @maintenance.
   ///
   /// In en, this message translates to:

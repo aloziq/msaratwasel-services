@@ -6,9 +6,12 @@ import 'package:msaratwasel_services/config/routes/app_routes.dart';
 void handleSupervisorNavigation(
   BuildContext context,
   int targetIndex,
-  int currentIndex,
-) {
-  Navigator.pop(context); // Close Drawer
+  int currentIndex, {
+  bool closeDrawer = true,
+}) {
+  if (closeDrawer) {
+    Navigator.pop(context); // Close Drawer
+  }
 
   if (targetIndex == currentIndex) return;
 

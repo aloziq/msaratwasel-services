@@ -39,14 +39,16 @@ class AboutAppPage extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.2),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     blurRadius: 30,
                                     spreadRadius: 5,
                                     offset: const Offset(0, 10),
                                   ),
                                   if (isDark)
                                     BoxShadow(
-                                      color: Colors.blue.withOpacity(0.1),
+                                      color: Colors.blue.withValues(alpha: 0.1),
                                       blurRadius: 50,
                                       spreadRadius: 10,
                                     ),
@@ -96,7 +98,7 @@ class AboutAppPage extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? Colors.white.withOpacity(0.1)
+                                  ? Colors.white.withValues(alpha: 0.1)
                                   : Colors.grey.shade200,
                               borderRadius: BorderRadius.circular(20),
                             ),
@@ -161,12 +163,12 @@ class AboutAppPage extends StatelessWidget {
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
                                 color: isDark
-                                    ? Colors.white.withOpacity(0.1)
-                                    : Colors.black.withOpacity(0.05),
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.black.withValues(alpha: 0.05),
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 20,
                                   offset: const Offset(0, 5),
                                 ),
@@ -234,14 +236,14 @@ class _SectionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.black.withOpacity(0.03),
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03),
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(0.2)
-                    : const Color(0xFF062A5A).withOpacity(0.05),
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : const Color(0xFF062A5A).withValues(alpha: 0.05),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
@@ -256,8 +258,8 @@ class _SectionCard extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.white.withOpacity(0.1)
-                          : AppColors.primary.withOpacity(0.05),
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : AppColors.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(

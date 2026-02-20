@@ -14,6 +14,7 @@ abstract class AppRoutes {
   static const attendanceHistory = '/attendance-history';
   static const settings = '/settings';
   static const qrScan = '/qr-scan';
+  static const helpCenter = '/help-center';
   static const reports = '/reports';
   static const profile = '/profile';
   static const assistantHome = '/assistant';

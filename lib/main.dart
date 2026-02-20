@@ -3,7 +3,6 @@ import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-// import 'package:shared_preferences/shared_preferences.dart'; // Removed unused import
 import 'config/routes/app_router.dart';
 import 'config/settings/settings_controller.dart';
 import 'config/theme/app_theme.dart';

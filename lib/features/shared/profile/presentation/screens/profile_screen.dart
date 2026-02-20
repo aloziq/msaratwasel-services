@@ -139,7 +139,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     if (authState is AuthAuthenticated) {
                       displayName = authState.user.name;
                       displayRole = authState.user.role.getDisplayName(context);
-                      // TODO: Use real avatar from user entity when available
+                      if (authState.user.avatar != null) {
+                        avatar = authState.user.avatar!;
+                      }
                     }
 
                     return _ProfileHeader(

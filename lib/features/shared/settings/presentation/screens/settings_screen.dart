@@ -223,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         title: l10n.helpCenter,
                         onTap: () {
-                          // TODO(SUPPORT): Implement Help Center navigation
+                          context.push(AppRoutes.helpCenter);
                         },
                       ),
                       _Divider(),
