@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'config/routes/app_router.dart';
 import 'config/settings/settings_controller.dart';
 import 'config/theme/app_theme.dart';
+
 import 'config/theme/theme_controller.dart';
 import 'features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'features/teacher/students/presentation/cubit/class_details_cubit.dart';

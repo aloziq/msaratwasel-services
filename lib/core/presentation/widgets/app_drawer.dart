@@ -13,8 +13,6 @@ import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:dartz/dartz.dart' hide State;
 import 'package:msaratwasel_services/features/teacher/teacher/domain/entities/classroom_entity.dart';
 import 'package:msaratwasel_services/features/teacher/teacher/domain/usecases/get_teacher_classrooms_usecase.dart';
-import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
-import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
 import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -51,16 +49,6 @@ class _AppDrawerState extends State<AppDrawer> {
       builder: (context, authState) {
         final user = authState is AuthAuthenticated ? authState.user : null;
         final role = user?.role ?? UserRole.teacher;
-
-        // If user is Field Supervisor, use their dedicated drawer
-        if (role == UserRole.fieldSupervisor) {
-          return SupervisorDrawer(
-            currentIndex: _getSupervisorIndex(currentLocation),
-            onSelect: (index) {
-              handleSupervisorNavigation(context, index, -1);
-            },
-          );
-        }
 
         return Drawer(
           elevation: 10,
@@ -394,6 +382,115 @@ class _AppDrawerState extends State<AppDrawer> {
       );
     }
 
+    // ---------------- FIELD SUPERVISOR ROLE ----------------
+    if (role == UserRole.fieldSupervisor) {
+      items.add(
+        _DrawerItem(
+          title: l10n.home,
+          icon: PhosphorIconsRegular.house,
+          isSelected: currentLocation == AppRoutes.supervisorHome,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.supervisorHome);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.busTracking,
+          icon: PhosphorIconsRegular.mapPin,
+          isSelected: currentLocation.startsWith(AppRoutes.supervisorBuses),
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.supervisorBuses);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.driversAndSupervisors,
+          icon: PhosphorIconsRegular.usersThree,
+          isSelected: currentLocation.startsWith(AppRoutes.supervisorDrivers),
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.supervisorDrivers);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.incidentsAndEmergencies,
+          icon: PhosphorIconsRegular.warningCircle,
+          isSelected: currentLocation.startsWith(AppRoutes.supervisorAlerts),
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.supervisorAlerts);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.fieldInspection,
+          icon: PhosphorIconsRegular.clipboardText,
+          isSelected: currentLocation.startsWith(
+            AppRoutes.supervisorInspection,
+          ),
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.supervisorInspection);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.registerDelays,
+          icon: PhosphorIconsRegular.timer,
+          isSelected: currentLocation.startsWith(AppRoutes.supervisorDelays),
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.supervisorDelays);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.fieldTrips,
+          icon: PhosphorIconsRegular.compass,
+          isSelected: currentLocation.startsWith(AppRoutes.supervisorTrips),
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.supervisorTrips);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
+          title: l10n.reports,
+          icon: PhosphorIconsRegular.chartBar,
+          isSelected: currentLocation.startsWith(AppRoutes.supervisorReports),
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.supervisorReports);
+          },
+        ),
+      );
+    }
+
     // ---------------- COMMON ITEMS ----------------
     items.add(
       _DrawerItem(
@@ -588,19 +685,6 @@ class _AppDrawerState extends State<AppDrawer> {
         ),
       ),
     );
-  }
-
-  int _getSupervisorIndex(String location) {
-    if (location == AppRoutes.supervisorHome) return 0;
-    if (location.startsWith(AppRoutes.supervisorBuses)) return 1;
-    if (location.startsWith(AppRoutes.supervisorDrivers)) return 2;
-    if (location.startsWith(AppRoutes.supervisorAlerts)) return 4;
-    if (location.startsWith(AppRoutes.supervisorInspection)) return 5;
-    if (location.startsWith(AppRoutes.supervisorDelays)) return 6;
-    if (location.startsWith(AppRoutes.supervisorTrips)) return 7;
-    if (location.startsWith(AppRoutes.supervisorReports)) return 8;
-    if (location == AppRoutes.settings) return 9;
-    return -1;
   }
 }
 
