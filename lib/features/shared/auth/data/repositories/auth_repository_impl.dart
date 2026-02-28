@@ -30,7 +30,6 @@ class AuthRepositoryImpl implements AuthRepository {
         role: role,
       );
 
-      // Cache the user data locally
       await localDataSource.cacheUser(user);
 
       return Right(user);
