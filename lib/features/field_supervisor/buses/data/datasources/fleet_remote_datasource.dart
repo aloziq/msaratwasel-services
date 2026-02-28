@@ -1,20 +1,21 @@
 import 'package:injectable/injectable.dart';
 import '../../domain/entities/fleet_bus.dart';
+import '../models/fleet_bus_model.dart';
 
 abstract class FleetRemoteDataSource {
-  Future<List<FleetBus>> getFleetBuses();
+  Future<List<FleetBusModel>> getFleetBuses();
 }
 
 @LazySingleton(as: FleetRemoteDataSource)
 class MockFleetRemoteDataSourceImpl implements FleetRemoteDataSource {
   @override
-  Future<List<FleetBus>> getFleetBuses() async {
+  Future<List<FleetBusModel>> getFleetBuses() async {
     // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 800));
 
     final now = DateTime.now();
     return [
-      FleetBus(
+      FleetBusModel(
         id: 'B001',
         name: 'حافلة 1',
         driverName: 'محمد أحمد',
@@ -29,7 +30,7 @@ class MockFleetRemoteDataSourceImpl implements FleetRemoteDataSource {
         status: FleetBusStatus.active,
         updatedAt: now.subtract(const Duration(minutes: 1)),
       ),
-      FleetBus(
+      FleetBusModel(
         id: 'B002',
         name: 'حافلة 2',
         driverName: 'علي سالم',
@@ -44,7 +45,7 @@ class MockFleetRemoteDataSourceImpl implements FleetRemoteDataSource {
         status: FleetBusStatus.stopped,
         updatedAt: now.subtract(const Duration(minutes: 5)),
       ),
-      FleetBus(
+      FleetBusModel(
         id: 'B003',
         name: 'حافلة 3',
         driverName: 'خالد ناصر',
@@ -59,7 +60,7 @@ class MockFleetRemoteDataSourceImpl implements FleetRemoteDataSource {
         status: FleetBusStatus.active,
         updatedAt: now.subtract(const Duration(minutes: 2)),
       ),
-      FleetBus(
+      FleetBusModel(
         id: 'B004',
         name: 'حافلة 4',
         driverName: 'سعيد حمد',
@@ -74,7 +75,7 @@ class MockFleetRemoteDataSourceImpl implements FleetRemoteDataSource {
         status: FleetBusStatus.maintenance,
         updatedAt: now.subtract(const Duration(hours: 2)),
       ),
-      FleetBus(
+      FleetBusModel(
         id: 'B005',
         name: 'حافلة 5',
         driverName: 'ياسر عبدالله',

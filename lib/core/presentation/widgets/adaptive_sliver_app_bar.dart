@@ -24,12 +24,21 @@ class AdaptiveSliverAppBar extends StatelessWidget {
     final theme = Theme.of(context);
 
     return CupertinoSliverNavigationBar(
-      largeTitle: Text(
-        title,
-        style: TextStyle(
-          color:
-              theme.appBarTheme.foregroundColor ?? theme.colorScheme.onSurface,
-          fontFamily: theme.textTheme.titleLarge?.fontFamily,
+      largeTitle: Padding(
+        padding: const EdgeInsets.only(
+          top: 4,
+        ), // Prevents clipping of Arabic font ascenders
+        child: Text(
+          title,
+          style: TextStyle(
+            color:
+                theme.appBarTheme.foregroundColor ??
+                theme.colorScheme.onSurface,
+            fontFamily: theme.textTheme.titleLarge?.fontFamily,
+            height:
+                1.0, // Increases text bounding box to accommodate Arabic fonts properly
+            fontSize: 28,
+          ),
         ),
       ),
       leading: leading,

@@ -9,26 +9,7 @@ import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_butto
 import 'package:msaratwasel_services/core/presentation/widgets/glass_card.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
 
-// Mock Data Model for Simulation
-class StudentStop {
-  final String nameAr;
-  final String nameEn;
-  final String parentAr;
-  final String parentEn;
-  final LatLng location;
-  final bool isAbsent;
-  final String photoUrl;
-
-  const StudentStop({
-    required this.nameAr,
-    required this.nameEn,
-    required this.parentAr,
-    required this.parentEn,
-    required this.location,
-    required this.photoUrl,
-    this.isAbsent = false,
-  });
-}
+import '../../domain/entities/student_stop.dart';
 
 class RouteNavigationScreen extends StatefulWidget {
   const RouteNavigationScreen({super.key});
@@ -49,6 +30,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   // Simulation Data (Optimized Linear Route: West -> East)
   final List<StudentStop> _stops = [
     const StudentStop(
+      id: '1',
       nameAr: 'أحمد سعيد',
       nameEn: 'Ahmed Saeed',
       parentAr: 'سعيد العلوي',
@@ -58,6 +40,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200',
     ),
     const StudentStop(
+      id: '2',
       nameAr: 'سارة محمد',
       nameEn: 'Sara Mohammed',
       parentAr: 'محمد الكندي',
@@ -68,6 +51,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
     ),
     const StudentStop(
+      id: '3',
       nameAr: 'عمر خالد',
       nameEn: 'Omar Khaled',
       parentAr: 'خالد المعولي',
@@ -77,6 +61,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=200',
     ),
     const StudentStop(
+      id: '4',
       nameAr: 'ليلى البلوشي',
       nameEn: 'Layla Al-Balushi',
       parentAr: 'ياسر البلوشي',

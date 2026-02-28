@@ -44,7 +44,6 @@ class AttendanceHistoryRepositoryImpl implements AttendanceHistoryRepository {
         totalStudents: 25,
         presentCount: 20,
         absentCount: 3,
-        lateCount: 2,
       );
     });
   }

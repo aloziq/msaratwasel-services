@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
-import 'package:msaratwasel_services/features/shared/messages/domain/models/message_model.dart';
+import '../../domain/entities/message_entity.dart';
 import 'package:msaratwasel_services/core/utils/date_utils.dart' as date_utils;
 
 class MessagesScreen extends StatefulWidget {
@@ -21,16 +21,15 @@ class _MessagesScreenState extends State<MessagesScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
-  // Local state for messages (mock data)
-  final List<MessageModel> _messages = [
-    MessageModel(
+  final List<MessageEntity> _messages = [
+    MessageEntity(
       id: '1',
       text: 'مرحباً، كيف يمكنني مساعدتك؟',
       sender: 'المشرفة',
       time: DateTime.now().subtract(const Duration(hours: 2)),
       incoming: true,
     ),
-    MessageModel(
+    MessageEntity(
       id: '2',
       text: 'Hello! How can I help you today?',
       sender: 'Supervisor',
@@ -52,7 +51,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
     setState(() {
       _messages.insert(
         0,
-        MessageModel(
+        MessageEntity(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           text: text.trim(),
           sender: 'Me',
@@ -350,7 +349,7 @@ class _MessageBubble extends StatelessWidget {
     required this.isParent,
   });
 
-  final MessageModel message;
+  final MessageEntity message;
   final bool isArabic;
   final bool isParent;
 

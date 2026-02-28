@@ -1,6 +1,14 @@
-/// Simple data model for chat messages.
-class MessageModel {
-  const MessageModel({
+import 'package:equatable/equatable.dart';
+
+class MessageEntity extends Equatable {
+  final String id;
+  final String text;
+  final String sender;
+  final DateTime time;
+  final bool incoming; // true = received, false = sent by user
+  final String? mediaUrl;
+
+  const MessageEntity({
     required this.id,
     required this.text,
     required this.sender,
@@ -9,14 +17,7 @@ class MessageModel {
     this.mediaUrl,
   });
 
-  final String id;
-  final String text;
-  final String sender;
-  final DateTime time;
-  final bool incoming; // true = received, false = sent by user
-  final String? mediaUrl;
-
-  MessageModel copyWith({
+  MessageEntity copyWith({
     String? id,
     String? text,
     String? sender,
@@ -24,7 +25,7 @@ class MessageModel {
     bool? incoming,
     String? mediaUrl,
   }) {
-    return MessageModel(
+    return MessageEntity(
       id: id ?? this.id,
       text: text ?? this.text,
       sender: sender ?? this.sender,
@@ -33,4 +34,7 @@ class MessageModel {
       mediaUrl: mediaUrl ?? this.mediaUrl,
     );
   }
+
+  @override
+  List<Object?> get props => [id, text, sender, time, incoming, mediaUrl];
 }

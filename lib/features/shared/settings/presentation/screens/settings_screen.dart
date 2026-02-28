@@ -170,19 +170,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             : isArabic
                             ? 'العربية'
                             : 'English',
-                        trailing: _ThreeWayToggle(
-                          selectedIndex: settingsController.isSystemLocale
+                        trailing: PopupMenuButton<int>(
+                          initialValue: settingsController.isSystemLocale
                               ? 0
                               : isArabic
                               ? 1
                               : 2,
-                          labels: [l10n.systemDefault, 'العربية', 'English'],
-                          icons: [
-                            PhosphorIcons.deviceMobile(PhosphorIconsStyle.bold),
-                            PhosphorIcons.translate(PhosphorIconsStyle.bold),
-                            PhosphorIcons.textAa(PhosphorIconsStyle.bold),
-                          ],
-                          onChanged: (index) {
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          color: isDark ? AppColors.cardDark : Colors.white,
+                          onSelected: (index) {
                             final locale = [
                               null,
                               const Locale('ar'),
@@ -190,6 +188,92 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ][index];
                             settingsController.setLocale(locale);
                           },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 0,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    PhosphorIcons.deviceMobile(
+                                      PhosphorIconsStyle.bold,
+                                    ),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(l10n.systemDefault),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 1,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    PhosphorIcons.translate(
+                                      PhosphorIconsStyle.bold,
+                                    ),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text('العربية'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 2,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    PhosphorIcons.textAa(
+                                      PhosphorIconsStyle.bold,
+                                    ),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text('English'),
+                                ],
+                              ),
+                            ),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.black.withValues(alpha: 0.3)
+                                  : AppColors.cardLightGray,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  settingsController.isSystemLocale
+                                      ? l10n.systemDefault
+                                      : isArabic
+                                      ? 'العربية'
+                                      : 'English',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? Colors.white
+                                        : theme.colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 16,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : theme.colorScheme.primary,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                       _Divider(),

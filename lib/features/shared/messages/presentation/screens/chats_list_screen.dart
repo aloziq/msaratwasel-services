@@ -7,26 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 
-/// Model for a conversation in the chats list
-class ConversationItem {
-  final String id;
-  final String parentName;
-  final String studentName;
-  final String lastMessage;
-  final DateTime lastMessageTime;
-  final int unreadCount;
-  final String? avatarUrl;
-
-  const ConversationItem({
-    required this.id,
-    required this.parentName,
-    required this.studentName,
-    required this.lastMessage,
-    required this.lastMessageTime,
-    this.unreadCount = 0,
-    this.avatarUrl,
-  });
-}
+import '../../domain/entities/conversation_entity.dart';
 
 class ChatsListScreen extends StatefulWidget {
   const ChatsListScreen({super.key});
@@ -36,9 +17,8 @@ class ChatsListScreen extends StatefulWidget {
 }
 
 class _ChatsListScreenState extends State<ChatsListScreen> {
-  // Mock data for conversations
-  final List<ConversationItem> _conversations = [
-    ConversationItem(
+  final List<ConversationEntity> _conversations = [
+    ConversationEntity(
       id: '1',
       parentName: 'أحمد محمد',
       studentName: 'يوسف أحمد',
@@ -46,7 +26,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
       lastMessageTime: DateTime.now().subtract(const Duration(minutes: 5)),
       unreadCount: 2,
     ),
-    ConversationItem(
+    ConversationEntity(
       id: '2',
       parentName: 'فاطمة علي',
       studentName: 'سارة علي',
@@ -54,7 +34,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
       lastMessageTime: DateTime.now().subtract(const Duration(hours: 1)),
       unreadCount: 0,
     ),
-    ConversationItem(
+    ConversationEntity(
       id: '3',
       parentName: 'محمد خالد',
       studentName: 'عمر محمد',
@@ -250,7 +230,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
 }
 
 class _ConversationTile extends StatelessWidget {
-  final ConversationItem conversation;
+  final ConversationEntity conversation;
   final VoidCallback onTap;
 
   const _ConversationTile({required this.conversation, required this.onTap});

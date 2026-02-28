@@ -2,11 +2,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:injectable/injectable.dart';
 import '../../domain/repositories/route_repository.dart';
 import '../../domain/entities/student_stop.dart';
+import '../models/student_stop_model.dart';
 
 @LazySingleton(as: RouteRepository)
 class RouteMockRepository implements RouteRepository {
   final List<StudentStop> _mockStops = [
-    const StudentStop(
+    const StudentStopModel(
       id: '1',
       nameAr: 'أحمد سعيد',
       nameEn: 'Ahmed Saeed',
@@ -16,7 +17,7 @@ class RouteMockRepository implements RouteRepository {
       photoUrl:
           'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200',
     ),
-    const StudentStop(
+    const StudentStopModel(
       id: '2',
       nameAr: 'سارة محمد',
       nameEn: 'Sara Mohammed',
@@ -27,7 +28,7 @@ class RouteMockRepository implements RouteRepository {
       photoUrl:
           'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
     ),
-    const StudentStop(
+    const StudentStopModel(
       id: '3',
       nameAr: 'عمر خالد',
       nameEn: 'Omar Khaled',
@@ -37,7 +38,7 @@ class RouteMockRepository implements RouteRepository {
       photoUrl:
           'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=200',
     ),
-    const StudentStop(
+    const StudentStopModel(
       id: '4',
       nameAr: 'ليلى البلوشي',
       nameEn: 'Layla Al-Balushi',

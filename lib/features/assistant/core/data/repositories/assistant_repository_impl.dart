@@ -1,11 +1,13 @@
 import 'package:dartz/dartz.dart';
 import '../../domain/entities/bus_student_entity.dart';
 import '../../domain/entities/bus_trip_entity.dart';
+import '../models/bus_student_model.dart';
+import '../models/bus_trip_model.dart';
 import '../../domain/repositories/assistant_repository.dart';
 
 class AssistantRepositoryImpl implements AssistantRepository {
   final List<BusStudentEntity> _mockStudents = [
-    const BusStudentEntity(
+    const BusStudentModel(
       id: 's1',
       name: 'أحمد محمد',
       grade: 'الصف الثاني',
@@ -16,7 +18,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       photoUrl:
           'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400',
     ),
-    const BusStudentEntity(
+    const BusStudentModel(
       id: 's2',
       name: 'فاطمة علي',
       grade: 'الصف الثالث',
@@ -27,7 +29,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       photoUrl:
           'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=400',
     ),
-    const BusStudentEntity(
+    const BusStudentModel(
       id: 's3',
       name: 'يوسف سليم',
       grade: 'الصف الأول',
@@ -38,7 +40,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       photoUrl:
           'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
     ),
-    const BusStudentEntity(
+    const BusStudentModel(
       id: 's4',
       name: 'ليان عمر',
       grade: 'الصف الرابع',
@@ -55,7 +57,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
   Future<Either<String, BusTripEntity>> getActiveTrip() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return Right(
-      BusTripEntity(
+      BusTripModel(
         id: 'trip-101',
         busNumber: 'B-45',
         driverName: 'عصام كمال',

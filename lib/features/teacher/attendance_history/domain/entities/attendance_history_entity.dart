@@ -7,7 +7,7 @@ class AttendanceHistoryRecord extends Equatable {
   final int totalStudents;
   final int presentCount;
   final int absentCount;
-  final int lateCount;
+  // final int lateCount;
 
   const AttendanceHistoryRecord({
     required this.date,
@@ -15,7 +15,7 @@ class AttendanceHistoryRecord extends Equatable {
     required this.totalStudents,
     required this.presentCount,
     required this.absentCount,
-    required this.lateCount,
+    // required this.lateCount,
   });
 
   double get attendanceRate =>
@@ -28,7 +28,7 @@ class AttendanceHistoryRecord extends Equatable {
     totalStudents,
     presentCount,
     absentCount,
-    lateCount,
+    // lateCount,
   ];
 }
 
