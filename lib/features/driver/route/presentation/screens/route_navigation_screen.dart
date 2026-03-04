@@ -8,6 +8,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/glass_card.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
+import '../../domain/repositories/route_repository.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../domain/entities/student_stop.dart';
 
@@ -28,59 +30,43 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   );
 
   // Simulation Data (Optimized Linear Route: West -> East)
-  final List<StudentStop> _stops = [
-    const StudentStop(
-      id: '1',
-      nameAr: 'أحمد سعيد',
-      nameEn: 'Ahmed Saeed',
-      parentAr: 'سعيد العلوي',
-      parentEn: 'Saeed Al-Alawi',
-      location: LatLng(23.6000, 58.3500), // Stop 1: Azaiba North
-      photoUrl:
-          'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200',
-    ),
-    const StudentStop(
-      id: '2',
-      nameAr: 'سارة محمد',
-      nameEn: 'Sara Mohammed',
-      parentAr: 'محمد الكندي',
-      parentEn: 'Mohammed Al-Kindi',
-      location: LatLng(23.5900, 58.4000), // Stop 2: Al Ghubra
-      isAbsent: true,
-      photoUrl:
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
-    ),
-    const StudentStop(
-      id: '3',
-      nameAr: 'عمر خالد',
-      nameEn: 'Omar Khaled',
-      parentAr: 'خالد المعولي',
-      parentEn: 'Khaled Al-Maawali',
-      location: LatLng(23.6000, 58.4300), // Stop 3: Al Khuwair 33
-      photoUrl:
-          'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=200',
-    ),
-    const StudentStop(
-      id: '4',
-      nameAr: 'ليلى البلوشي',
-      nameEn: 'Layla Al-Balushi',
-      parentAr: 'ياسر البلوشي',
-      parentEn: 'Yasser Al-Balushi',
-      location: LatLng(23.6080, 58.4500), // Stop 4: MSQ
-      photoUrl:
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
-    ),
-  ];
+  List<StudentStop> _stops = [];
+  bool _isLoading = true;
+  String? _error;
+  final RouteRepository _routeRepository = GetIt.instance<RouteRepository>();
 
   int _currentStopIndex = 0;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   bool _isArrived = false;
+  bool _isActionLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _initMapData();
+    _fetchRouteData();
+  }
+
+  Future<void> _fetchRouteData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final stops = await _routeRepository.getTripStops();
+      
+      setState(() {
+        _stops = stops;
+        _isLoading = false;
+        _initMapData();
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   // Manually defined points to strictly follow 18th Nov St & Sultan Qaboos St (Asphalt)
@@ -206,29 +192,76 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Future<void> _advanceToNextStop() async {
     if (_currentStopIndex < _stops.length - 1) {
       setState(() {
-        _currentStopIndex++;
-        _isArrived = false;
-        _initMapData(); // Refresh markers color
+        _isActionLoading = true;
       });
 
-      final controller = await _controller.future;
-      controller.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(target: _stops[_currentStopIndex].location, zoom: 15),
-        ),
-      );
+      try {
+        final currentStudentId = _stops[_currentStopIndex].id;
+        // Board logic (assuming morning trip to school)
+        await _routeRepository.boardStudent(
+          studentId: currentStudentId,
+          direction: 'to_school',
+        );
 
-      // Auto-show info window for the new target
-      controller.showMarkerInfoWindow(MarkerId('stop_$_currentStopIndex'));
-    } else {
-      // End of route
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('انتهت الرحلة! جميع الطلاب وصلوا.'),
-            backgroundColor: Colors.green,
+        setState(() {
+          _currentStopIndex++;
+          _isArrived = false;
+          _isActionLoading = false;
+          _initMapData(); // Refresh markers color
+        });
+
+        final controller = await _controller.future;
+        controller.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: _stops[_currentStopIndex].location, zoom: 15),
           ),
         );
+
+        // Auto-show info window for the new target
+        controller.showMarkerInfoWindow(MarkerId('stop_$_currentStopIndex'));
+      } catch (e) {
+        setState(() {
+          _isActionLoading = false;
+        });
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('فشل التسجيل: \$e'), backgroundColor: Colors.red),
+           );
+        }
+      }
+    } else {
+      // Last stop
+      setState(() {
+        _isActionLoading = true;
+      });
+
+      try {
+        final currentStudentId = _stops[_currentStopIndex].id;
+        await _routeRepository.boardStudent(
+          studentId: currentStudentId,
+          direction: 'to_school',
+        );
+
+        if (mounted) {
+          setState(() {
+            _isActionLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('انتهت الرحلة! جميع الطلاب وصلوا.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        setState(() {
+          _isActionLoading = false;
+        });
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('فشل التسجيل: \$e'), backgroundColor: Colors.red),
+           );
+        }
       }
     }
   }
@@ -242,24 +275,41 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         : null;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          // 1. Google Map Background
-          GoogleMap(
-            mapType: MapType.normal,
-            initialCameraPosition: _kInitialPosition,
-            markers: _markers,
-            polylines: _polylines,
-            myLocationEnabled: true,
-            zoomControlsEnabled: false,
-            onMapCreated: (GoogleMapController controller) {
-              _controller.complete(controller);
-              // Show the first stop's name immediately
-              Future.delayed(const Duration(milliseconds: 500), () {
-                controller.showMarkerInfoWindow(const MarkerId('stop_0'));
-              });
-            },
-          ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('خطأ: \$_error', style: const TextStyle(color: Colors.red)),
+                      ElevatedButton(
+                        onPressed: _fetchRouteData,
+                        child: const Text('إعادة المحاولة'),
+                      )
+                    ],
+                  ),
+                )
+              : _stops.isEmpty
+                  ? const Center(child: Text('لا يوجد طلاب في هذه الرحلة'))
+                  : Stack(
+                      children: [
+                        // 1. Google Map Background
+                        GoogleMap(
+                          mapType: MapType.normal,
+                          initialCameraPosition: _kInitialPosition,
+                          markers: _markers,
+                          polylines: _polylines,
+                          myLocationEnabled: true,
+                          zoomControlsEnabled: false,
+                          onMapCreated: (GoogleMapController controller) {
+                            _controller.complete(controller);
+                            // Show the first stop's name immediately
+                            Future.delayed(const Duration(milliseconds: 500), () {
+                              controller.showMarkerInfoWindow(const MarkerId('stop_0'));
+                            });
+                          },
+                        ),
 
           // 2. Next Stop Card (Centered Adaptive Pill)
           if (currentStop != null)
@@ -342,25 +392,27 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                   const SizedBox(height: 20),
 
                   // Main Action Button (PremiumButton)
-                  PremiumButton(
-                    text: _isArrived
-                        ? (isArabic ? '✅ الوجهة التالية' : 'Next Destination')
-                        : (isArabic
-                              ? '📍 الوصول للطالب'
-                              : '📍 Arrive at Student'),
-                    onTap: () {
-                      if (_isArrived) {
-                        _advanceToNextStop();
-                      } else {
-                        setState(() {
-                          _isArrived = true;
-                        });
-                      }
-                    },
-                    icon: _isArrived
-                        ? PhosphorIconsBold.arrowRight
-                        : PhosphorIconsBold.mapPin,
-                  ).animate().slideY(begin: 1, end: 0, duration: 500.ms),
+                  _isActionLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : PremiumButton(
+                          text: _isArrived
+                              ? (isArabic ? '✅ ركوب / الوجهة التالية' : 'Board / Next')
+                              : (isArabic
+                                  ? '📍 الوصول للطالب'
+                                  : '📍 Arrive at Student'),
+                          onTap: () {
+                            if (_isArrived) {
+                              _advanceToNextStop();
+                            } else {
+                              setState(() {
+                                _isArrived = true;
+                              });
+                            }
+                          },
+                          icon: _isArrived
+                              ? PhosphorIconsBold.arrowRight
+                              : PhosphorIconsBold.mapPin,
+                        ).animate().slideY(begin: 1, end: 0, duration: 500.ms),
                 ],
               ),
             ),

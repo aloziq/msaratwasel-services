@@ -6,7 +6,6 @@ abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> login({
     required String id,
     required String password,
-    required UserRole role,
   });
 
   Future<Either<Failure, void>> logout();

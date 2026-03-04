@@ -17,7 +17,7 @@ import '../../features/teacher/attendance_history/data/repositories/attendance_h
 import '../../features/teacher/students/presentation/screens/class_details_screen.dart';
 import '../../features/teacher/students/presentation/screens/my_classes_screen.dart';
 import '../../features/teacher/students/presentation/cubit/my_classes_cubit.dart';
-import '../../features/teacher/teacher/domain/usecases/get_teacher_classrooms_usecase.dart';
+import 'package:msaratwasel_services/features/teacher/teacher/domain/usecases/get_teacher_classrooms_usecase.dart';
 import '../../features/teacher/teacher/presentation/screens/teacher_home_screen.dart';
 import '../../features/shared/qr_scan/presentation/screens/qr_scan_screen.dart';
 import '../../features/teacher/reports/presentation/screens/reports_screen.dart';
@@ -191,8 +191,11 @@ class AppRouter {
             path: AppRoutes.messages,
             name: 'messages',
             builder: (context, state) {
-              final recipientName = state.extra as String?;
-              return MessagesScreen(recipientName: recipientName);
+              final extra = state.extra as Map<String, dynamic>?;
+              return MessagesScreen(
+                conversationId: extra?['id'] as String?,
+                recipientName: extra?['name'] as String?,
+              );
             },
           ),
           GoRoute(

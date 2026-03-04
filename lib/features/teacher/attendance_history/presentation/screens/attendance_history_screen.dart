@@ -10,8 +10,8 @@ import '../cubit/attendance_history_cubit.dart';
 import '../cubit/attendance_history_state.dart';
 import '../../domain/entities/attendance_history_entity.dart';
 import '../../../students/domain/entities/student_entity.dart';
-import '../../../../../../core/presentation/widgets/main_shell.dart';
-import '../../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 class AttendanceHistoryScreen extends StatefulWidget {
   const AttendanceHistoryScreen({super.key});

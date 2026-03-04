@@ -13,7 +13,7 @@ import '../../../teacher/domain/entities/classroom_entity.dart';
 import '../../domain/entities/student_entity.dart';
 import '../cubit/class_details_cubit.dart';
 import '../cubit/class_details_state.dart';
-import '../../../../../../core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 
 class ClassDetailsScreen extends StatefulWidget {
   final ClassroomEntity classroom;

@@ -4,7 +4,7 @@ import '../../domain/repositories/route_repository.dart';
 import '../../domain/entities/student_stop.dart';
 import '../models/student_stop_model.dart';
 
-@LazySingleton(as: RouteRepository)
+// @LazySingleton(as: RouteRepository)
 class RouteMockRepository implements RouteRepository {
   final List<StudentStop> _mockStops = [
     const StudentStopModel(

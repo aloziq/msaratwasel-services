@@ -25,8 +25,8 @@ import '../../features/driver/maintenance/domain/repositories/maintenance_reposi
     as _i71;
 import '../../features/driver/maintenance/presentation/manager/maintenance_cubit.dart'
     as _i736;
-import '../../features/driver/route/data/repositories/route_mock_repository.dart'
-    as _i923;
+import '../../features/driver/route/data/repositories/route_repository_impl.dart'
+    as _i973;
 import '../../features/driver/route/domain/repositories/route_repository.dart'
     as _i423;
 import '../../features/driver/route/presentation/manager/route_navigation_cubit.dart'
@@ -62,6 +62,10 @@ import '../../features/shared/auth/domain/usecases/logout_usecase.dart' as _i29;
 import '../../features/shared/auth/domain/usecases/reset_password_usecase.dart'
     as _i307;
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart' as _i277;
+import '../../features/shared/messages/data/repositories/messages_repository_impl.dart'
+    as _i33;
+import '../../features/shared/messages/domain/repositories/messages_repository.dart'
+    as _i633;
 import '../../features/teacher/students/data/repositories/students_repository_impl.dart'
     as _i704;
 import '../../features/teacher/students/domain/repositories/students_repository.dart'
@@ -118,10 +122,13 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i627.MockFleetRemoteDataSourceImpl(),
     );
     gh.lazySingleton<_i920.HomeRepository>(() => _i198.HomeMockRepository());
+    gh.lazySingleton<_i423.RouteRepository>(() => _i973.RouteRepositoryImpl());
     gh.lazySingleton<_i554.AuthRemoteDataSource>(
       () => _i554.AuthRemoteDataSourceImpl(),
     );
-    gh.lazySingleton<_i423.RouteRepository>(() => _i923.RouteMockRepository());
+    gh.lazySingleton<_i633.MessagesRepository>(
+      () => _i33.MessagesRepositoryImpl(),
+    );
     gh.factory<_i736.MaintenanceCubit>(
       () => _i736.MaintenanceCubit(gh<_i71.MaintenanceRepository>()),
     );

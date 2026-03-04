@@ -9,7 +9,7 @@ import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_a
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
-import '../../../teacher/domain/entities/classroom_entity.dart';
+import 'package:msaratwasel_services/features/teacher/teacher/domain/entities/classroom_entity.dart';
 import '../cubit/my_classes_cubit.dart';
 import '../cubit/my_classes_state.dart';
 

@@ -3,14 +3,13 @@ import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'config/routes/app_router.dart';
-import 'config/settings/settings_controller.dart';
-import 'config/theme/app_theme.dart';
-
-import 'config/theme/theme_controller.dart';
-import 'features/shared/auth/presentation/cubit/auth_cubit.dart';
-import 'features/teacher/students/presentation/cubit/class_details_cubit.dart';
-import 'features/teacher/teacher/presentation/cubit/teacher_cubit.dart';
+import 'package:msaratwasel_services/config/routes/app_router.dart';
+import 'package:msaratwasel_services/config/settings/settings_controller.dart';
+import 'package:msaratwasel_services/config/theme/app_theme.dart';
+import 'package:msaratwasel_services/config/theme/theme_controller.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/teacher/students/presentation/cubit/class_details_cubit.dart';
+import 'package:msaratwasel_services/features/teacher/teacher/presentation/cubit/teacher_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -8,6 +8,8 @@ import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 
 import '../../domain/entities/conversation_entity.dart';
+import '../../domain/repositories/messages_repository.dart';
+import 'package:get_it/get_it.dart';
 
 class ChatsListScreen extends StatefulWidget {
   const ChatsListScreen({super.key});
@@ -17,32 +19,37 @@ class ChatsListScreen extends StatefulWidget {
 }
 
 class _ChatsListScreenState extends State<ChatsListScreen> {
-  final List<ConversationEntity> _conversations = [
-    ConversationEntity(
-      id: '1',
-      parentName: 'أحمد محمد',
-      studentName: 'يوسف أحمد',
-      lastMessage: 'شكراً لكم على الاهتمام بابني',
-      lastMessageTime: DateTime.now().subtract(const Duration(minutes: 5)),
-      unreadCount: 2,
-    ),
-    ConversationEntity(
-      id: '2',
-      parentName: 'فاطمة علي',
-      studentName: 'سارة علي',
-      lastMessage: 'متى ستصل الحافلة؟',
-      lastMessageTime: DateTime.now().subtract(const Duration(hours: 1)),
-      unreadCount: 0,
-    ),
-    ConversationEntity(
-      id: '3',
-      parentName: 'محمد خالد',
-      studentName: 'عمر محمد',
-      lastMessage: 'تم الوصول بسلامة',
-      lastMessageTime: DateTime.now().subtract(const Duration(days: 1)),
-      unreadCount: 0,
-    ),
-  ];
+  List<ConversationEntity> _conversations = [];
+  bool _isLoading = true;
+  String? _error;
+  final MessagesRepository _messagesRepository = GetIt.instance<MessagesRepository>();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchConversations();
+  }
+
+  Future<void> _fetchConversations() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final conversations = await _messagesRepository.getConversations();
+      
+      setState(() {
+        _conversations = conversations;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +88,26 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
               alpha: 0.9,
             ),
           ),
-          if (_conversations.isEmpty)
+          if (_isLoading)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_error != null)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('خطأ: $_error', style: const TextStyle(color: Colors.red)),
+                    ElevatedButton(
+                      onPressed: _fetchConversations,
+                      child: const Text('إعادة المحاولة'),
+                    )
+                  ],
+                ),
+              ),
+            )
+          else if (_conversations.isEmpty)
             SliverFillRemaining(
               child: Center(
                 child: Column(
@@ -130,7 +156,10 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                           conversation: conversation,
                           onTap: () => context.push(
                             AppRoutes.messages,
-                            extra: conversation.parentName,
+                            extra: {
+                              'id': conversation.id,
+                              'name': conversation.parentName,
+                            },
                           ),
                         )
                         .animate()
@@ -216,7 +245,13 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    context.push(AppRoutes.messages, extra: parent['name']);
+                    context.push(
+                      AppRoutes.messages,
+                      extra: {
+                        'id': null, // New chat, backend will find or create
+                        'name': parent['name'],
+                      },
+                    );
                   },
                 );
               }),

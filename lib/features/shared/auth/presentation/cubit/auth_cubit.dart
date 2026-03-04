@@ -33,21 +33,17 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> login({
     required String id,
     required String password,
-    required UserRole role,
+    required UserRole selectedRole, // للـ UI فقط - السيرفر يحدد الـ role الحقيقي
   }) async {
     emit(AuthLoading());
     final result = await loginUseCase(
-      LoginParams(id: id, password: password, role: role),
+      LoginParams(id: id, password: password),
     );
     result.fold(
-      (failure) =>
-          emit(AuthError(failure.message ?? 'An unexpected error occurred')),
+      (failure) => emit(AuthError(failure.message ?? 'حدث خطأ غير متوقع')),
       (user) {
-        // Validate that user's actual role matches the selected role
-        if (user.role != role) {
-          emit(AuthError('Please select the correct role to login'));
-          return;
-        }
+        // السيرفر هو المرجع الوحيد للـ role الحقيقي.
+        // التوجيه يتم تلقائياً عبر _guardRoute في AppRouter بناءً على user.role.
         emit(AuthAuthenticated(user));
       },
     );
@@ -57,8 +53,7 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     final result = await logoutUseCase(NoParams());
     result.fold(
-      (failure) =>
-          emit(AuthError(failure.message ?? 'An unexpected error occurred')),
+      (failure) => emit(AuthUnauthenticated()), // نخرج حتى لو كان هناك خطأ
       (_) => emit(AuthUnauthenticated()),
     );
   }

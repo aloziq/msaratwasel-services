@@ -6,7 +6,7 @@ import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
-import '../../data/repositories/home_mock_repository.dart';
+import 'package:msaratwasel_services/features/driver/home/data/repositories/home_mock_repository.dart';
 import 'package:msaratwasel_services/features/driver/home/presentation/widgets/quick_action_button.dart';
 import 'package:msaratwasel_services/features/driver/home/presentation/widgets/trip_status_card.dart';
 import 'package:msaratwasel_services/features/driver/home/presentation/manager/driver_home_cubit.dart';

@@ -1,7 +1,7 @@
 import 'package:injectable/injectable.dart';
-import '../../domain/repositories/home_repository.dart';
-import '../../domain/entities/trip_status.dart';
-import '../models/trip_status_model.dart';
+import 'package:msaratwasel_services/features/driver/home/domain/repositories/home_repository.dart';
+import 'package:msaratwasel_services/features/driver/home/domain/entities/trip_status.dart';
+import 'package:msaratwasel_services/features/driver/home/data/models/trip_status_model.dart';
 
 @LazySingleton(as: HomeRepository)
 class HomeMockRepository implements HomeRepository {

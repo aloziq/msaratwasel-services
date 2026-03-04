@@ -1,6 +1,6 @@
 name: msaratwasel_services
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
@@ -12,22 +12,25 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
-  
+
+  # Networking
+  dio: ^5.7.0
+
   # State Management
   flutter_bloc: ^8.1.6
-  
+
   # Functional Programming
   dartz: ^0.10.1
-  
+
   # Value Equality
   equatable: ^2.0.5
-  
+
   # Local Storage
   shared_preferences: ^2.3.3
-  
+
   # Navigation
   go_router: ^14.6.0
-  
+
   # UI Enhancements
   google_fonts: ^6.2.1
   flutter_animate: ^4.5.0

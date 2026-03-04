@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,10 +8,13 @@ import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import '../../domain/entities/message_entity.dart';
 import 'package:msaratwasel_services/core/utils/date_utils.dart' as date_utils;
 
-class MessagesScreen extends StatefulWidget {
-  const MessagesScreen({super.key, this.recipientName});
+import '../../domain/repositories/messages_repository.dart';
+import 'package:get_it/get_it.dart';
 
-  /// Optional recipient name (e.g., parent name from student list)
+class MessagesScreen extends StatefulWidget {
+  const MessagesScreen({super.key, this.conversationId, this.recipientName});
+
+  final String? conversationId;
   final String? recipientName;
 
   @override
@@ -20,49 +24,98 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  Timer? _pollTimer; // Added for polling
+  bool _isSending = false; // Added to prevent polling during send
 
-  final List<MessageEntity> _messages = [
-    MessageEntity(
-      id: '1',
-      text: 'مرحباً، كيف يمكنني مساعدتك؟',
-      sender: 'المشرفة',
-      time: DateTime.now().subtract(const Duration(hours: 2)),
-      incoming: true,
-    ),
-    MessageEntity(
-      id: '2',
-      text: 'Hello! How can I help you today?',
-      sender: 'Supervisor',
-      time: DateTime.now().subtract(const Duration(hours: 1)),
-      incoming: true,
-    ),
-  ];
+  bool _isLoading = true; // Changed initial value from false to true
+  String? _error;
+  final MessagesRepository _messagesRepository = GetIt.instance<MessagesRepository>();
+
+  List<MessageEntity> _messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.conversationId != null) {
+      _loadMessages();
+      _startPolling(); // Start polling
+    }
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!_isSending) { // Only poll if not currently sending a message
+        _loadMessages(isPolling: true);
+      }
+    });
+  }
+
+  Future<void> _loadMessages({bool isPolling = false}) async {
+    if (!isPolling) { // Only show loading indicator and clear error if not polling
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
+    try {
+      final msgs = await _messagesRepository.getMessages(widget.conversationId!);
+      if (mounted) { // Check if the widget is still in the tree
+        setState(() {
+          _messages = msgs;
+          _isLoading = false;
+        });
+      }
+    } catch(e) {
+      if (mounted && !isPolling) { // Only show error if not polling
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل تحميل الرسائل: $e')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
+    _pollTimer?.cancel(); // Cancel the timer
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _sendMessage(String text, {String? mediaUrl}) {
+  Future<void> _sendMessage(String text, {String? mediaUrl}) async {
     if (text.trim().isEmpty && mediaUrl == null) return;
+    
+    // Optimistic UI update
+    final newMessage = MessageEntity(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      text: text.trim(),
+      sender: 'أنا',
+      time: DateTime.now(),
+      incoming: false,
+      mediaUrl: mediaUrl,
+    );
 
     setState(() {
-      _messages.insert(
-        0,
-        MessageEntity(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          text: text.trim(),
-          sender: 'Me',
-          time: DateTime.now(),
-          incoming: false,
-          mediaUrl: mediaUrl,
-        ),
-      );
+      _messages.insert(0, newMessage);
     });
     _controller.clear();
     FocusScope.of(context).unfocus();
+
+    if (widget.conversationId != null) {
+      try {
+        await _messagesRepository.sendMessage(widget.conversationId!, text.trim());
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل الإرسال: $e'), backgroundColor: Colors.red));
+          // Rollback could be added here
+        }
+      }
+    }
   }
 
   Future<void> _pickImage() async {
@@ -135,7 +188,11 @@ class _MessagesScreenState extends State<MessagesScreen> {
         child: Column(
           children: [
             Expanded(
-              child: hasMessages
+              child: _isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null 
+                ? Center(child: Text('خطأ: $_error', style: const TextStyle(color: Colors.red)))
+                : hasMessages
                   ? ListView.builder(
                       controller: _scrollController,
                       reverse: true,

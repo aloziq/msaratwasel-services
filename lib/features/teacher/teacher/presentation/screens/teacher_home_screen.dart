@@ -5,10 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../../../../../../config/routes/app_routes.dart';
-import '../../../../../features/shared/auth/presentation/cubit/auth_cubit.dart';
-import '../../../../../features/shared/auth/presentation/cubit/auth_state.dart';
-import '../../../../../../core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 import '../cubit/teacher_cubit.dart';
 import '../cubit/teacher_state.dart';
 

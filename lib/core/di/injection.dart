@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
-import 'package:msaratwasel_services/core/di/injection.config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'injection.config.dart';
 
 final getIt = GetIt.instance;
 

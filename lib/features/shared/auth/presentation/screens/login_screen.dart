@@ -62,13 +62,10 @@ class _LoginScreenState extends State<LoginScreen>
     }
     FocusScope.of(context).unfocus();
 
-    debugPrint(
-      'Form valid, attempting login with ID: ${_idController.text}, Role: $_selectedRole',
-    );
     context.read<AuthCubit>().login(
       id: _idController.text.trim(),
       password: _passwordController.text.trim(),
-      role: _selectedRole,
+      selectedRole: _selectedRole,
     );
   }
 

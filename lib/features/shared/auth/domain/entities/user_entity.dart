@@ -9,10 +9,21 @@ enum UserRole {
   const UserRole();
 
   static UserRole fromString(String role) {
-    return UserRole.values.firstWhere(
-      (e) => e.name == role,
-      orElse: () => UserRole.driver,
-    );
+    switch (role.toLowerCase()) {
+      case 'driver':
+        return UserRole.driver;
+      case 'supervisor':
+        return UserRole.busAssistant; // supervisor في Laravel → مشرف/مشرفة الحافلة
+      case 'field_supervisor':
+      case 'fieldsupervisor':
+        return UserRole.fieldSupervisor; // field_supervisor في Laravel → المشرف الميداني
+      case 'teacher':
+        return UserRole.teacher;
+      case 'busassistant':
+        return UserRole.busAssistant;
+      default:
+        return UserRole.driver;
+    }
   }
 }
 
@@ -22,6 +33,7 @@ class UserEntity extends Equatable {
   final UserRole role;
   final String token;
   final String? avatar;
+  final int? busId;
 
   const UserEntity({
     required this.id,
@@ -29,8 +41,9 @@ class UserEntity extends Equatable {
     required this.role,
     required this.token,
     this.avatar,
+    this.busId,
   });
 
   @override
-  List<Object?> get props => [id, name, role, token, avatar];
+  List<Object?> get props => [id, name, role, token, avatar, busId];
 }

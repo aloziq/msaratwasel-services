@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/bus_position.dart';
-import '../../../../teacher/students/domain/entities/student_entity.dart';
+import 'package:msaratwasel_services/features/teacher/students/domain/entities/student_entity.dart';
 
 abstract class BusTrackingState extends Equatable {
   const BusTrackingState();

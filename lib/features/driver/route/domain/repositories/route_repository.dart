@@ -4,4 +4,6 @@ import '../entities/student_stop.dart';
 abstract class RouteRepository {
   Future<List<StudentStop>> getTripStops();
   Future<List<LatLng>> getRoutePoints();
+  Future<void> boardStudent({required String studentId, required String direction});
+  Future<void> alightStudent({required String studentId, required String direction});
 }
