@@ -13,8 +13,8 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:shared_preferences/shared_preferences.dart' as _i460;
 
-import '../../features/driver/home/data/repositories/home_mock_repository.dart'
-    as _i198;
+import '../../features/driver/home/data/repositories/home_repository_impl.dart'
+    as _i215;
 import '../../features/driver/home/domain/repositories/home_repository.dart'
     as _i920;
 import '../../features/driver/home/presentation/manager/driver_home_cubit.dart'
@@ -31,8 +31,8 @@ import '../../features/driver/route/domain/repositories/route_repository.dart'
     as _i423;
 import '../../features/driver/route/presentation/manager/route_navigation_cubit.dart'
     as _i155;
-import '../../features/driver/trip/data/repositories/trip_mock_repository.dart'
-    as _i749;
+import '../../features/driver/trip/data/repositories/trip_repository_impl.dart'
+    as _i671;
 import '../../features/driver/trip/domain/repositories/trip_repository.dart'
     as _i932;
 import '../../features/driver/trip/presentation/manager/end_trip_cubit.dart'
@@ -88,6 +88,7 @@ import '../../features/teacher/teacher/domain/usecases/get_teacher_classrooms_us
     as _i833;
 import '../../features/teacher/teacher/presentation/cubit/teacher_cubit.dart'
     as _i998;
+import '../services/fcm_service.dart' as _i928;
 import 'register_module.dart' as _i291;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -102,8 +103,13 @@ extension GetItInjectableX on _i174.GetIt {
       () => registerModule.prefs,
       preResolve: true,
     );
+    gh.lazySingleton<_i928.FcmService>(() => _i928.FcmService());
     gh.lazySingleton<_i71.MaintenanceRepository>(
       () => _i391.MaintenanceMockRepository(),
+    );
+    gh.lazySingleton<_i920.HomeRepository>(() => _i215.HomeRepositoryImpl());
+    gh.factory<_i903.DriverHomeCubit>(
+      () => _i903.DriverHomeCubit(gh<_i920.HomeRepository>()),
     );
     gh.lazySingleton<_i517.AuthLocalDataSource>(
       () => _i517.AuthLocalDataSourceImpl(gh<_i460.SharedPreferences>()),
@@ -111,7 +117,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i70.TeacherLocalDataSource>(
       () => _i70.TeacherLocalDataSourceImpl(),
     );
-    gh.lazySingleton<_i932.TripRepository>(() => _i749.TripMockRepository());
+    gh.lazySingleton<_i932.TripRepository>(() => _i671.TripRepositoryImpl());
     gh.lazySingleton<_i319.StudentsRepository>(
       () => _i704.StudentsRepositoryImpl(),
     );
@@ -121,7 +127,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i627.FleetRemoteDataSource>(
       () => _i627.MockFleetRemoteDataSourceImpl(),
     );
-    gh.lazySingleton<_i920.HomeRepository>(() => _i198.HomeMockRepository());
     gh.lazySingleton<_i423.RouteRepository>(() => _i973.RouteRepositoryImpl());
     gh.lazySingleton<_i554.AuthRemoteDataSource>(
       () => _i554.AuthRemoteDataSourceImpl(),
@@ -191,9 +196,6 @@ extension GetItInjectableX on _i174.GetIt {
         getStudentsUseCase: gh<_i842.GetStudentsUseCase>(),
         markAttendanceUseCase: gh<_i307.MarkAttendanceUseCase>(),
       ),
-    );
-    gh.factory<_i903.DriverHomeCubit>(
-      () => _i903.DriverHomeCubit(gh<_i920.HomeRepository>()),
     );
     gh.lazySingleton<_i301.GetFleetBusesUseCase>(
       () => _i301.GetFleetBusesUseCase(gh<_i26.FleetRepository>()),

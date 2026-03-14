@@ -16,14 +16,15 @@ import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/aut
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:intl/intl.dart';
 
+import 'package:msaratwasel_services/core/di/injection.dart';
+
 class DriverHomeScreen extends StatelessWidget {
   const DriverHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          DriverHomeCubit(HomeMockRepository())..loadDashboard(),
+      create: (context) => getIt<DriverHomeCubit>()..loadDashboard(),
       child: const _DriverHomeContent(),
     );
   }
@@ -108,18 +109,38 @@ class _DriverHomeContent extends StatelessWidget {
                           isArabic: isArabic,
                           isDark: isDark,
                           departureTime: state.tripStatus.departureTime,
-                          studentCount: state.tripStatus.totalStudents
-                              .toString(),
-                          onStartTrip: () {
-                            context.push('/driver/route');
+                          studentCount:
+                              state.tripStatus.totalStudents.toString(),
+                          onStartTrip: () async {
+                            final cubit = context.read<DriverHomeCubit>();
+                            await cubit.startTrip(
+                              state.tripStatus.id.toString(),
+                            );
+                            
+                            if (context.mounted) {
+                              final updatedState = cubit.state;
+                              if (updatedState is DriverHomeLoaded && updatedState.tripStatus.isStarted) {
+                                context.push('/driver/route');
+                              } else if (updatedState is DriverHomeError) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(updatedState.message),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           },
+                        ).animate().fadeIn(delay: 200.ms).slideY(
+                          begin: 0.1,
+                          end: 0,
                         );
                       } else if (state is DriverHomeError) {
                         return Center(child: Text(l10n.errorOccurred));
                       }
                       return const Center(child: CircularProgressIndicator());
                     },
-                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
+                  ),
 
                   const SizedBox(height: AppSpacing.xl),
 
@@ -135,73 +156,82 @@ class _DriverHomeContent extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
 
                   // Quick Actions Grid
-                  Row(
+                  Column(
                     children: [
-                      Expanded(
-                        child: DriverQuickAction(
-                          icon: PhosphorIconsRegular.flag,
-                          label: l10n.endTripTitle,
-                          color: Colors.red,
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: Text(l10n.endTripTitle),
-                                content: Text(l10n.confirmEndTrip),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text(l10n.cancel),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DriverQuickAction(
+                              icon: PhosphorIconsRegular.users,
+                              label: l10n.myStudents,
+                              color: Colors.green,
+                              onTap: () => context.push(AppRoutes.driverStudents),
+                              isDark: isDark,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: DriverQuickAction(
+                              icon: PhosphorIconsRegular.chatCircle,
+                              label: l10n.chats,
+                              color: Colors.blue,
+                              onTap: () => context.push('/chats'),
+                              isDark: isDark,
+                            ),
+                          ),
+                        ],
+                      ).animate().fadeIn(delay: 400.ms),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DriverQuickAction(
+                              icon: PhosphorIconsRegular.flag,
+                              label: l10n.endTripTitle,
+                              color: Colors.orange,
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text(l10n.endTripTitle),
+                                    content: Text(l10n.confirmEndTrip),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text(l10n.cancel),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          context.push(AppRoutes.driverEndTrip);
+                                        },
+                                        child: Text(
+                                          l10n.confirm,
+                                          style: const TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      context.push(AppRoutes.driverEndTrip);
-                                    },
-                                    child: Text(
-                                      l10n.confirm,
-                                      style: const TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          isDark: isDark,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: DriverQuickAction(
-                          icon: PhosphorIconsRegular.chatCircle,
-                          label: l10n.chats,
-                          color: Colors.blue,
-                          onTap: () => context.push('/chats'),
-                          isDark: isDark,
-                        ),
-                      ),
+                                );
+                              },
+                              isDark: isDark,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: DriverQuickAction(
+                              icon: PhosphorIconsRegular.warningOctagon,
+                              label: l10n.sos,
+                              color: Colors.red,
+                              isDanger: true,
+                              onTap: () => context.push('/incident-report'),
+                              isDark: isDark,
+                            ),
+                          ),
+                        ],
+                      ).animate().fadeIn(delay: 500.ms),
                     ],
-                  ).animate().fadeIn(delay: 400.ms),
-
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Emergency Button
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DriverQuickAction(
-                          icon: PhosphorIconsRegular.warningOctagon,
-                          label: l10n.sos,
-                          color: Colors.red,
-                          isDanger: true,
-                          onTap: () => context.push('/incident-report'),
-                          isDark: isDark,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      const Expanded(child: SizedBox()),
-                    ],
-                  ).animate().fadeIn(delay: 500.ms),
+                  ),
 
                   const SizedBox(height: AppSpacing.xxl),
                 ],

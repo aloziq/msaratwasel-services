@@ -9,6 +9,9 @@ class BusTripEntity extends Equatable {
   final List<BusStudentEntity> students;
   final DateTime startTime;
   final DateTime? endTime;
+  final String? suggestedDirection;
+  final String? suggestedTripType;
+  final String? tripStatus;
   final bool isCompleted;
 
   const BusTripEntity({
@@ -20,6 +23,9 @@ class BusTripEntity extends Equatable {
     required this.startTime,
     this.endTime,
     this.isCompleted = false,
+    this.suggestedDirection,
+    this.suggestedTripType,
+    this.tripStatus,
   });
 
   BusTripEntity copyWith({
@@ -31,6 +37,8 @@ class BusTripEntity extends Equatable {
     DateTime? startTime,
     DateTime? endTime,
     bool? isCompleted,
+    String? suggestedDirection,
+    String? suggestedTripType,
   }) {
     return BusTripEntity(
       id: id ?? this.id,
@@ -41,6 +49,8 @@ class BusTripEntity extends Equatable {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       isCompleted: isCompleted ?? this.isCompleted,
+      suggestedDirection: suggestedDirection ?? this.suggestedDirection,
+      suggestedTripType: suggestedTripType ?? this.suggestedTripType,
     );
   }
 
@@ -54,5 +64,7 @@ class BusTripEntity extends Equatable {
     startTime,
     endTime,
     isCompleted,
+    suggestedDirection,
+    suggestedTripType,
   ];
 }

@@ -11,6 +11,7 @@ import 'package:msaratwasel_services/core/presentation/widgets/premium_button.da
 import '../../domain/repositories/route_repository.dart';
 import 'package:get_it/get_it.dart';
 
+import 'package:msaratwasel_services/core/utils/location_utils.dart';
 import '../../domain/entities/student_stop.dart';
 
 class RouteNavigationScreen extends StatefulWidget {
@@ -41,10 +42,36 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   bool _isArrived = false;
   bool _isActionLoading = false;
 
+  Timer? _locationTimer;
+  int _routePointIndex = 0;
+  final List<LatLng> _routePoints = [];
+
   @override
   void initState() {
     super.initState();
+    _routePoints.addAll(_getMuscatRoutePoints());
     _fetchRouteData();
+    _startLocationUpdates();
+  }
+
+  void _startLocationUpdates() {
+    _locationTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+      if (_routePoints.isNotEmpty) {
+        final currentPos = _routePoints[_routePointIndex];
+        _routeRepository.updateLocation(
+          latitude: currentPos.latitude,
+          longitude: currentPos.longitude,
+        );
+        // Simulate moving along the points
+        _routePointIndex = (_routePointIndex + 1) % _routePoints.length;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchRouteData() async {
@@ -369,9 +396,9 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                               color: Colors.orange,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
-                              "25 min",
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                            Text(
+                              LocationUtils.formatEtaEnglish(18.2),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(width: 24),
                             const Icon(
@@ -381,7 +408,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                             ),
                             const SizedBox(width: 8),
                             const Text(
-                              "18 km",
+                              "18.2 km",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],

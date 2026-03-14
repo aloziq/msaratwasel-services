@@ -6,10 +6,10 @@ class ConversationEntity extends Equatable {
   final String studentName;
   final String lastMessage;
   final DateTime lastMessageTime;
-  final int unreadCount;
+  int unreadCount;
   final String? avatarUrl;
 
-  const ConversationEntity({
+  ConversationEntity({
     required this.id,
     required this.parentName,
     required this.studentName,

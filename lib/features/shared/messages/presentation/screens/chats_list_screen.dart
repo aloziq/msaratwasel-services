@@ -8,6 +8,7 @@ import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 
 import '../../domain/entities/conversation_entity.dart';
+import '../../domain/entities/contact_entity.dart';
 import '../../domain/repositories/messages_repository.dart';
 import 'package:get_it/get_it.dart';
 
@@ -154,13 +155,18 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                   children: [
                     _ConversationTile(
                           conversation: conversation,
-                          onTap: () => context.push(
-                            AppRoutes.messages,
-                            extra: {
-                              'id': conversation.id,
-                              'name': conversation.parentName,
-                            },
-                          ),
+                          onTap: () {
+                            setState(() {
+                              conversation.unreadCount = 0;
+                            });
+                            context.push(
+                              AppRoutes.messages,
+                              extra: {
+                                'id': conversation.id,
+                                'name': conversation.parentName,
+                              },
+                            ).then((_) => _fetchConversations());
+                          },
                         )
                         .animate()
                         .fadeIn(delay: (index * 50).ms)
@@ -183,81 +189,122 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
   }
 
   void _showNewChatDialog(BuildContext context) {
-    // ... items ...
-    _mockShowDialog(context); // Helper for brevity, keeping existing logic
-  }
-
-  void _mockShowDialog(BuildContext context) {
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
-    final parents = [
-      {'name': 'أحمد محمد', 'student': 'يوسف أحمد'},
-      {'name': 'فاطمة علي', 'student': 'سارة علي'},
-      {'name': 'محمد خالد', 'student': 'عمر محمد'},
-      {'name': 'نورة سعيد', 'student': 'خالد سعيد'},
-    ];
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      builder: (ctx) => _NewChatDialog(messagesRepository: _messagesRepository),
+    );
+  }
+}
+
+class _NewChatDialog extends StatefulWidget {
+  final MessagesRepository messagesRepository;
+  const _NewChatDialog({required this.messagesRepository});
+
+  @override
+  State<_NewChatDialog> createState() => _NewChatDialogState();
+}
+
+class _NewChatDialogState extends State<_NewChatDialog> {
+  List<ContactEntity> _contacts = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchContacts();
+  }
+
+  Future<void> _fetchContacts() async {
+    try {
+      final contacts = await widget.messagesRepository.getContacts();
+      setState(() {
+        _contacts = contacts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                isArabic ? 'بدء محادثة جديدة' : 'Start New Chat',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              ...parents.map((parent) {
-                final theme = Theme.of(ctx);
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primary.withValues(
-                      alpha: 0.1,
-                    ),
-                    child: Icon(
-                      PhosphorIconsRegular.user,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  title: Text(parent['name']!, style: TextStyle()),
-                  subtitle: Text(
-                    isArabic
-                        ? 'ولي أمر ${parent['student']}'
-                        : 'Parent of ${parent['student']}',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    context.push(
-                      AppRoutes.messages,
-                      extra: {
-                        'id': null, // New chat, backend will find or create
-                        'name': parent['name'],
-                      },
-                    );
-                  },
-                );
-              }),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              isArabic ? 'بدء محادثة جديدة' : 'Start New Chat',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(child: Text('خطأ: $_error', style: const TextStyle(color: Colors.red)))
+                      : _contacts.isEmpty
+                          ? Center(child: Text(isArabic ? 'لا توجد جهات اتصال' : 'No contacts available'))
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: _contacts.length,
+                              itemBuilder: (context, index) {
+                                final contact = _contacts[index];
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                    backgroundImage: contact.avatarUrl != null ? NetworkImage(contact.avatarUrl!) : null,
+                                    child: contact.avatarUrl == null
+                                        ? Icon(PhosphorIconsRegular.user, color: theme.colorScheme.primary)
+                                        : null,
+                                  ),
+                                  title: Text(contact.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text(
+                                    contact.description,
+                                    style: const TextStyle(fontSize: 12),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    context.push(
+                                      AppRoutes.messages,
+                                      extra: {
+                                        'id': null, // New chat
+                                        'name': contact.name,
+                                        'receiverId': contact.id, // We need to pass receiverId
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+            ),
+          ],
         ),
       ),
     );

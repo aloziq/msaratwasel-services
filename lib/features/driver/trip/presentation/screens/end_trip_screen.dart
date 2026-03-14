@@ -9,7 +9,7 @@ import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
-import 'package:msaratwasel_services/features/driver/trip/data/repositories/trip_mock_repository.dart';
+import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:msaratwasel_services/features/driver/trip/presentation/manager/end_trip_cubit.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
@@ -19,7 +19,7 @@ class EndTripScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => EndTripCubit(TripMockRepository()),
+      create: (context) => getIt<EndTripCubit>(),
       child: const _EndTripContent(),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/bus_position.dart';
 import 'package:msaratwasel_services/features/teacher/students/domain/entities/student_entity.dart';
+import 'package:msaratwasel_services/core/utils/location_utils.dart';
 
 abstract class BusTrackingState extends Equatable {
   const BusTrackingState();
@@ -66,9 +67,9 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
           busId: 'B-45',
           lat: 24.7136, // Riyadh
           lng: 46.6753,
-          speedKmh: 45.0,
+          speedKmh: LocationUtils.speedKmPerHour,
           distanceKm: 12.5,
-          etaMinutes: 15,
+          etaMinutes: LocationUtils.calculateEtaMinutesRounded(12.5),
           studentsOnBoard: students.length,
           state: BusState.enRoute,
           updatedAt: DateTime.now(),

@@ -10,7 +10,13 @@ abstract class AssistantRepository {
   Future<Either<String, void>> updateStudentStatus(
     String studentId,
     BusStudentStatus status,
+    String? direction,
   );
+
+  Future<Either<String, void>> groupAlight({
+    required List<String> studentIds,
+    required String direction,
+  });
 
   Future<Either<String, void>> submitIncidentReport({
     required String studentId,

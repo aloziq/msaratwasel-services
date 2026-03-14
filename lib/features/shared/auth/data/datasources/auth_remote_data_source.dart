@@ -3,6 +3,8 @@ import 'package:injectable/injectable.dart';
 import '../../domain/entities/user_entity.dart';
 import '../models/user_model.dart';
 import '../../../../../core/network/api_client.dart';
+import '../../../../../core/di/injection.dart';
+import '../../../../../core/services/fcm_service.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> login({
@@ -27,12 +29,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String password,
   }) async {
     try {
+      final fcmService = getIt<FcmService>();
+      final fcmToken = await fcmService.getToken();
+
       final response = await _dio.post(
         '/auth/login',
         data: {
           'national_id': nationalId,
           'password': password,
           'device_name': 'device_1',
+          'app_context': 'services',
+          if (fcmToken != null) 'fcm_token': fcmToken,
         },
       );
 

@@ -3,7 +3,7 @@ import 'package:msaratwasel_services/features/driver/home/domain/repositories/ho
 import 'package:msaratwasel_services/features/driver/home/domain/entities/trip_status.dart';
 import 'package:msaratwasel_services/features/driver/home/data/models/trip_status_model.dart';
 
-@LazySingleton(as: HomeRepository)
+//@LazySingleton(as: HomeRepository)
 class HomeMockRepository implements HomeRepository {
   @override
   Future<TripStatus> getCurrentTripStatus() async {

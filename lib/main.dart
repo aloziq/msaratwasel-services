@@ -11,25 +11,68 @@ import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/aut
 import 'package:msaratwasel_services/features/teacher/students/presentation/cubit/class_details_cubit.dart';
 import 'package:msaratwasel_services/features/teacher/teacher/presentation/cubit/teacher_cubit.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:msaratwasel_services/core/services/fcm_service.dart';
+
+import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
+
+class AppBlocObserver extends BlocObserver {
+  @override
+  void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
+    developer.log('Bloc Error in ${bloc.runtimeType}: $error', stackTrace: stackTrace);
+    super.onError(bloc, error, stackTrace);
+  }
+
+  @override
+  void onChange(BlocBase bloc, Change change) {
+    super.onChange(bloc, change);
+    developer.log('Bloc Change in ${bloc.runtimeType}: $change');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Handle Flutter errors
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    developer.log('Flutter Error: ${details.exception}', stackTrace: details.stack);
+  };
 
-  // Initialize ThemeController
-  final themeController = ThemeController();
-  await themeController.load();
+  // Handle platform/asynchronous errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    developer.log('Unhandled Async Error: $error', stackTrace: stack);
+    return true; // Prevent app from crashing
+  };
 
-  // Initialize SettingsController
-  final settingsController = SettingsController();
-  await settingsController.load();
+  Bloc.observer = AppBlocObserver();
 
-  await configureDependencies();
+  try {
+    await Firebase.initializeApp();
 
-  runApp(
-    MainApp(
-      themeController: themeController,
-      settingsController: settingsController,
-    ),
-  );
+    // Initialize ThemeController
+    final themeController = ThemeController();
+    await themeController.load();
+
+    // Initialize SettingsController
+    final settingsController = SettingsController();
+    await settingsController.load();
+
+    await configureDependencies();
+    
+    // Initialize FCM
+    await getIt<FcmService>().init();
+
+    runApp(
+      MainApp(
+        themeController: themeController,
+        settingsController: settingsController,
+      ),
+    );
+  } catch (e, stack) {
+    developer.log('Initialization Error: $e', stackTrace: stack);
+  }
 }
 
 class MainApp extends StatefulWidget {

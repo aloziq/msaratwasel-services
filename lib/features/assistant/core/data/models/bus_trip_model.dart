@@ -12,6 +12,9 @@ class BusTripModel extends BusTripEntity {
     required super.startTime,
     super.endTime,
     super.isCompleted = false,
+    super.suggestedDirection,
+    super.suggestedTripType,
+    super.tripStatus,
   });
 
   factory BusTripModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +33,9 @@ class BusTripModel extends BusTripEntity {
           ? DateTime.parse(json['endTime'] as String)
           : null,
       isCompleted: json['isCompleted'] as bool? ?? false,
+      suggestedDirection: json['suggested_direction'] as String?,
+      suggestedTripType: json['suggested_trip_type'] as String?,
+      tripStatus: json['trip_status'] as String?,
     );
   }
 
@@ -43,6 +49,7 @@ class BusTripModel extends BusTripEntity {
         if (e is BusStudentModel) return e.toJson();
         return BusStudentModel(
           id: e.id,
+          studentCode: e.studentCode,
           name: e.name,
           grade: e.grade,
           schoolId: e.schoolId,

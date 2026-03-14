@@ -22,10 +22,13 @@ class BusTripCubit extends Cubit<BusTripState> {
 
   Future<void> updateStudentStatus(
     String studentId,
-    BusStudentStatus status,
-  ) async {
+    BusStudentStatus status, {
+    String? direction,
+  }) async {
     if (state is BusTripLoaded) {
       final currentTrip = (state as BusTripLoaded).trip;
+      final finalDirection = direction ?? currentTrip.suggestedDirection;
+
       final updatedStudents = currentTrip.students.map((student) {
         if (student.id == studentId) {
           return student.copyWith(status: status);
@@ -34,14 +37,40 @@ class BusTripCubit extends Cubit<BusTripState> {
       }).toList();
 
       final updatedTrip = currentTrip.copyWith(students: updatedStudents);
-      emit(BusTripLoaded(updatedTrip));
+      emit(BusTripLoaded(updatedTrip)); // Optimistic UI update
 
-      final result = await repository.updateStudentStatus(studentId, status);
+      final result = await repository.updateStudentStatus(studentId, status, finalDirection);
       result.fold((failure) {
-        // Revert on failure
+        emit(BusTripUpdateError(failure));
         emit(BusTripLoaded(currentTrip));
-        emit(BusTripError(failure));
-      }, (_) => null);
+      }, (_) {
+         emit(const BusTripUpdateSuccess('تم التحديث بنجاح'));
+         emit(BusTripLoaded(updatedTrip));
+      });
+    }
+  }
+
+  Future<void> groupAlight(List<String> studentIds, String direction) async {
+    if (state is BusTripLoaded) {
+      final currentTrip = (state as BusTripLoaded).trip;
+      
+      emit(BusTripLoading()); // Indicate work in progress for batch action
+      
+      final result = await repository.groupAlight(
+        studentIds: studentIds,
+        direction: direction,
+      );
+
+      result.fold(
+        (failure) {
+          emit(BusTripUpdateError(failure));
+          emit(BusTripLoaded(currentTrip));
+        },
+        (_) {
+          emit(const BusTripUpdateSuccess('تم تحديث الكل بنجاح'));
+          loadTrip(); // Reload full list after batch action to be safe
+        },
+      );
     }
   }
 

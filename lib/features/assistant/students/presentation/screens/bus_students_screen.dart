@@ -12,6 +12,7 @@ import '../../../core/presentation/cubit/bus_trip_cubit.dart';
 import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 import 'package:url_launcher/url_launcher.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class BusStudentsScreen extends StatefulWidget {
   const BusStudentsScreen({super.key});
@@ -23,6 +24,8 @@ class BusStudentsScreen extends StatefulWidget {
 class _BusStudentsScreenState extends State<BusStudentsScreen> {
   String _searchQuery = '';
   BusStudentStatus? _selectedStatus;
+  final Set<String> _selectedStudentIds = {};
+  bool _isSelectionMode = false;
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
@@ -35,6 +38,42 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
         );
       }
     }
+  }
+
+  void _openQrScanner(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _QrScannerModal(
+        onScan: (code) {
+          final cubit = context.read<BusTripCubit>();
+          final state = cubit.state;
+          if (state is BusTripLoaded) {
+            final student = state.trip.students.where((s) => s.studentCode == code).firstOrNull;
+            if (student != null) {
+              // Decide next status: if atHome -> onBus, if onBus -> depends on suggestedDirection
+              BusStudentStatus nextStatus;
+              if (student.status == BusStudentStatus.atHome) {
+                nextStatus = BusStudentStatus.onBus;
+              } else if (student.status == BusStudentStatus.onBus) {
+                nextStatus = state.trip.suggestedDirection == 'to_school' 
+                  ? BusStudentStatus.atSchool 
+                  : BusStudentStatus.atHome;
+              } else {
+                return; // Already arrived or absent
+              }
+              cubit.updateStudentStatus(student.id, nextStatus);
+              Navigator.pop(context);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('طالب غير معروف')),
+              );
+            }
+          }
+        },
+      ),
+    );
   }
 
   @override
@@ -61,7 +100,28 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: BlocBuilder<BusTripCubit, BusTripState>(
+        child: BlocConsumer<BusTripCubit, BusTripState>(
+          listenWhen: (previous, current) => 
+              current is BusTripUpdateSuccess || current is BusTripUpdateError,
+          listener: (context, state) {
+            if (state is BusTripUpdateSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else if (state is BusTripUpdateError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          buildWhen: (previous, current) => 
+              current is BusTripLoading || current is BusTripError || current is BusTripLoaded,
           builder: (context, state) {
             if (state is BusTripLoading) {
               return const Center(child: CircularProgressIndicator());
@@ -87,23 +147,83 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
               return CustomScrollView(
                 slivers: [
                   AdaptiveSliverAppBar(
-                    title: l10n.studentsList,
-                    leading: Material(
-                      color: Colors.transparent,
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.menu_rounded,
-                          color: theme.colorScheme.onSurface,
+                    title: _isSelectionMode 
+                      ? 'تم اختيار ${_selectedStudentIds.length}'
+                      : l10n.studentsList,
+                    leading: _isSelectionMode
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => setState(() {
+                            _isSelectionMode = false;
+                            _selectedStudentIds.clear();
+                          }),
+                        )
+                      : Material(
+                          color: Colors.transparent,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.menu_rounded,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            onPressed: () => MainShell.of(context)?.openDrawer(),
+                          ),
                         ),
-                        onPressed: () => MainShell.of(context)?.openDrawer(),
-                      ),
-                    ),
+                    actions: [
+                      if (!_isSelectionMode)
+                        IconButton(
+                          icon: const Icon(PhosphorIconsRegular.qrCode),
+                          onPressed: () => _openQrScanner(context),
+                        ),
+                      if (_isSelectionMode)
+                        IconButton(
+                          icon: const Icon(Icons.select_all_rounded),
+                          onPressed: () {
+                            setState(() {
+                              final allIds = state.trip.students.map((e) => e.id).toSet();
+                              if (_selectedStudentIds.length == allIds.length) {
+                                _selectedStudentIds.clear();
+                                _isSelectionMode = false;
+                              } else {
+                                _selectedStudentIds.addAll(allIds);
+                              }
+                            });
+                          },
+                        ),
+                    ],
                     backgroundColor: Colors.transparent,
                     stretch: true,
                   ),
                   SliverToBoxAdapter(
                     child: _buildTripSummary(context, state.trip),
                   ),
+                  if (_isSelectionMode)
+                   SliverToBoxAdapter(
+                     child: Padding(
+                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                       child: ElevatedButton.icon(
+                         onPressed: () {
+                           if (_selectedStudentIds.isNotEmpty) {
+                             context.read<BusTripCubit>().groupAlight(
+                               _selectedStudentIds.toList(),
+                               state.trip.suggestedDirection ?? 'to_school',
+                             );
+                             setState(() {
+                               _isSelectionMode = false;
+                               _selectedStudentIds.clear();
+                             });
+                           }
+                         },
+                         icon: const Icon(PhosphorIconsFill.checkCircle),
+                         label: const Text('تسجيل وصول الكل للمنشأة'),
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: Colors.green,
+                           foregroundColor: Colors.white,
+                           minimumSize: const Size(double.infinity, 50),
+                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                         ),
+                       ),
+                     ).animate().fadeIn().slideY(begin: -0.2),
+                   ),
                   SliverToBoxAdapter(
                     child: _buildSearchAndFilter(context, isDark),
                   ),
@@ -119,8 +239,31 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate((context, index) {
                           final student = filteredStudents[index];
+                          final isSelected = _selectedStudentIds.contains(student.id);
                           return _StudentCard(
                                 student: student,
+                                isSelected: isSelected,
+                                isSelectionMode: _isSelectionMode,
+                                onLongPress: () {
+                                  setState(() {
+                                    _isSelectionMode = true;
+                                    _selectedStudentIds.add(student.id);
+                                  });
+                                },
+                                onTap: () {
+                                  if (_isSelectionMode) {
+                                    setState(() {
+                                      if (isSelected) {
+                                        _selectedStudentIds.remove(student.id);
+                                        if (_selectedStudentIds.isEmpty) {
+                                          _isSelectionMode = false;
+                                        }
+                                      } else {
+                                        _selectedStudentIds.add(student.id);
+                                      }
+                                    });
+                                  }
+                                },
                                 onCall: () =>
                                     _makePhoneCall(student.parentPhone),
                               )
@@ -346,8 +489,19 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
 class _StudentCard extends StatelessWidget {
   final BusStudentEntity student;
   final VoidCallback? onCall;
+  final bool isSelected;
+  final bool isSelectionMode;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
-  const _StudentCard({required this.student, this.onCall});
+  const _StudentCard({
+    required this.student,
+    this.onCall,
+    this.isSelected = false,
+    this.isSelectionMode = false,
+    this.onTap,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -355,27 +509,33 @@ class _StudentCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final statusColor = _getStatusColor(student.status);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.grey.withValues(alpha: 0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected 
+                ? theme.colorScheme.primary 
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.grey.withValues(alpha: 0.1)),
+            width: isSelected ? 2 : 1,
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Column(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -442,6 +602,15 @@ class _StudentCard extends StatelessWidget {
                     ),
                   ),
                   _StatusBadge(status: student.status),
+                  if (isSelectionMode)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Checkbox(
+                        value: isSelected,
+                        onChanged: (val) => onTap?.call(),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -487,6 +656,7 @@ class _StudentCard extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -517,52 +687,88 @@ class _StudentCard extends StatelessWidget {
 
   Widget _buildActionButton(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    if (student.status == BusStudentStatus.atSchool) {
+    final cubitState = context.read<BusTripCubit>().state;
+    final direction = (cubitState is BusTripLoaded)
+        ? cubitState.trip.suggestedDirection
+        : 'to_school';
+
+    final isToSchool = direction == 'to_school';
+
+    // ═══════════════════════════════════════════════════════════
+    // State Machine — الأزرار تتغير حسب الاتجاه والحالة الحالية
+    // ═══════════════════════════════════════════════════════════
+
+    // حالة مكتملة: وصل وجهته النهائية
+    final isCompleted = (isToSchool && student.status == BusStudentStatus.atSchool)
+        || (!isToSchool && student.status == BusStudentStatus.atHome);
+
+    if (isCompleted) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            const Icon(
-              PhosphorIconsFill.checkCircle,
-              color: Colors.green,
-              size: 18,
-            ),
+            const Icon(PhosphorIconsFill.checkCircle, color: Colors.green, size: 18),
             const SizedBox(width: 6),
             Text(
               l10n.arrivedSafely,
-              style: const TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ],
         ),
       );
     }
 
-    final isAtHome = student.status == BusStudentStatus.atHome;
-    final color = isAtHome ? Colors.orange : Colors.green;
-    final label = isAtHome ? l10n.boardedBus : l10n.reachedSchool;
-    final icon = isAtHome ? PhosphorIconsFill.bus : PhosphorIconsFill.buildings;
-    final nextStatus = isAtHome
-        ? BusStudentStatus.onBus
-        : BusStudentStatus.atSchool;
+    // الطالب على الباص → زر النزول (وصل المدرسة / وصل المنزل)
+    if (student.status == BusStudentStatus.onBus) {
+      final label = isToSchool ? l10n.reachedSchool : 'وصل المنزل';
+      final icon = isToSchool ? PhosphorIconsFill.buildings : PhosphorIconsFill.house;
+      return ElevatedButton.icon(
+        icon: Icon(icon, size: 16),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          minimumSize: const Size(0, 36),
+        ),
+        onPressed: () => context.read<BusTripCubit>().updateStudentStatus(
+          student.id,
+          isToSchool ? BusStudentStatus.atSchool : BusStudentStatus.atHome,
+        ),
+      );
+    }
 
-    return ElevatedButton.icon(
-      icon: Icon(icon, size: 16),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        minimumSize: const Size(0, 36),
-      ),
-      onPressed: () => context.read<BusTripCubit>().updateStudentStatus(
-        student.id,
-        nextStatus,
+    // الطالب في نقطة البداية → زر الركوب
+    final canBoard = (isToSchool && student.status == BusStudentStatus.atHome)
+        || (!isToSchool && student.status == BusStudentStatus.atSchool);
+
+    if (canBoard) {
+      return ElevatedButton.icon(
+        icon: const Icon(PhosphorIconsFill.bus, size: 16),
+        label: Text(l10n.boardedBus),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          minimumSize: const Size(0, 36),
+        ),
+        onPressed: () => context.read<BusTripCubit>().updateStudentStatus(
+          student.id,
+          BusStudentStatus.onBus,
+        ),
+      );
+    }
+
+    // حالة غير معروفة أو غائب
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        student.status.labelAr,
+        style: TextStyle(color: Colors.grey[600], fontSize: 13),
       ),
     );
   }
@@ -683,3 +889,87 @@ class _StatusBadge extends StatelessWidget {
     }
   }
 }
+
+class _QrScannerModal extends StatelessWidget {
+  final Function(String) onScan;
+
+  const _QrScannerModal({required this.onScan});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'مسح رمز الطالب',
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Stack(
+                  children: [
+                    MobileScanner(
+                      onDetect: (capture) {
+                        final List<Barcode> barcodes = capture.barcodes;
+                        for (final barcode in barcodes) {
+                          if (barcode.rawValue != null) {
+                            onScan(barcode.rawValue!);
+                            break;
+                          }
+                        }
+                      },
+                    ),
+                    Center(
+                      child: Container(
+                        width: 250,
+                        height: 250,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.colorScheme.primary, width: 4),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Text(
+              'وجه الكاميرا نحو الرمز الموجود على بطاقة الطالب ليتم تسجيل حالته تلقائياً',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.textTheme.bodySmall?.color,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
+    );
+  }
+}
+

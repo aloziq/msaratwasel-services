@@ -195,6 +195,7 @@ class AppRouter {
               return MessagesScreen(
                 conversationId: extra?['id'] as String?,
                 recipientName: extra?['name'] as String?,
+                receiverId: extra?['receiverId'] as String?,
               );
             },
           ),

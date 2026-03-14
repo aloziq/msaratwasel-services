@@ -1,7 +1,7 @@
 import 'package:injectable/injectable.dart';
 import 'package:msaratwasel_services/features/driver/trip/domain/repositories/trip_repository.dart';
 
-@LazySingleton(as: TripRepository)
+//@LazySingleton(as: TripRepository)
 class TripMockRepository implements TripRepository {
   @override
   Future<void> updateStudentStatus(

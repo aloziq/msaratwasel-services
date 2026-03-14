@@ -47,6 +47,8 @@ dependencies:
   injectable: ^2.7.1+4
   font_awesome_flutter: ^10.12.0
   cupertino_icons: ^1.0.8
+  firebase_core: ^4.5.0
+  firebase_messaging: ^16.1.2
 
 dev_dependencies:
   flutter_test:

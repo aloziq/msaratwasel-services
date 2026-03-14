@@ -6,16 +6,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import '../../domain/entities/message_entity.dart';
+import '../../data/models/message_model.dart';
 import 'package:msaratwasel_services/core/utils/date_utils.dart' as date_utils;
 
 import '../../domain/repositories/messages_repository.dart';
 import 'package:get_it/get_it.dart';
 
 class MessagesScreen extends StatefulWidget {
-  const MessagesScreen({super.key, this.conversationId, this.recipientName});
+  const MessagesScreen({super.key, this.conversationId, this.recipientName, this.receiverId});
 
   final String? conversationId;
   final String? recipientName;
+  final String? receiverId;
 
   @override
   State<MessagesScreen> createState() => _MessagesScreenState();
@@ -24,50 +26,87 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  Timer? _pollTimer; // Added for polling
-  bool _isSending = false; // Added to prevent polling during send
+  Timer? _pollTimer;
+  bool _isSending = false;
 
-  bool _isLoading = true; // Changed initial value from false to true
+  bool _isLoading = true;
   String? _error;
   final MessagesRepository _messagesRepository = GetIt.instance<MessagesRepository>();
 
   List<MessageEntity> _messages = [];
+  String? _currentConversationId;
 
   @override
   void initState() {
     super.initState();
-    if (widget.conversationId != null) {
+    _currentConversationId = widget.conversationId;
+
+    if (_currentConversationId != null) {
       _loadMessages();
-      _startPolling(); // Start polling
+      _startPolling();
+    } else if (widget.receiverId != null) {
+      _startNewConversation();
+    } else {
+      setState(() {
+        _isLoading = false;
+        _error = 'بيانات المحادثة غير مكتملة';
+      });
+    }
+  }
+
+  Future<void> _startNewConversation() async {
+    try {
+      final conv = await _messagesRepository.startConversation(widget.receiverId!);
+      if (mounted) {
+        setState(() {
+          _currentConversationId = conv.id;
+        });
+        _loadMessages();
+        _startPolling();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'فشل إنشاء محادثة: $e';
+          _isLoading = false;
+        });
+      }
     }
   }
 
   void _startPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!_isSending) { // Only poll if not currently sending a message
+      if (!_isSending && _currentConversationId != null) {
         _loadMessages(isPolling: true);
       }
     });
   }
 
   Future<void> _loadMessages({bool isPolling = false}) async {
-    if (!isPolling) { // Only show loading indicator and clear error if not polling
+    if (!isPolling) {
       setState(() {
         _isLoading = true;
         _error = null;
       });
     }
     try {
-      final msgs = await _messagesRepository.getMessages(widget.conversationId!);
-      if (mounted) { // Check if the widget is still in the tree
+      if (_currentConversationId == null) return;
+      final msgs = await _messagesRepository.getMessages(_currentConversationId!);
+      if (mounted) {
+        final hadNewMessages = msgs.length > _messages.length;
         setState(() {
-          _messages = msgs;
+          _messages = List<MessageEntity>.from(msgs);
           _isLoading = false;
         });
+        
+        // Mark as read if we just loaded messages normally OR if polling found new ones
+        if (_currentConversationId != null && (!isPolling || hadNewMessages)) {
+          _messagesRepository.markAsRead(_currentConversationId!);
+        }
       }
     } catch(e) {
-      if (mounted && !isPolling) { // Only show error if not polling
+      if (mounted && !isPolling) {
         setState(() {
           _error = e.toString();
           _isLoading = false;
@@ -81,19 +120,25 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   @override
   void dispose() {
-    _pollTimer?.cancel(); // Cancel the timer
+    _pollTimer?.cancel();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _sendMessage(String text, {String? mediaUrl}) async {
-    if (text.trim().isEmpty && mediaUrl == null) return;
-    
+    final trimmedText = text.trim();
+    if (trimmedText.isEmpty && mediaUrl == null) return;
+    if (_isSending) return;
+
+    setState(() {
+      _isSending = true;
+    });
+
     // Optimistic UI update
     final newMessage = MessageEntity(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: text.trim(),
+      text: trimmedText,
       sender: 'أنا',
       time: DateTime.now(),
       incoming: false,
@@ -104,16 +149,32 @@ class _MessagesScreenState extends State<MessagesScreen> {
       _messages.insert(0, newMessage);
     });
     _controller.clear();
-    FocusScope.of(context).unfocus();
+    // FocusScope.of(context).unfocus(); // Keep focus for better UX unless it's a small screen
 
-    if (widget.conversationId != null) {
-      try {
-        await _messagesRepository.sendMessage(widget.conversationId!, text.trim());
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل الإرسال: $e'), backgroundColor: Colors.red));
-          // Rollback could be added here
-        }
+    try {
+      if (_currentConversationId == null && widget.receiverId != null) {
+        // Wait a bit if it's still initializing, or try to initialize now
+        final conv = await _messagesRepository.startConversation(widget.receiverId!);
+        _currentConversationId = conv.id;
+      }
+
+      if (_currentConversationId != null) {
+        await _messagesRepository.sendMessage(_currentConversationId!, trimmedText);
+      } else {
+        throw Exception('لم يتم العثور على محادثة');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل الإرسال: $e'), backgroundColor: Colors.red)
+        );
+        // Optional: Remove the optimistically added message on failure
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
       }
     }
   }
@@ -330,14 +391,22 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           ),
                         ],
                       ),
-                      child: IconButton(
-                        onPressed: () => _sendMessage(_controller.text),
-                        icon: const Icon(
-                          Icons.send_rounded,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _isSending 
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : IconButton(
+                            onPressed: () => _sendMessage(_controller.text),
+                            icon: const Icon(
+                              Icons.send_rounded,
+                              size: 22, // Increased size
+                              color: Colors.white,
+                            ),
+                          ),
                     ),
                   ),
                 ],

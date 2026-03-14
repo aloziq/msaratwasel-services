@@ -4,20 +4,22 @@ import 'package:flutter/material.dart';
 /// Unified sliver app bar that always uses [CupertinoSliverNavigationBar]
 /// across all platforms for a consistent large-title header experience.
 class AdaptiveSliverAppBar extends StatelessWidget {
+  final String title;
+  final Widget? leading;
+  final Widget? trailing;
+  final List<Widget>? actions;
+  final Color? backgroundColor;
+  final bool stretch;
+
   const AdaptiveSliverAppBar({
     super.key,
     required this.title,
     this.leading,
     this.trailing,
+    this.actions,
     this.backgroundColor,
     this.stretch = true,
   });
-
-  final String title;
-  final Widget? leading;
-  final Widget? trailing;
-  final Color? backgroundColor;
-  final bool stretch;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +44,10 @@ class AdaptiveSliverAppBar extends StatelessWidget {
         ),
       ),
       leading: leading,
-      trailing: trailing,
+      trailing: trailing ?? (actions != null ? Row(
+        mainAxisSize: MainAxisSize.min,
+        children: actions!,
+      ) : null),
       backgroundColor: backgroundColor ?? Colors.transparent,
       border: null,
       stretch: stretch,

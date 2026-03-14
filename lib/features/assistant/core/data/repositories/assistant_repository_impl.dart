@@ -1,4 +1,7 @@
 import 'package:dartz/dartz.dart';
+import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../../core/network/api_client.dart';
 import '../../domain/entities/bus_student_entity.dart';
 import '../../domain/entities/bus_trip_entity.dart';
 import '../models/bus_student_model.dart';
@@ -6,81 +9,132 @@ import '../models/bus_trip_model.dart';
 import '../../domain/repositories/assistant_repository.dart';
 
 class AssistantRepositoryImpl implements AssistantRepository {
-  final List<BusStudentEntity> _mockStudents = [
-    const BusStudentModel(
-      id: 's1',
-      name: 'أحمد محمد',
-      grade: 'الصف الثاني',
-      schoolId: 'SCH-001',
-      parentName: 'محمد علي',
-      parentPhone: '99999999',
-      status: BusStudentStatus.atHome,
-      photoUrl:
-          'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400',
-    ),
-    const BusStudentModel(
-      id: 's2',
-      name: 'فاطمة علي',
-      grade: 'الصف الثالث',
-      schoolId: 'SCH-001',
-      parentName: 'علي حسن',
-      parentPhone: '98888888',
-      status: BusStudentStatus.onBus,
-      photoUrl:
-          'https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=400',
-    ),
-    const BusStudentModel(
-      id: 's3',
-      name: 'يوسف سليم',
-      grade: 'الصف الأول',
-      schoolId: 'SCH-001',
-      parentName: 'سليم خالد',
-      parentPhone: '97777777',
-      status: BusStudentStatus.atSchool,
-      photoUrl:
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-    ),
-    const BusStudentModel(
-      id: 's4',
-      name: 'ليان عمر',
-      grade: 'الصف الرابع',
-      schoolId: 'SCH-001',
-      parentName: 'عمر هاني',
-      parentPhone: '96666666',
-      status: BusStudentStatus.atHome,
-      photoUrl:
-          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400',
-    ),
-  ];
+  String? get _busId {
+    try {
+      return GetIt.instance<SharedPreferences>().getString('USER_BUS_ID');
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Future<Either<String, BusTripEntity>> getActiveTrip() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return Right(
-      BusTripModel(
-        id: 'trip-101',
-        busNumber: 'B-45',
-        driverName: 'عصام كمال',
-        assistantName: 'مريم سعيد',
-        students: _mockStudents,
-        startTime: DateTime.now().subtract(const Duration(minutes: 30)),
-      ),
-    );
+    try {
+      final busId = _busId;
+      if (busId == null) {
+        return const Left('لم يتم العثور على حافلة معينة لحسابك.');
+      }
+
+      final response = await ApiClient.instance.get('/bus/$busId/passengers');
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final passengers = (data['passengers'] as List)
+            .map((e) => BusStudentModel.fromJson(e))
+            .toList();
+            
+        final busData = data['bus'];
+        
+        return Right(
+          BusTripModel(
+            id: 'trip-$busId',
+            busNumber: busData['bus_number'] ?? '-',
+            driverName: '-', // Needs to come from user profile if needed
+            assistantName: '-', // Needs to come from user profile
+            students: passengers,
+            startTime: DateTime.now(), 
+            suggestedDirection: busData['suggested_direction'] as String?,
+            suggestedTripType: busData['suggested_trip_type'] as String?,
+            tripStatus: busData['trip_status'] as String?,
+          ),
+        );
+      }
+      return const Left('فشل في جلب بيانات الرحلة');
+    } catch (e) {
+      return Left('خطأ في الاتصال: $e');
+    }
   }
 
   @override
   Future<Either<String, List<BusStudentEntity>>> getStudents() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return Right(_mockStudents);
+    final tripResult = await getActiveTrip();
+    return tripResult.fold(
+      (failure) => Left(failure),
+      (trip) => Right(trip.students),
+    );
   }
 
   @override
   Future<Either<String, void>> updateStudentStatus(
     String studentId,
     BusStudentStatus status,
+    String? direction,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return const Right(null);
+    try {
+      final busId = _busId;
+      if (busId == null) {
+        return const Left('خطأ: لا توجد حافلة مسجلة');
+      }
+
+      String endpoint;
+      String finalDirection;
+
+      if (status == BusStudentStatus.onBus) {
+        endpoint = '/bus/$busId/board';
+        // Use provided direction or ask backend? Defaulting to morning if null.
+        finalDirection = direction ?? 'to_school'; 
+      } else if (status == BusStudentStatus.atSchool || status == BusStudentStatus.atHome) {
+        endpoint = '/bus/$busId/alight';
+        finalDirection = direction ?? (status == BusStudentStatus.atSchool ? 'to_school' : 'to_home');
+      } else {
+        return const Right(null); 
+      }
+
+      final response = await ApiClient.instance.post(
+        endpoint,
+        data: {
+          'student_id': studentId,
+          'direction': finalDirection,
+          'latitude': null,
+          'longitude': null,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return const Right(null);
+      }
+      return Left(response.data['message'] ?? 'حدث خطأ غير متوقع');
+    } catch (e) {
+      return Left('تعذر تحديث الحالة: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<Either<String, void>> groupAlight({
+    required List<String> studentIds,
+    required String direction,
+  }) async {
+    try {
+      final busId = _busId;
+      if (busId == null) return const Left('خطأ: لا توجد حافلة');
+
+      final response = await ApiClient.instance.post(
+        '/bus/$busId/group-alight',
+        data: {
+          'student_ids': studentIds,
+          'direction': direction,
+          'latitude': null,
+          'longitude': null,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return const Right(null);
+      }
+      return Left(response.data['message'] ?? 'فشل التحديث الجماعي');
+    } catch (e) {
+      return Left('خطأ في التحديث الجماعي: $e');
+    }
   }
 
   @override

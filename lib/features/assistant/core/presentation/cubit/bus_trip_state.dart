@@ -28,3 +28,21 @@ class BusTripError extends BusTripState {
   @override
   List<Object?> get props => [message];
 }
+
+class BusTripUpdateError extends BusTripState {
+  final String message;
+
+  const BusTripUpdateError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class BusTripUpdateSuccess extends BusTripState {
+  final String message;
+
+  const BusTripUpdateSuccess(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

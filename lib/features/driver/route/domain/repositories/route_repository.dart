@@ -6,4 +6,5 @@ abstract class RouteRepository {
   Future<List<LatLng>> getRoutePoints();
   Future<void> boardStudent({required String studentId, required String direction});
   Future<void> alightStudent({required String studentId, required String direction});
+  Future<void> updateLocation({required double latitude, required double longitude});
 }

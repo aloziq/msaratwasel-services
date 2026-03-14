@@ -25,6 +25,7 @@ enum BusStudentStatus {
 
 class BusStudentEntity extends Equatable {
   final String id;
+  final String studentCode;
   final String name;
   final String grade;
   final String schoolId;
@@ -36,6 +37,7 @@ class BusStudentEntity extends Equatable {
 
   const BusStudentEntity({
     required this.id,
+    required this.studentCode,
     required this.name,
     required this.grade,
     required this.schoolId,
@@ -48,6 +50,7 @@ class BusStudentEntity extends Equatable {
 
   BusStudentEntity copyWith({
     String? id,
+    String? studentCode,
     String? name,
     String? grade,
     String? schoolId,
@@ -59,6 +62,7 @@ class BusStudentEntity extends Equatable {
   }) {
     return BusStudentEntity(
       id: id ?? this.id,
+      studentCode: studentCode ?? this.studentCode,
       name: name ?? this.name,
       grade: grade ?? this.grade,
       schoolId: schoolId ?? this.schoolId,
@@ -73,6 +77,7 @@ class BusStudentEntity extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    studentCode,
     name,
     grade,
     schoolId,

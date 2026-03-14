@@ -11,6 +11,7 @@ import 'package:msaratwasel_services/features/teacher/students/domain/entities/s
 import '../cubit/bus_tracking_cubit.dart';
 import '../../domain/entities/bus_position.dart';
 import '../widgets/student_marker_widget.dart';
+import 'package:msaratwasel_services/core/utils/location_utils.dart';
 
 class BusMapScreen extends StatefulWidget {
   const BusMapScreen({super.key});
@@ -442,11 +443,23 @@ class _BottomDetailsCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    '${l10n.updated} 2 دقيقة', // Use timeAgo logic?
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${l10n.remainingTime}: ${LocationUtils.formatEtaArabic(position.distanceKm)}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${l10n.updated} 2 دقيقة',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
