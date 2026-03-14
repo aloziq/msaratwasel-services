@@ -81,4 +81,20 @@ class RouteMockRepository implements RouteRepository {
       const LatLng(23.6080, 58.4500),
     ];
   }
+
+  @override
+  Future<void> boardStudent({
+    required String studentId,
+    required String direction,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> alightStudent({
+    required String studentId,
+    required String direction,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
 }
