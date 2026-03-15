@@ -13,6 +13,19 @@ abstract class AuthRemoteDataSource {
   });
 
   Future<void> logout({required String token});
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
+
+  Future<String> updateAvatar({required String imagePath});
+
+  Future<void> updateProfile({
+    required String phone,
+    required String email,
+  });
 }
 
 @LazySingleton(as: AuthRemoteDataSource)
@@ -59,8 +72,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'name': userJson['name'],
         'role': userJson['role'],
         'token': token,
-        'avatar': userJson['avatar'],
+        'avatar': userJson['image_url'] ?? userJson['avatar'],
         'bus_id': userJson['bus_id'],
+        'email': userJson['email'],
+        'phone': userJson['phone'],
+        'national_id': userJson['national_id'],
       });
     } on DioException catch (e) {
       // خطأ من السيرفر (مثلاً 422 Validation Error)
@@ -80,6 +96,49 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await authenticatedDio.post('/auth/logout');
     } catch (_) {
       // نتجاهل الخطأ في حالة logout - نمسح التوكن محلياً على أي حال
+    }
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      await _dio.post('/auth/change-password', data: {
+        'current_password': currentPassword,
+        'new_password': newPassword,
+        'new_password_confirmation': confirmPassword,
+      });
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? 'فشل تغيير كلمة السر';
+      throw Exception(message);
+    }
+  }
+
+  @override
+  Future<String> updateAvatar({required String imagePath}) async {
+    try {
+      final formData = FormData.fromMap({
+        'avatar': await MultipartFile.fromFile(imagePath, filename: 'avatar.jpg'),
+      });
+      final response = await _dio.post('/auth/profile/avatar', data: formData);
+      return response.data['image_url'] ?? '';
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['message'] ?? 'فشل تحديث الصورة');
+    }
+  }
+
+  @override
+  Future<void> updateProfile({required String phone, required String email}) async {
+    try {
+      await _dio.post('/auth/profile/update', data: {
+        'phone': phone,
+        'email': email,
+      });
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['message'] ?? 'فشل تحديث البيانات');
     }
   }
 }

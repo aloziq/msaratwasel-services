@@ -13,4 +13,17 @@ abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> getCurrentUser();
 
   Future<Either<Failure, void>> resetPassword({required String id});
+  
+  Future<Either<Failure, void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
+
+  Future<Either<Failure, String>> updateAvatar(String imagePath);
+
+  Future<Either<Failure, void>> updateProfile({
+    required String phone,
+    required String email,
+  });
 }

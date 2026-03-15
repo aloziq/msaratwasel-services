@@ -12,6 +12,7 @@ import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_e
 import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/features/shared/profile/presentation/screens/change_password_screen.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
@@ -32,16 +33,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final XFile? pickedFile = await _picker.pickImage(source: source);
       if (pickedFile != null) {
-        setState(() {
-          _profileImage = File(pickedFile.path);
-        });
+        if (!mounted) return;
+        // الرفع للسيرفر مباشرة
+        context.read<AuthCubit>().updateAvatar(pickedFile.path);
       }
     } catch (e) {
-      // Handle error if permissions are denied or other issues
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      ).showSnackBar(SnackBar(content: Text('خطأ في اختيار الصورة: $e')));
     }
   }
 
@@ -128,20 +128,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Builder(
                   builder: (context) {
                     final authState = context.watch<AuthCubit>().state;
-                    String displayName = isArabic
-                        ? "عبدالله الأحمد"
-                        : "Abdullah Al-Ahmad";
-                    String displayRole = isArabic
-                        ? "مشرف حافلة"
-                        : "Bus Supervisor";
-                    String avatar = 'https://i.pravatar.cc/300?img=11';
+                    String displayName = "...";
+                    String displayRole = "...";
+                    String? avatar;
 
                     if (authState is AuthAuthenticated) {
                       displayName = authState.user.name;
                       displayRole = authState.user.role.getDisplayName(context);
-                      if (authState.user.avatar != null) {
-                        avatar = authState.user.avatar!;
-                      }
+                      avatar = authState.user.avatar;
                     }
 
                     return _ProfileHeader(
@@ -149,8 +143,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       role: displayRole,
                       isArabic: isArabic,
                       isDark: isDark,
-                      avatarUrl: avatar,
-                      profileImage: _profileImage,
+                      avatarUrl: avatar ?? 'https://i.pravatar.cc/300?img=11',
+                      profileImage: null, // We handle preview via NetworkImage/authState
                       onChangePhoto: () =>
                           _showImageSourceActionSheet(context, isArabic),
                     ).animate().fadeIn().slideY(begin: 0.1, end: 0);
@@ -169,31 +163,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ).animate().fadeIn(delay: 100.ms),
                 const SizedBox(height: AppSpacing.md),
 
-                _InfoCard(
-                  icon: PhosphorIconsRegular.identificationCard,
-                  label: isArabic ? "الرقم المدني" : "Civil ID",
-                  value: "1234567890",
-                  isDark: isDark,
-                  delay: 200.ms,
-                ),
-                const SizedBox(height: AppSpacing.sm),
+                Builder(builder: (context) {
+                  final authState = context.watch<AuthCubit>().state;
+                  final user = (authState is AuthAuthenticated) ? authState.user : null;
 
-                _InfoCard(
-                  icon: PhosphorIconsRegular.phone,
-                  label: isArabic ? "رقم الهاتف" : "Phone Number",
-                  value: "+966 50 123 4567",
-                  isDark: isDark,
-                  delay: 300.ms,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-
-                _InfoCard(
-                  icon: PhosphorIconsRegular.envelope,
-                  label: isArabic ? "البريد الإلكتروني" : "Email",
-                  value: "mohammed@wasel.edu.sa",
-                  isDark: isDark,
-                  delay: 400.ms,
-                ),
+                  return Column(
+                    children: [
+                      _InfoCard(
+                        icon: PhosphorIconsRegular.identificationCard,
+                        label: isArabic ? "الرقم المدني" : "Civil ID",
+                        value: user?.nationalId ?? "---",
+                        isDark: isDark,
+                        delay: 200.ms,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _InfoCard(
+                        icon: PhosphorIconsRegular.phone,
+                        label: isArabic ? "رقم الهاتف" : "Phone Number",
+                        value: user?.phone ?? "---",
+                        isDark: isDark,
+                        delay: 300.ms,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _InfoCard(
+                        icon: PhosphorIconsRegular.envelope,
+                        label: isArabic ? "البريد الإلكتروني" : "Email",
+                        value: user?.email ?? "---",
+                        isDark: isDark,
+                        delay: 400.ms,
+                      ),
+                    ],
+                  );
+                }),
 
                 const SizedBox(height: AppSpacing.xl),
 
@@ -273,6 +274,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
 
                 const SizedBox(height: AppSpacing.xl),
+
+                // Account Actions Section
+                _SectionTitle(
+                  title: isArabic ? "إعدادات الحساب" : "Account Settings",
+                  icon: PhosphorIconsRegular.gear,
+                  isDark: isDark,
+                ).animate().fadeIn(delay: 600.ms),
+                const SizedBox(height: AppSpacing.md),
+
+                _ProfileActionButton(
+                  icon: Icons.lock_outline_rounded,
+                  label: isArabic ? "تغيير كلمة السر" : "Change Password",
+                  color: AppColors.primary,
+                  isDark: isDark,
+                  isHorizontal: true,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ChangePasswordScreen(),
+                      ),
+                    );
+                  },
+                ).animate().fadeIn(delay: 650.ms),
+
+                const SizedBox(height: AppSpacing.lg),
 
                 // Logout Button
                 _ProfileActionButton(

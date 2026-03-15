@@ -55,7 +55,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   }
 
   void _startLocationUpdates() {
-    _locationTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+    _locationTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (_routePoints.isNotEmpty) {
         final currentPos = _routePoints[_routePointIndex];
         _routeRepository.updateLocation(
@@ -83,12 +83,15 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
       final stops = await _routeRepository.getTripStops();
       
+      if (!mounted) return;
+      
       setState(() {
         _stops = stops;
         _isLoading = false;
         _initMapData();
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -229,6 +232,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           studentId: currentStudentId,
           direction: 'to_school',
         );
+
+        if (!mounted) return;
 
         setState(() {
           _currentStopIndex++;

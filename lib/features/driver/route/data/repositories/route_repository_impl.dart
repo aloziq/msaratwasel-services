@@ -53,12 +53,13 @@ class RouteRepositoryImpl implements RouteRepository {
         
         return StudentStopModel(
           id: json['id'].toString(),
-          nameAr: json['full_name'],
-          nameEn: json['full_name'],
-          parentAr: 'ولي الأمر',
-          parentEn: 'Parent',
+          nameAr: json['name'],
+          nameEn: json['name'],
+          parentAr: json['parentName'] ?? 'ولي الأمر',
+          parentEn: json['parentName'] ?? 'Parent',
+          parentUserId: json['parentUserId']?.toString(),
           location: _generateMockLocationForStudent(json['id']),
-          photoUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['full_name'])}&background=random',
+          photoUrl: json['photoUrl'] ?? 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['name'])}&background=random',
           isBoarded: isOnBus,
           isDroppedOff: isDroppedOff,
           isAbsent: false,

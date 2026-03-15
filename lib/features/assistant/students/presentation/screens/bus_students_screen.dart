@@ -637,11 +637,27 @@ class _StudentCard extends StatelessWidget {
                       _buildIconButton(
                         context,
                         PhosphorIconsFill.chatCircleText,
-                        Colors.blue,
-                        () => context.push(
-                          AppRoutes.messages,
-                          extra: 'ولي أمر ${student.name}',
-                        ),
+                        student.parentUserId != null ? Colors.blue : Colors.grey,
+                        () {
+                          final receiverId = student.parentUserId;
+                          if (receiverId != null && receiverId.isNotEmpty) {
+                            context.push(
+                              AppRoutes.messages,
+                              extra: {
+                                'id': null,
+                                'name': 'ولي أمر ${student.name}',
+                                'receiverId': receiverId,
+                              },
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('بيانات التواصل مع ولي الأمر غير متوفرة حالياً'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),

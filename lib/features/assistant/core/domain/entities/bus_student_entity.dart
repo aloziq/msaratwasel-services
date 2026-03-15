@@ -31,6 +31,7 @@ class BusStudentEntity extends Equatable {
   final String schoolId;
   final String parentName;
   final String parentPhone;
+  final String? parentUserId;
   final String? photoUrl;
   final BusStudentStatus status;
   final String? behavioralNote;
@@ -43,6 +44,7 @@ class BusStudentEntity extends Equatable {
     required this.schoolId,
     required this.parentName,
     required this.parentPhone,
+    this.parentUserId,
     this.photoUrl,
     this.status = BusStudentStatus.unknown,
     this.behavioralNote,
@@ -56,6 +58,7 @@ class BusStudentEntity extends Equatable {
     String? schoolId,
     String? parentName,
     String? parentPhone,
+    String? parentUserId,
     String? photoUrl,
     BusStudentStatus? status,
     String? behavioralNote,
@@ -68,6 +71,7 @@ class BusStudentEntity extends Equatable {
       schoolId: schoolId ?? this.schoolId,
       parentName: parentName ?? this.parentName,
       parentPhone: parentPhone ?? this.parentPhone,
+      parentUserId: parentUserId ?? this.parentUserId,
       photoUrl: photoUrl ?? this.photoUrl,
       status: status ?? this.status,
       behavioralNote: behavioralNote ?? this.behavioralNote,
@@ -83,6 +87,7 @@ class BusStudentEntity extends Equatable {
     schoolId,
     parentName,
     parentPhone,
+    parentUserId,
     photoUrl,
     status,
     behavioralNote,

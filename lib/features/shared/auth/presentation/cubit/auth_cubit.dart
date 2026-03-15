@@ -6,6 +6,8 @@ import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/reset_password_usecase.dart';
+import '../../domain/usecases/change_password_usecase.dart';
+import '../../domain/usecases/update_avatar_usecase.dart';
 import 'auth_state.dart';
 
 @lazySingleton
@@ -14,12 +16,16 @@ class AuthCubit extends Cubit<AuthState> {
   final LogoutUseCase logoutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
   final ResetPasswordUseCase resetPasswordUseCase;
+  final ChangePasswordUseCase changePasswordUseCase;
+  final UpdateAvatarUseCase updateAvatarUseCase;
 
   AuthCubit({
     required this.loginUseCase,
     required this.logoutUseCase,
     required this.getCurrentUserUseCase,
     required this.resetPasswordUseCase,
+    required this.changePasswordUseCase,
+    required this.updateAvatarUseCase,
   }) : super(AuthInitial());
 
   Future<void> checkAuthStatus() async {
@@ -65,6 +71,40 @@ class AuthCubit extends Cubit<AuthState> {
       (failure) =>
           emit(AuthError(failure.message ?? 'An unexpected error occurred')),
       (_) => emit(AuthPasswordResetSent()),
+    );
+  }
+
+  Future<void> updateAvatar(String imagePath) async {
+    final currentState = state;
+    if (currentState is AuthAuthenticated) {
+      final result = await updateAvatarUseCase(imagePath);
+      result.fold(
+        (failure) => emit(AuthError(failure.message ?? 'فشل تحديث الصورة')),
+        (newAvatarUrl) {
+          final updatedUser = currentState.user.copyWith(avatar: newAvatarUrl);
+          emit(AuthAuthenticated(updatedUser));
+        },
+      );
+    }
+  }
+
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final result = await changePasswordUseCase(ChangePasswordParams(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
+    ));
+    
+    return result.fold(
+      (failure) {
+        emit(AuthError(failure.message ?? 'فشل تغيير كلمة السر'));
+        return false;
+      },
+      (_) => true,
     );
   }
 }

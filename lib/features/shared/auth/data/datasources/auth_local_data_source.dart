@@ -22,6 +22,9 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   static const String _userTokenKey = 'USER_TOKEN';
   static const String _userAvatarKey = 'USER_AVATAR';
   static const String _userBusIdKey = 'USER_BUS_ID';
+  static const String _userPhoneKey = 'USER_PHONE';
+  static const String _userEmailKey = 'USER_EMAIL';
+  static const String _userNationalIdKey = 'USER_NATIONAL_ID';
 
   @override
   Future<UserModel> getCachedUser() async {
@@ -32,6 +35,9 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     final avatar = sharedPreferences.getString(_userAvatarKey);
     final busIdString = sharedPreferences.getString(_userBusIdKey);
     final busId = busIdString != null ? int.tryParse(busIdString) : null;
+    final phone = sharedPreferences.getString(_userPhoneKey);
+    final email = sharedPreferences.getString(_userEmailKey);
+    final nationalId = sharedPreferences.getString(_userNationalIdKey);
 
     if (id != null && name != null && roleString != null && token != null) {
       return UserModel(
@@ -41,6 +47,9 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
         token: token,
         avatar: avatar,
         busId: busId,
+        phone: phone,
+        email: email,
+        nationalId: nationalId,
       );
     } else {
       throw Exception('No cached user found');
@@ -53,15 +62,35 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     await sharedPreferences.setString(_userNameKey, user.name);
     await sharedPreferences.setString(_userRoleKey, user.role.name);
     await sharedPreferences.setString(_userTokenKey, user.token);
+    
     if (user.avatar != null) {
       await sharedPreferences.setString(_userAvatarKey, user.avatar!);
     } else {
       await sharedPreferences.remove(_userAvatarKey);
     }
+    
     if (user.busId != null) {
       await sharedPreferences.setString(_userBusIdKey, user.busId.toString());
     } else {
       await sharedPreferences.remove(_userBusIdKey);
+    }
+
+    if (user.phone != null) {
+      await sharedPreferences.setString(_userPhoneKey, user.phone!);
+    } else {
+      await sharedPreferences.remove(_userPhoneKey);
+    }
+
+    if (user.email != null) {
+      await sharedPreferences.setString(_userEmailKey, user.email!);
+    } else {
+      await sharedPreferences.remove(_userEmailKey);
+    }
+
+    if (user.nationalId != null) {
+      await sharedPreferences.setString(_userNationalIdKey, user.nationalId!);
+    } else {
+      await sharedPreferences.remove(_userNationalIdKey);
     }
   }
 

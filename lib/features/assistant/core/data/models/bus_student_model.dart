@@ -9,6 +9,7 @@ class BusStudentModel extends BusStudentEntity {
     required super.schoolId,
     required super.parentName,
     required super.parentPhone,
+    super.parentUserId,
     super.photoUrl,
     super.status = BusStudentStatus.unknown,
     super.behavioralNote,
@@ -23,6 +24,7 @@ class BusStudentModel extends BusStudentEntity {
       schoolId: json['schoolId'] as String,
       parentName: json['parentName'] as String,
       parentPhone: json['parentPhone'] as String,
+      parentUserId: json['parentUserId']?.toString(),
       photoUrl: json['photoUrl'] as String?,
       status: BusStudentStatus.values.firstWhere(
         (e) => e.name == json['status'],
@@ -41,6 +43,7 @@ class BusStudentModel extends BusStudentEntity {
       'schoolId': schoolId,
       'parentName': parentName,
       'parentPhone': parentPhone,
+      'parentUserId': parentUserId,
       'photoUrl': photoUrl,
       'status': status.name,
       'behavioralNote': behavioralNote,

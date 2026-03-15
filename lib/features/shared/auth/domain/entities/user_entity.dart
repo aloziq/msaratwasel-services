@@ -34,6 +34,9 @@ class UserEntity extends Equatable {
   final String token;
   final String? avatar;
   final int? busId;
+  final String? email;
+  final String? phone;
+  final String? nationalId;
 
   const UserEntity({
     required this.id,
@@ -42,8 +45,36 @@ class UserEntity extends Equatable {
     required this.token,
     this.avatar,
     this.busId,
+    this.email,
+    this.phone,
+    this.nationalId,
   });
 
+  UserEntity copyWith({
+    String? id,
+    String? name,
+    UserRole? role,
+    String? token,
+    String? avatar,
+    int? busId,
+    String? email,
+    String? phone,
+    String? nationalId,
+  }) {
+    return UserEntity(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      token: token ?? this.token,
+      avatar: avatar ?? this.avatar,
+      busId: busId ?? this.busId,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      nationalId: nationalId ?? this.nationalId,
+    );
+  }
+
   @override
-  List<Object?> get props => [id, name, role, token, avatar, busId];
+  List<Object?> get props =>
+      [id, name, role, token, avatar, busId, email, phone, nationalId];
 }

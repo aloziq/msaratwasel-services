@@ -67,7 +67,54 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> resetPassword({required String id}) async {
-    // لم يُنفَّذ بعد في الـ Backend
+    // لم يُنفَّذ بعد في الـ Backend بشكل كامل
     return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      await remoteDataSource.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> updateAvatar(String imagePath) async {
+    try {
+      final imageUrl = await remoteDataSource.updateAvatar(imagePath: imagePath);
+      
+      // تحديث بيانات المستخدم في الكاش المحلي
+      final currentUser = await localDataSource.getCachedUser();
+      final updatedUser = currentUser.copyWith(avatar: imageUrl);
+      await localDataSource.cacheUser(updatedUser);
+      
+      return Right(imageUrl);
+    } catch (e) {
+      return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateProfile({
+    required String phone,
+    required String email,
+  }) async {
+    try {
+      await remoteDataSource.updateProfile(phone: phone, email: email);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
   }
 }

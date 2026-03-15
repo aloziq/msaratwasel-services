@@ -97,4 +97,13 @@ class RouteMockRepository implements RouteRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
   }
+
+  @override
+  Future<void> updateLocation({
+    required double latitude,
+    required double longitude,
+  }) async {
+    // Mock implementation for updating bus location
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
 }
