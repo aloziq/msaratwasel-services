@@ -14,6 +14,8 @@ import '../cubit/attendance_history_cubit.dart';
 import '../cubit/attendance_history_state.dart';
 import '../../domain/entities/attendance_history_entity.dart';
 import '../../../students/domain/entities/student_entity.dart';
+import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 
 class AttendanceHistoryScreen extends StatefulWidget {
   const AttendanceHistoryScreen({super.key});
@@ -40,8 +42,14 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        context.go(AppRoutes.teacherHome);
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
       body: BlocBuilder<AttendanceHistoryCubit, AttendanceHistoryState>(
         builder: (context, state) {
           if (state is AttendanceHistoryLoading) {
@@ -81,7 +89,8 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
           return const SizedBox.shrink();
         },
       ),
-    );
+    ),
+   );
   }
 
   Widget _buildClassesSliverList(List<AttendanceHistoryEntity> history) {

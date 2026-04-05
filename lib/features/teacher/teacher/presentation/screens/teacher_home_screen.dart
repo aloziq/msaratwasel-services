@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,6 +23,8 @@ class TeacherHomeScreen extends StatefulWidget {
 }
 
 class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
+  DateTime? _lastPressedAt;
+
   @override
   void initState() {
     super.initState();
@@ -44,8 +47,28 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
           context.go(AppRoutes.login);
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          
+          final now = DateTime.now();
+          if (_lastPressedAt == null ||
+              now.difference(_lastPressedAt!) > const Duration(seconds: 2)) {
+            _lastPressedAt = now;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('اضغط مرة أخرى للخروج من التطبيق', textAlign: TextAlign.center),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
+          
+          SystemNavigator.pop();
+        },
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -77,7 +100,8 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
           ),
         ),
       ),
-    );
+    ),
+   );
   }
 
   Widget _buildDashboard(

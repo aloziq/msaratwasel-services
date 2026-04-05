@@ -201,7 +201,9 @@ class _AppDrawerState extends State<AppDrawer> {
           isDark: isDark,
           onTap: () {
             Navigator.pop(context);
-            context.go(AppRoutes.attendanceHistory);
+            if (currentLocation != AppRoutes.attendanceHistory) {
+              context.push(AppRoutes.attendanceHistory);
+            }
           },
         ),
       );
@@ -214,7 +216,9 @@ class _AppDrawerState extends State<AppDrawer> {
           isDark: isDark,
           onTap: () {
             Navigator.pop(context);
-            context.go(AppRoutes.reports);
+            if (currentLocation != AppRoutes.reports) {
+              context.push(AppRoutes.reports);
+            }
           },
         ),
       );
@@ -243,7 +247,9 @@ class _AppDrawerState extends State<AppDrawer> {
           isDark: isDark,
           onTap: () {
             Navigator.pop(context);
-            context.go(AppRoutes.busStudents);
+            if (currentLocation != AppRoutes.busStudents) {
+               context.push(AppRoutes.busStudents);
+            }
           },
         ),
       );
@@ -256,7 +262,9 @@ class _AppDrawerState extends State<AppDrawer> {
           isDark: isDark,
           onTap: () {
             Navigator.pop(context);
-            context.go(AppRoutes.dailyChecklist);
+            if (currentLocation != AppRoutes.dailyChecklist) {
+              context.push(AppRoutes.dailyChecklist);
+            }
           },
         ),
       );
@@ -282,7 +290,9 @@ class _AppDrawerState extends State<AppDrawer> {
           isDark: isDark,
           onTap: () {
             Navigator.pop(context);
-            context.go(AppRoutes.busMap);
+            if (currentLocation != AppRoutes.busMap) {
+              context.push(AppRoutes.busMap);
+            }
           },
         ),
       );

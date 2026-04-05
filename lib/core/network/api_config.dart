@@ -1,6 +1,6 @@
 class ApiConfig {
   // هذا هو المتغير الوحيد الذي ستغيره للربط بين المحلي والاستضافة
-  static const bool isLocal = true;
+  static const bool isLocal = false;
 
   // رابط السيرفر المحلي (تأكد من IP جهازك إذا كنت تختبر على هاتف حقيقي بدلاً من 10.0.2.2)
   static const String _localUrl = "http://192.168.8.188:8001/api/"; 
