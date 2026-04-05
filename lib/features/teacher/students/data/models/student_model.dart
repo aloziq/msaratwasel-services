@@ -12,10 +12,10 @@ class StudentModel extends StudentEntity {
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
     return StudentModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      parentName: json['parentName'] as String,
-      parentPhone: json['parentPhone'] as String,
+      id: json['id']?.toString() ?? '',
+      name: json['name'] as String? ?? 'غير معروف',
+      parentName: json['parentName'] as String? ?? '',
+      parentPhone: json['parentPhone'] as String? ?? '',
       photoUrl: json['photoUrl'] as String?,
       status: AttendanceStatus.values.firstWhere(
         (e) => e.name == json['status'],

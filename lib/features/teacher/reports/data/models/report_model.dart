@@ -5,8 +5,10 @@ class ReportModel extends ReportEntity {
 
   factory ReportModel.fromJson(Map<String, dynamic> json) {
     return ReportModel(
-      date: DateTime.parse(json['date'] as String),
-      attendancePercentage: (json['attendancePercentage'] as num).toDouble(),
+      date: json['date'] != null 
+          ? DateTime.tryParse(json['date'].toString()) ?? DateTime.now() 
+          : DateTime.now(),
+      attendancePercentage: (json['attendancePercentage'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -21,21 +23,24 @@ class ReportModel extends ReportEntity {
 class StudentReportModel extends StudentReportEntity {
   const StudentReportModel({
     required super.name,
+    super.civilId,
     required super.presentCount,
     required super.absentCount,
   });
 
   factory StudentReportModel.fromJson(Map<String, dynamic> json) {
     return StudentReportModel(
-      name: json['name'] as String,
-      presentCount: json['presentCount'] as int? ?? 0,
-      absentCount: json['absentCount'] as int? ?? 0,
+      name: json['name']?.toString() ?? 'غير معروف',
+      civilId: json['civil_id']?.toString() ?? json['civilId']?.toString(),
+      presentCount: (json['presentCount'] as num?)?.toInt() ?? 0,
+      absentCount: (json['absentCount'] as num?)?.toInt() ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
+      'civil_id': civilId,
       'presentCount': presentCount,
       'absentCount': absentCount,
     };
@@ -47,16 +52,24 @@ class AttendanceStatsModel extends AttendanceStatsEntity {
     required super.totalStudents,
     required super.presentToday,
     required super.absentToday,
+    required super.unmarkedToday,
     required super.averageAttendance,
     required super.weeklyTrend,
     required super.studentReports,
   });
 
   factory AttendanceStatsModel.fromJson(Map<String, dynamic> json) {
+    final total = json['totalStudents'] as int? ?? 0;
+    final present = json['presentToday'] as int? ?? 0;
+    final absent = json['absentToday'] as int? ?? 0;
+    // Calculate unmarked if not provided explicitly by backend
+    final unmarked = json['unmarkedToday'] as int? ?? (total - present - absent);
+
     return AttendanceStatsModel(
-      totalStudents: json['totalStudents'] as int? ?? 0,
-      presentToday: json['presentToday'] as int? ?? 0,
-      absentToday: json['absentToday'] as int? ?? 0,
+      totalStudents: total,
+      presentToday: present,
+      absentToday: absent,
+      unmarkedToday: unmarked,
       averageAttendance: (json['averageAttendance'] as num?)?.toDouble() ?? 0.0,
       weeklyTrend:
           (json['weeklyTrend'] as List<dynamic>?)
@@ -78,6 +91,7 @@ class AttendanceStatsModel extends AttendanceStatsEntity {
       'totalStudents': totalStudents,
       'presentToday': presentToday,
       'absentToday': absentToday,
+      'unmarkedToday': unmarkedToday,
       'averageAttendance': averageAttendance,
       'weeklyTrend': weeklyTrend.map((e) {
         if (e is ReportModel) return e.toJson();
@@ -90,6 +104,7 @@ class AttendanceStatsModel extends AttendanceStatsEntity {
         if (e is StudentReportModel) return e.toJson();
         return StudentReportModel(
           name: e.name,
+          civilId: e.civilId,
           presentCount: e.presentCount,
           absentCount: e.absentCount,
         ).toJson();

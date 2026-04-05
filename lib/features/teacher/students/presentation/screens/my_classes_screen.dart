@@ -124,11 +124,15 @@ class _ClassCard extends StatelessWidget {
           size: 16,
           color: theme.colorScheme.primary,
         ),
-        onTap: () {
-          context.push(
+        onTap: () async {
+          await context.push(
             AppRoutes.classDetailsPath(classroom.id),
             extra: classroom,
           );
+          // Always refresh this screen's stats when returning from class details!
+          if (context.mounted) {
+            context.read<MyClassesCubit>().loadClasses();
+          }
         },
       ),
     ).animate().fadeIn(delay: (100 * index).ms).slideX(begin: 0.1);

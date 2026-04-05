@@ -401,10 +401,11 @@
     "tryAgain": "حاول مرة أخرى",
     "noInternet": "لا يوجد اتصال بالإنترنت",
     
-    "successMessage": "تمت العملية بنجاح",
+    "successMessage": "العملية تمت بنجاح",
     "savedSuccessfully": "تم الحفظ بنجاح",
     "deletedSuccessfully": "تم الحذف بنجاح",
     "sentSuccessfully": "تم الإرسال بنجاح",
+    "attendanceMarked": "تم تسجيل الحضور بنجاح",
     
     "navigation": "الملاحة",
     "endTrip": "إنهاء الرحلة",
@@ -519,5 +520,7 @@
     "roleDriver": "سائق",
     "roleBusAssistant": "مشرفة الحافلة",
     "roleFieldSupervisor": "مشرف ميداني",
-    "roleTeacher": "معلم"
+    "roleTeacher": "معلم",
+    "unmarkedToday": "غير محددين اليوم",
+    "civilIdPrefix": "الرقم المدني"
 }

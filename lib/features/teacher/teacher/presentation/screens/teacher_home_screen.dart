@@ -11,6 +11,8 @@ import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/aut
 import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 import '../cubit/teacher_cubit.dart';
 import '../cubit/teacher_state.dart';
+import 'package:msaratwasel_services/features/teacher/reports/presentation/cubit/reports_cubit.dart';
+import 'package:msaratwasel_services/features/teacher/reports/presentation/cubit/reports_state.dart';
 
 class TeacherHomeScreen extends StatefulWidget {
   const TeacherHomeScreen({super.key});
@@ -24,6 +26,14 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
   void initState() {
     super.initState();
     context.read<TeacherCubit>().loadClassroom();
+    context.read<ReportsCubit>().loadReports();
+  }
+
+  Future<void> _handleRefresh() async {
+    context.read<TeacherCubit>().loadClassroom();
+    context.read<ReportsCubit>().loadReports();
+    // Wait for state updates to settle visually
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 
   @override
@@ -50,18 +60,21 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
             },
           ),
         ),
-        body: BlocBuilder<AuthCubit, AuthState>(
-          builder: (context, authState) {
-            String teacherName = AppLocalizations.of(context)!.theTeacher;
-            if (authState is AuthAuthenticated) {
-              teacherName = authState.user.name;
-            }
-            return BlocBuilder<TeacherCubit, TeacherState>(
-              builder: (context, teacherState) {
-                return _buildDashboard(context, teacherName, teacherState);
-              },
-            );
-          },
+        body: RefreshIndicator(
+          onRefresh: _handleRefresh,
+          child: BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, authState) {
+              String teacherName = AppLocalizations.of(context)!.theTeacher;
+              if (authState is AuthAuthenticated) {
+                teacherName = authState.user.name;
+              }
+              return BlocBuilder<TeacherCubit, TeacherState>(
+                builder: (context, teacherState) {
+                  return _buildDashboard(context, teacherName, teacherState);
+                },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -74,6 +87,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
   ) {
     final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,43 +228,75 @@ class _StatsSection extends StatelessWidget {
     // Colors using AppColors
     const absentColor = AppColors.dangerRed;
     const presentColor = AppColors.successGreen;
-    // const totalColor = AppColors.slateGray; // Removed as we use AppColors.lightBlue directly
 
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            icon: Icons.cancel_rounded, // X Icon
-            label: l10n.absentToday, // "غائبون اليوم"
-            value: '3',
-            color: absentColor,
-            isDarkBg: true,
-            delay: 400,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            icon: Icons.check_circle_rounded,
-            label: l10n.presentToday, // "حاضرون اليوم"
-            value: '22',
-            color: presentColor,
-            isDarkBg: true,
-            delay: 300,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            icon: Icons.groups_rounded,
-            label: l10n.studentCount, // "عدد الطلاب"
-            value: '$studentCount',
-            color: AppColors.lightBlue, // Changed from slateGray to Blue
-            isDarkBg: true,
-            delay: 200,
-          ),
-        ),
-      ],
+    return BlocBuilder<ReportsCubit, ReportsState>(
+      builder: (context, reportsState) {
+        String presentToday = '-';
+        String absentToday = '-';
+        String unmarkedToday = '-';
+        String displayStudentCount = '-';
+
+        if (reportsState is ReportsLoaded) {
+          final loadedState = reportsState;
+          presentToday = '${loadedState.stats.presentToday}';
+          absentToday = '${loadedState.stats.absentToday}';
+          unmarkedToday = '${loadedState.stats.unmarkedToday}';
+          displayStudentCount = '${loadedState.stats.totalStudents}';
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = (constraints.maxWidth - 36) / 4; // 12 * 3 spacing
+            return Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.groups_rounded,
+                    label: l10n.studentCount, // "عدد الطلاب"
+                    value: displayStudentCount,
+                    color: AppColors.lightBlue,
+                    isDarkBg: true,
+                    delay: 200,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.check_circle_rounded,
+                    label: l10n.presentToday, // "حاضرون اليوم"
+                    value: presentToday,
+                    color: presentColor,
+                    isDarkBg: true,
+                    delay: 300,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.cancel_rounded,
+                    label: l10n.absentToday, // "غائبون اليوم"
+                    value: absentToday,
+                    color: absentColor,
+                    isDarkBg: true,
+                    delay: 400,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.help_outline_rounded,
+                    label: l10n.unmarked, // "غير محدد"
+                    value: unmarkedToday,
+                    color: Colors.orange,
+                    isDarkBg: true,
+                    delay: 500,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -281,16 +327,14 @@ class _StatCard extends StatelessWidget {
         : Colors.white.withValues(alpha: 0.7); // Glassy White for Light Mode
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
-              : Colors.white.withValues(
-                  alpha: 0.5,
-                ), // Lighter border in light mode
+              : Colors.white.withValues(alpha: 0.5),
         ),
         boxShadow: isDark
             ? []
@@ -305,32 +349,28 @@ class _StatCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isDark
-                  ? Colors.white
-                  : AppColors.textPrimary, // Dynamic Text Color
+              color: isDark ? Colors.white : AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              color: isDark
-                  ? Colors.white70
-                  : AppColors.textSecondary, // Dynamic Subtitle Color
+              fontSize: 9,
+              color: isDark ? Colors.white70 : AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
@@ -361,9 +401,13 @@ class _QuickActionsGrid extends StatelessWidget {
         _ActionCard(
           icon: PhosphorIconsFill.users,
           label: l10n.myStudents, // "طلابي"
-          color: AppColors.lightBlue, // Changed from teal to Blue
-          onTap: () {
-            context.push(AppRoutes.myClasses);
+          color: AppColors.lightBlue,
+          onTap: () async {
+            await context.push(AppRoutes.myClasses);
+            if (context.mounted) {
+              context.read<TeacherCubit>().loadClassroom();
+              context.read<ReportsCubit>().loadReports();
+            }
           },
           delay: 600,
         ),
@@ -371,8 +415,12 @@ class _QuickActionsGrid extends StatelessWidget {
           icon: PhosphorIconsFill.qrCode, // Grid icon kinda
           label: l10n.scanAttendance, // "مسح الحضور"
           color: AppColors.accent, // Changed from slateGray to Amber/Yellow
-          onTap: () {
-            context.push(AppRoutes.qrScan);
+          onTap: () async {
+            await context.push(AppRoutes.qrScan);
+            if (context.mounted) {
+              context.read<TeacherCubit>().loadClassroom();
+              context.read<ReportsCubit>().loadReports();
+            }
           },
           delay: 700,
         ),
@@ -380,8 +428,12 @@ class _QuickActionsGrid extends StatelessWidget {
           icon: PhosphorIconsFill.clockCounterClockwise,
           label: l10n.attendanceHistory, // "سجل الحضور"
           color: AppColors.purple, // Changed from successGreen to Purple
-          onTap: () {
-            context.go(AppRoutes.attendanceHistory);
+          onTap: () async {
+            await context.push(AppRoutes.attendanceHistory); // Use push instead of go to easily hook return
+            if (context.mounted) {
+              context.read<TeacherCubit>().loadClassroom();
+              context.read<ReportsCubit>().loadReports();
+            }
           },
           delay: 800,
         ),
@@ -389,8 +441,12 @@ class _QuickActionsGrid extends StatelessWidget {
           icon: PhosphorIconsFill.chartBar,
           label: l10n.reports, // "التقارير"
           color: AppColors.pink, // Changed from skyBlue to Pink
-          onTap: () {
-            context.pushNamed('reports');
+          onTap: () async {
+            await context.pushNamed('reports');
+            if (context.mounted) {
+              context.read<TeacherCubit>().loadClassroom();
+              context.read<ReportsCubit>().loadReports();
+            }
           },
           delay: 900,
         ),

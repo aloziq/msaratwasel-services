@@ -1138,6 +1138,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sentSuccessfully => 'Sent successfully';
 
   @override
+  String get attendanceMarked => 'Attendance marked successfully';
+
+  @override
   String get navigation => 'Navigation';
 
   @override
@@ -1385,4 +1388,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String parentNameLabel(String name) {
     return 'Parent: $name';
   }
+
+  @override
+  String get unmarkedToday => 'Unmarked Today';
+
+  @override
+  String get civilIdPrefix => 'Civil ID';
 }

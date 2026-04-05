@@ -28,3 +28,12 @@ class QRScanError extends QRScanState {
   @override
   List<Object?> get props => [message];
 }
+
+class QRScanAttendanceSuccess extends QRScanState {
+  final String studentId;
+
+  const QRScanAttendanceSuccess(this.studentId);
+
+  @override
+  List<Object?> get props => [studentId, DateTime.now().millisecondsSinceEpoch]; // Force update even for same ID
+}

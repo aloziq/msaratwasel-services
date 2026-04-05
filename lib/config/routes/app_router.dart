@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/di/injection.dart';
 import '../../core/presentation/widgets/main_shell.dart';
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
 import '../../features/shared/auth/presentation/cubit/auth_state.dart';
@@ -13,17 +14,20 @@ import '../../features/shared/settings/presentation/screens/help_center_screen.d
 import '../../features/teacher/attendance_history/presentation/screens/attendance_history_screen.dart';
 import '../../features/teacher/attendance_history/presentation/cubit/attendance_history_cubit.dart';
 import '../../features/teacher/attendance_history/domain/usecases/get_attendance_history_usecase.dart';
-import '../../features/teacher/attendance_history/data/repositories/attendance_history_repository_impl.dart';
+
 import '../../features/teacher/students/presentation/screens/class_details_screen.dart';
 import '../../features/teacher/students/presentation/screens/my_classes_screen.dart';
 import '../../features/teacher/students/presentation/cubit/my_classes_cubit.dart';
 import 'package:msaratwasel_services/features/teacher/teacher/domain/usecases/get_teacher_classrooms_usecase.dart';
+import '../../features/teacher/teacher/domain/usecases/get_teacher_classroom_usecase.dart';
+import '../../features/teacher/teacher/presentation/cubit/teacher_cubit.dart';
 import '../../features/teacher/teacher/presentation/screens/teacher_home_screen.dart';
 import '../../features/shared/qr_scan/presentation/screens/qr_scan_screen.dart';
 import '../../features/teacher/reports/presentation/screens/reports_screen.dart';
 import '../../features/teacher/reports/presentation/cubit/reports_cubit.dart';
 import '../../features/teacher/reports/domain/usecases/get_attendance_stats_usecase.dart';
 import '../../features/teacher/reports/data/repositories/reports_repository_impl.dart';
+import '../../features/teacher/reports/data/datasources/reports_remote_datasource.dart';
 import '../../features/shared/profile/presentation/screens/profile_screen.dart';
 import '../../features/assistant/home/presentation/screens/assistant_home_screen.dart';
 import '../../features/assistant/students/presentation/screens/bus_students_screen.dart';
@@ -87,7 +91,24 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.teacherHome,
             name: 'teacherHome',
-            builder: (context, state) => const TeacherHomeScreen(),
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (context) => TeacherCubit(
+                    getTeacherClassroomUseCase:
+                        getIt<GetTeacherClassroomUseCase>(),
+                  )..loadClassroom(),
+                ),
+                BlocProvider(
+                  create: (context) => ReportsCubit(
+                    getAttendanceStatsUseCase: GetAttendanceStatsUseCase(
+                      ReportsRepositoryImpl(ReportsRemoteDataSourceImpl()),
+                    ),
+                  )..loadReports(),
+                ),
+              ],
+              child: const TeacherHomeScreen(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.classDetails,
@@ -102,8 +123,8 @@ class AppRouter {
             name: 'myClasses',
             builder: (context, state) => BlocProvider(
               create: (context) => MyClassesCubit(
-                getTeacherClassroomsUseCase: context
-                    .read<GetTeacherClassroomsUseCase>(),
+                getTeacherClassroomsUseCase:
+                    getIt<GetTeacherClassroomsUseCase>(),
               ),
               child: const MyClassesScreen(),
             ),
@@ -113,9 +134,7 @@ class AppRouter {
             name: 'attendanceHistory',
             builder: (context, state) => BlocProvider(
               create: (context) => AttendanceHistoryCubit(
-                getAttendanceHistoryUseCase: GetAttendanceHistoryUseCase(
-                  AttendanceHistoryRepositoryImpl(),
-                ),
+                getAttendanceHistoryUseCase: getIt<GetAttendanceHistoryUseCase>(),
               )..loadHistory(),
               child: const AttendanceHistoryScreen(),
             ),
@@ -133,7 +152,9 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.qrScan,
             name: 'qrScan',
-            builder: (context, state) => const QRScanScreen(),
+            builder: (context, state) => QRScanScreen(
+              classId: state.extra as String?,
+            ),
           ),
           GoRoute(
             path: AppRoutes.reports,
@@ -141,7 +162,7 @@ class AppRouter {
             builder: (context, state) => BlocProvider(
               create: (context) => ReportsCubit(
                 getAttendanceStatsUseCase: GetAttendanceStatsUseCase(
-                  ReportsRepositoryImpl(),
+                  ReportsRepositoryImpl(ReportsRemoteDataSourceImpl()),
                 ),
               ),
               child: const ReportsScreen(),

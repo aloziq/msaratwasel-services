@@ -6,8 +6,15 @@ import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../cubit/qr_scan_cubit.dart';
 import '../cubit/qr_scan_state.dart';
 
+import 'package:msaratwasel_services/core/di/injection.dart';
+import 'package:msaratwasel_services/features/teacher/students/presentation/screens/class_details_screen.dart'
+    show AttendanceStatus;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
+
 class QRScanScreen extends StatefulWidget {
-  const QRScanScreen({super.key});
+  final String? classId;
+  const QRScanScreen({super.key, this.classId});
 
   @override
   State<QRScanScreen> createState() => _QRScanScreenState();
@@ -27,21 +34,49 @@ class _QRScanScreenState extends State<QRScanScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return BlocProvider(
-      create: (context) => QRScanCubit(),
+      create: (context) => getIt<QRScanCubit>(),
       child: BlocListener<QRScanCubit, QRScanState>(
         listener: (context, state) {
           if (state is QRScanSuccess) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('Scanned: ${state.code}')));
-            Future.delayed(const Duration(seconds: 1), () {
-              if (!context.mounted) return;
-              context.pop(state.code);
-            });
+            if (widget.classId != null) {
+              // Direct attendance marking mode
+              context.read<QRScanCubit>().markAttendanceViaQr(
+                    state.code,
+                    widget.classId ?? '',
+                  );
+            } else {
+              // General purpose mode (pop with code)
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Scanned: ${state.code}')));
+              Future.delayed(const Duration(seconds: 1), () {
+                if (!context.mounted) return;
+                context.pop(state.code);
+              });
+            }
+          } else if (state is QRScanAttendanceSuccess) {
+            // Success in continuous mode
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${l10n.attendanceMarked}: ${state.studentId}',
+                  style: GoogleFonts.cairo(),
+                ),
+                backgroundColor: const Color(0xFF10B981),
+                duration: const Duration(seconds: 1),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           } else if (state is QRScanError) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            ).showSnackBar(
+              SnackBar(
+                content: Text(state.message, style: GoogleFonts.cairo()),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           }
         },
         child: Scaffold(
@@ -59,19 +94,26 @@ class _QRScanScreenState extends State<QRScanScreen> {
             children: [
               // Scanner
               MobileScanner(
-                controller: controller,
-                onDetect: (capture) {
-                  final List<Barcode> barcodes = capture.barcodes;
-                  for (final barcode in barcodes) {
-                    if (barcode.rawValue != null) {
-                      context.read<QRScanCubit>().onCodeScanned(
-                        barcode.rawValue!,
-                      );
-                      break;
-                    }
+              controller: controller,
+              onDetect: (capture) {
+                final List<Barcode> barcodes = capture.barcodes;
+                for (final barcode in barcodes) {
+                  if (barcode.rawValue != null &&
+                      barcode.rawValue!.isNotEmpty) {
+                    final String code = barcode.rawValue!;
+                    
+                    // Provide haptic feedback to confirm scan
+                    HapticFeedback.mediumImpact();
+
+                    // Trigger attendance marking
+                    context.read<QRScanCubit>().markAttendanceViaQr(
+                          code,
+                          widget.classId ?? '',
+                        );
                   }
-                },
-              ),
+                }
+              },
+            ),
 
               // Overlay
               _buildOverlay(context),

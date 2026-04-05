@@ -29,21 +29,52 @@ class ClassDetailsCubit extends Cubit<ClassDetailsState> {
     AttendanceStatus status,
     String classId,
   ) async {
-    final result = await markAttendanceUseCase(studentId, status);
-    result.fold((l) => emit(ClassDetailsError(l)), (r) {
-      if (state is ClassDetailsLoaded) {
-        final currentState = state as ClassDetailsLoaded;
-        final updatedStudents = currentState.students.map((student) {
-          if (student.id == studentId) {
-            return student.copyWith(status: status);
-          }
-          return student;
-        }).toList();
-        emit(ClassDetailsLoaded(updatedStudents, classId));
-      } else {
-        // Fallback if state is not loaded for some reason
-        loadStudents(classId);
+    if (state is! ClassDetailsLoaded) return;
+    
+    final currentState = state as ClassDetailsLoaded;
+    final currentStudent = currentState.students.firstWhere((s) => s.id == studentId);
+
+    // Rule: Cannot change status of locked students if they were already marked (present/absent)
+    if (currentStudent.isLocked && currentStudent.status != AttendanceStatus.unknown) {
+      return;
+    }
+
+    // تحديث واجهة المستخدم فوراً (Optimistic Update)
+    final previousStudents = List<StudentEntity>.from(currentState.students);
+    final updatedStudents = currentState.students.map((student) {
+      if (student.id == studentId) {
+        return student.copyWith(status: status);
       }
+      return student;
+    }).toList();
+    
+    emit(ClassDetailsLoaded(updatedStudents, classId));
+
+    final result = await markAttendanceUseCase(studentId, status);
+    
+    result.fold((l) {
+      // Return to previous state on failure
+      if (state is ClassDetailsLoaded) {
+        emit(ClassDetailsLoaded(previousStudents, classId));
+      }
+    }, (r) {
+      // Success: Keep the optimistic state
     });
+  }
+
+  Future<void> submitDailyReport() async {
+    if (state is! ClassDetailsLoaded) return;
+    
+    final currentState = state as ClassDetailsLoaded;
+    // Lock all students that have been marked
+    final lockedStudents = currentState.students.map((student) {
+      if (student.status != AttendanceStatus.unknown) {
+        return student.copyWith(isLocked: true);
+      }
+      return student;
+    }).toList();
+    
+    emit(ClassDetailsLoaded(lockedStudents, currentState.classId));
+    // Usually here you'd call a usecase to tell the backend the report was sent formally
   }
 }

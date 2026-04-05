@@ -1117,7 +1117,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noInternet => 'لا يوجد اتصال بالإنترنت';
 
   @override
-  String get successMessage => 'تمت العملية بنجاح';
+  String get successMessage => 'العملية تمت بنجاح';
 
   @override
   String get savedSuccessfully => 'تم الحفظ بنجاح';
@@ -1127,6 +1127,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sentSuccessfully => 'تم الإرسال بنجاح';
+
+  @override
+  String get attendanceMarked => 'تم تسجيل الحضور بنجاح';
 
   @override
   String get navigation => 'الملاحة';
@@ -1376,4 +1379,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String parentNameLabel(String name) {
     return 'ولي الأمر: $name';
   }
+
+  @override
+  String get unmarkedToday => 'غير محددين اليوم';
+
+  @override
+  String get civilIdPrefix => 'الرقم المدني';
 }

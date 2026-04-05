@@ -10,10 +10,19 @@ class ClassroomModel extends ClassroomEntity {
 
   factory ClassroomModel.fromJson(Map<String, dynamic> json) {
     return ClassroomModel(
-      id: json['id'],
-      name: json['name'],
-      grade: json['grade'],
-      studentCount: json['studentCount'],
+      id: json['id']?.toString() ?? '',
+      name: json['name'] as String? ?? '',
+      grade: json['grade'] as String? ?? '',
+      studentCount: (json['studentCount'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'grade': grade,
+      'studentCount': studentCount,
+    };
   }
 }

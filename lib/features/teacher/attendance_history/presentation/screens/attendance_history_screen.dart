@@ -2,43 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart' as intl;
 
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import '../cubit/attendance_history_cubit.dart';
 import '../cubit/attendance_history_state.dart';
 import '../../domain/entities/attendance_history_entity.dart';
 import '../../../students/domain/entities/student_entity.dart';
-import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
-import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 class AttendanceHistoryScreen extends StatefulWidget {
   const AttendanceHistoryScreen({super.key});
 
   @override
-  State<AttendanceHistoryScreen> createState() =>
-      _AttendanceHistoryScreenState();
+  State<AttendanceHistoryScreen> createState() => _AttendanceHistoryScreenState();
 }
 
 class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
   AttendanceHistoryEntity? selectedClass;
   AttendanceHistoryRecord? selectedRecord;
-  AttendanceStatus? _filterStatus;
-  DateTime? _selectedDate;
+  AttendanceStatus? _filterStatus; // null means "All"
 
   @override
   void initState() {
     super.initState();
+    _selectedDay = _focusedDay;
     context.read<AttendanceHistoryCubit>().loadHistory();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
+    final l10n = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: BlocBuilder<AttendanceHistoryCubit, AttendanceHistoryState>(
         builder: (context, state) {
           if (state is AttendanceHistoryLoading) {
@@ -46,68 +49,32 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
           } else if (state is AttendanceHistoryError) {
             return Center(child: Text(state.message));
           } else if (state is AttendanceHistoryLoaded) {
+            final history = state.history;
             return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
               slivers: [
                 AdaptiveSliverAppBar(
-                  leading: selectedRecord != null || selectedClass != null
-                      ? BackButton(
-                          onPressed: () {
-                            setState(() {
-                              if (selectedRecord != null) {
-                                selectedRecord = null;
-                                _filterStatus = null;
-                              } else if (selectedClass != null) {
-                                selectedClass = null;
-                                _selectedDate =
-                                    null; // Reset date filter when going back
-                              }
-                            });
-                          },
-                        )
-                      : IconButton(
-                          icon: Icon(
-                            PhosphorIconsRegular.list,
-                            color: theme.colorScheme.onSurface,
-                            size: 32,
-                          ),
-                          onPressed: () {
-                            MainShell.of(context)?.openDrawer();
-                          },
-                        ),
-                  title: _getTitle(context),
-                  trailing: (selectedClass != null && selectedRecord == null)
-                      ? IconButton(
-                          icon: Icon(
-                            _selectedDate != null
-                                ? PhosphorIconsFill.calendarX
-                                : PhosphorIconsRegular.calendarPlus,
-                            color: _selectedDate != null
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurface,
-                          ),
-                          tooltip: _selectedDate != null
-                              ? AppLocalizations.of(context)!.clearFilter
-                              : AppLocalizations.of(context)!.searchByDate,
-                          onPressed: () {
-                            if (_selectedDate != null) {
-                              setState(() {
-                                _selectedDate = null;
-                              });
-                            } else {
-                              _pickDate(context);
-                            }
-                          },
-                        )
-                      : null,
-                  backgroundColor: Colors.transparent,
-                  stretch: true,
+                  title: selectedRecord != null 
+                      ? l10n.students
+                      : (selectedClass != null 
+                          ? '${selectedClass!.className} (${intl.DateFormat('yyyy/M/d').format(_selectedDay ?? _focusedDay)})'
+                          : l10n.attendanceHistory),
+                  leading: selectedClass != null 
+                    ? BackButton(onPressed: () {
+                        setState(() {
+                          if (selectedRecord != null) {
+                            selectedRecord = null;
+                          } else {
+                            selectedClass = null;
+                          }
+                        });
+                      })
+                    : null,
                 ),
-                if (selectedRecord != null)
-                  _buildStudentsSliverList(selectedRecord!.attendedStudents)
-                else if (selectedClass != null)
-                  _buildDailyRecordsSliverList(selectedClass!.dailyRecords)
+                if (selectedClass != null)
+                  ..._buildClassHistoryContent(selectedClass!)
                 else
-                  _buildClassesSliverList(state.history),
+                  _buildClassesSliverList(history),
               ],
             );
           }
@@ -117,542 +84,526 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
     );
   }
 
-  Future<void> _pickDate(BuildContext context) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: DateTime(2023),
-      lastDate: now,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
-  String _getTitle(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    if (selectedRecord != null) {
-      if (_filterStatus == AttendanceStatus.present) return l10n.presentToday;
-      if (_filterStatus == AttendanceStatus.absent) return l10n.absentToday;
-      return l10n.studentCount;
-    } else if (selectedClass != null) {
-      if (_selectedDate != null) {
-        return "${selectedClass!.className} (${_formatDate(_selectedDate!)})";
-      }
-      return selectedClass!.className;
-    }
-    return l10n.attendanceHistory;
-  }
-
   Widget _buildClassesSliverList(List<AttendanceHistoryEntity> history) {
     return SliverPadding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.lg),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate((context, index) {
-          final item = history[index];
-          return _ClassCard(
-            className: item.className,
-            recordCount: item.dailyRecords.length,
-            onTap: () => setState(() => selectedClass = item),
-            index: index,
-          );
-        }, childCount: history.length),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final classModel = history[index];
+            return _ClassCard(
+              classModel: classModel,
+              onTap: () => setState(() => selectedClass = classModel),
+            ).animate().fadeIn(delay: (index * 50).ms).slideX();
+          },
+          childCount: history.length,
+        ),
       ),
     );
   }
 
-  Widget _buildDailyRecordsSliverList(List<AttendanceHistoryRecord> records) {
-    final theme = Theme.of(context);
+  List<Widget> _buildClassHistoryContent(AttendanceHistoryEntity classModel) {
+    final records = classModel.dailyRecords;
+    final currentRecord = records.any((r) => isSameDay(r.date, _selectedDay))
+        ? records.firstWhere((r) => isSameDay(r.date, _selectedDay))
+        : null;
 
-    // Filter records by selected date if set
-    final filteredRecords = _selectedDate == null
-        ? records
-        : records.where((r) => isSameDay(r.date, _selectedDate!)).toList();
+    int totalPresent = 0;
+    int totalAbsent = 0;
+    for (var r in records) {
+      if (r.date.month == _focusedDay.month && r.date.year == _focusedDay.year) {
+        totalPresent += r.presentCount;
+        totalAbsent += r.absentCount;
+      }
+    }
 
-    if (filteredRecords.isEmpty && _selectedDate != null) {
-      return SliverFillRemaining(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return [
+      SliverToBoxAdapter(
+        child: Column(
+          children: [
+        // 1. Top Summary Cards (Present/Absent)
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          child: Row(
             children: [
-              Icon(
-                PhosphorIconsDuotone.calendarX,
-                size: 64,
-                color: theme.disabledColor,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context)!.noRecordsForDate,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              Expanded(
+                child: _HeaderSummaryCard(
+                  label: '${AppLocalizations.of(context)!.present} (هذا الشهر)',
+                  value: totalPresent.toString(),
+                  color: const Color(0xFF10B981),
+                  icon: PhosphorIconsFill.checkCircle,
                 ),
               ),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: () => setState(() => _selectedDate = null),
-                icon: const Icon(Icons.refresh),
-                label: Text(AppLocalizations.of(context)!.showAllRecords),
+              SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _HeaderSummaryCard(
+                  label: '${AppLocalizations.of(context)!.absent} (هذا الشهر)',
+                  value: totalAbsent.toString(),
+                  color: const Color(0xFFEF4444),
+                  icon: PhosphorIconsFill.xCircle,
+                ),
               ),
             ],
           ),
         ),
-      );
-    }
 
-    return SliverPadding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate((context, index) {
-          final record = filteredRecords[index];
-          return _HistoryCard(
-            record: record,
-            index: index,
-            onTap: () => setState(() {
-              selectedRecord = record;
-              _filterStatus = null;
-            }),
-            onPresentTap: () => setState(() {
-              selectedRecord = record;
-              _filterStatus = AttendanceStatus.present;
-            }),
-            onAbsentTap: () => setState(() {
-              selectedRecord = record;
-              _filterStatus = AttendanceStatus.absent;
-            }),
-          );
-        }, childCount: filteredRecords.length),
+        // 2. Calendar Card
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildCalendarHeader(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: TableCalendar(
+                    firstDay: DateTime.utc(2020, 1, 1),
+                    lastDay: DateTime.utc(2030, 12, 31),
+                    focusedDay: _focusedDay,
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    locale: Localizations.localeOf(context).languageCode,
+                    headerVisible: false,
+                    daysOfWeekHeight: 32,
+                    rowHeight: 48,
+                    calendarFormat: CalendarFormat.month,
+                    startingDayOfWeek: StartingDayOfWeek.sunday,
+                    weekendDays: const [DateTime.friday, DateTime.saturday],
+                            onDaySelected: (selectedDay, focusedDay) {
+                              setState(() {
+                                _selectedDay = selectedDay;
+                                _focusedDay = focusedDay;
+                              });
+                            },
+                            calendarStyle: CalendarStyle(
+                              outsideDaysVisible: false,
+                              selectedDecoration: const BoxDecoration(
+                                color: Color(0xFFECFDF5),
+                                shape: BoxShape.circle,
+                              ),
+                              selectedTextStyle: GoogleFonts.cairo(
+                                color: const Color(0xFF10B981),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                              todayDecoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              todayTextStyle: GoogleFonts.cairo(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              defaultTextStyle: GoogleFonts.cairo(fontSize: 15, color: const Color(0xFF475569)),
+                              weekendTextStyle: GoogleFonts.cairo(fontSize: 15, color: const Color(0xFF94A3B8)),
+                            ),
+                            daysOfWeekStyle: DaysOfWeekStyle(
+                              weekdayStyle: GoogleFonts.cairo(
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                              weekendStyle: GoogleFonts.cairo(
+                                color: const Color(0xFF94A3B8),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+
+        SizedBox(height: AppSpacing.lg),
+
+        // 3. Daily Status Card
+            if (currentRecord != null)
+              _DailyDetailCard(
+                record: currentRecord,
+                onFilterSelected: (status) => setState(() => _filterStatus = status),
+                currentFilter: _filterStatus,
+                onTap: () => setState(() => _filterStatus = null),
+              )
+            else
+              _EmptyRecordCard(date: _selectedDay ?? DateTime.now()),
+          ],
+        ),
+      ),
+      if (currentRecord != null)
+        _buildStudentsSliverList(currentRecord.attendedStudents)
+    ];
+  }
+
+  Widget _buildCalendarHeader() {
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final monthName = intl.DateFormat.MMMM(languageCode).format(_focusedDay);
+    final year = _focusedDay.year;
+
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_right, color: Color(0xFF1E293B)),
+            onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
+          ),
+          Text(
+            '$monthName $year',
+            style: GoogleFonts.cairo(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1E293B),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_left, color: Color(0xFF1E293B)),
+            onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
+          ),
+        ],
       ),
     );
-  }
-
-  bool isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}/${date.month}/${date.day}';
   }
 
   Widget _buildStudentsSliverList(List<StudentEntity> students) {
-    // Filter students based on _filterStatus
-    final filteredStudents = _filterStatus == null
-        ? students
+    final filteredStudents = _filterStatus == null 
+        ? students 
         : students.where((s) => s.status == _filterStatus).toList();
 
-    if (filteredStudents.isEmpty) {
-      return SliverFillRemaining(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return SliverPadding(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final student = filteredStudents[index];
+            return _StudentHistoryCard(student: student, index: index)
+                .animate()
+                .fadeIn(delay: (index * 50).ms)
+                .slideY(begin: 0.1);
+          },
+          childCount: filteredStudents.length,
+        ),
+      ),
+    );
+  }
+
+  bool isSameDay(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+class _HeaderSummaryCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  const _HeaderSummaryCard({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                PhosphorIconsDuotone.userList,
-                size: 64,
-                color: Colors.grey.withValues(alpha: 0.6),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 16),
               ),
-              const SizedBox(height: 16),
               Text(
-                AppLocalizations.of(context)!.noStudentsInList,
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+                value,
+                style: GoogleFonts.cairo(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
+                ),
               ),
             ],
           ),
-        ),
-      );
-    }
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              color: const Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-    return SliverPadding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate((context, index) {
-          final student = filteredStudents[index];
-          return _StudentHistoryCard(student: student, index: index);
-        }, childCount: filteredStudents.length),
+class _DailyDetailCard extends StatelessWidget {
+  final AttendanceHistoryRecord record;
+  final VoidCallback onTap;
+  final Function(AttendanceStatus?) onFilterSelected;
+  final AttendanceStatus? currentFilter;
+
+  const _DailyDetailCard({
+    required this.record, 
+    required this.onTap,
+    required this.onFilterSelected,
+    this.currentFilter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final total = record.totalStudents > 0 ? record.totalStudents : 1;
+    final rate = (record.presentCount / total * 100).toInt();
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    onFilterSelected(null);
+                    onTap();
+                  },
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF1F2),
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: Text(
+                              '$rate%',
+                              style: GoogleFonts.cairo(
+                                color: const Color(0xFFEF4444),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                intl.DateFormat('yyyy/M/d').format(record.date),
+                                style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(PhosphorIconsFill.calendar, size: 20, color: Color(0xFF475569)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: record.presentCount / total,
+                          minHeight: 8,
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => onFilterSelected(AttendanceStatus.absent),
+                        child: _StatusBox(
+                          label: l10n.absent,
+                          value: record.absentCount.toString(),
+                          color: const Color(0xFFEF4444),
+                          bgColor: const Color(0xFFFFF1F2),
+                          isSelected: currentFilter == AttendanceStatus.absent,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => onFilterSelected(AttendanceStatus.present),
+                        child: _StatusBox(
+                          label: l10n.present,
+                          value: record.presentCount.toString(),
+                          color: const Color(0xFF10B981),
+                          bgColor: const Color(0xFFECFDF5),
+                          isSelected: currentFilter == AttendanceStatus.present,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusBox extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final Color bgColor;
+  final bool isSelected;
+
+  const _StatusBox({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.bgColor,
+    this.isSelected = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: isSelected ? Border.all(color: color, width: 2) : null,
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.cairo(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.cairo(
+              fontSize: 12,
+              color: color.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _ClassCard extends StatelessWidget {
-  final String className;
-  final int recordCount;
+  final AttendanceHistoryEntity classModel;
   final VoidCallback onTap;
-  final int index;
 
-  const _ClassCard({
-    required this.className,
-    required this.recordCount,
-    required this.onTap,
-    required this.index,
-  });
+  const _ClassCard({required this.classModel, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      margin: EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1E293B).withValues(alpha: 0.7)
-            : Colors.white.withValues(alpha: 0.8),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.white, // Cleaner white border in light mode
-          width: 1.5,
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-            spreadRadius: 0,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: 4,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(
-            PhosphorIconsFill.chalkboardTeacher,
-            color: isDark ? Colors.white : theme.colorScheme.primary,
-            size: 24,
-          ),
+          child: Icon(PhosphorIconsFill.chalkboardTeacher, color: AppColors.primary),
         ),
         title: Text(
-          className,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
+          classModel.className,
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Row(
-            children: [
-              Icon(
-                PhosphorIconsRegular.fileText,
-                size: 14,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                AppLocalizations.of(context)!.dailyRecordCount(recordCount),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+        subtitle: Text(
+          AppLocalizations.of(context)!.dailyRecordCount(classModel.dailyRecords.length),
+          style: GoogleFonts.cairo(color: Colors.grey[600], fontSize: 13),
         ),
-        trailing: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Directionality.of(context) == TextDirection.rtl
-                ? PhosphorIconsRegular.caretLeft
-                : PhosphorIconsRegular.caretRight,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF94A3B8)),
         onTap: onTap,
       ),
-    ).animate().fadeIn(delay: (100 * index).ms).slideX(begin: 0.1);
-  }
-}
-
-class _HistoryCard extends StatelessWidget {
-  final AttendanceHistoryRecord record;
-  final int index;
-  final VoidCallback onTap;
-  final VoidCallback onPresentTap;
-  final VoidCallback onAbsentTap;
-
-  const _HistoryCard({
-    required this.record,
-    required this.index,
-    required this.onTap,
-    required this.onPresentTap,
-    required this.onAbsentTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1E293B).withValues(alpha: 0.7)
-            : Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 25,
-            offset: const Offset(0, 10),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.1,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          PhosphorIconsFill.calendarBlank,
-                          color: isDark
-                              ? Colors.white
-                              : theme.colorScheme.primary,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Text(
-                        _formatDate(record.date),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getAttendanceColor(
-                        context,
-                        record.attendanceRate,
-                      ).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _getAttendanceColor(
-                          context,
-                          record.attendanceRate,
-                        ).withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Text(
-                      '${record.attendanceRate.toStringAsFixed(0)}%',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _getAttendanceColor(
-                          context,
-                          record.attendanceRate,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // Visual Progress Bar
-              Stack(
-                children: [
-                  Container(
-                    height: 6,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                  FractionallySizedBox(
-                    widthFactor: record.attendanceRate / 100,
-                    child: Container(
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: _getAttendanceColor(
-                          context,
-                          record.attendanceRate,
-                        ),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: onPresentTap,
-                      child: _StatItem(
-                        label: AppLocalizations.of(context)!.present,
-                        value: record.presentCount,
-                        color: AppColors.successGreen,
-                        isPill: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: onAbsentTap,
-                      child: _StatItem(
-                        label: AppLocalizations.of(context)!.absent,
-                        value: record.absentCount,
-                        color: AppColors.dangerRed,
-                        isPill: true,
-                      ),
-                    ),
-                  ),
-                  // const SizedBox(width: 8),
-                  // Expanded(
-                  //   child: _StatItem(
-                  //     label: 'تأخير',
-                  //     value: record.lateCount,
-                  //     color: Colors.orange,
-                  //     isPill: true,
-                  //   ),
-                  // ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).animate().fadeIn(delay: (100 * index).ms).slideX(begin: 0.1);
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}/${date.month}/${date.day}';
-  }
-
-  Color _getAttendanceColor(BuildContext context, double rate) {
-    if (rate >= 90) return AppColors.successGreen;
-    if (rate >= 75) return Colors.orange;
-    return AppColors.dangerRed;
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final int value;
-  final Color color;
-  final bool isPill;
-
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.color,
-    this.isPill = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    if (isPill) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : color.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              '$value',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.8,
-                ),
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        Text(
-          '$value',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -665,66 +616,269 @@ class _StudentHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isPresent = student.status == AttendanceStatus.present;
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      padding: const EdgeInsets.all(AppSpacing.md),
+      margin: EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark
-            ? const Color(0xFF1E293B).withValues(alpha: 0.7)
-            : Colors.white.withValues(alpha: 0.8),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.brightness == Brightness.dark
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.white,
-          width: 1.5,
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-            spreadRadius: 0,
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-            child: Icon(
-              PhosphorIconsRegular.student,
-              color: theme.brightness == Brightness.dark
-                  ? Colors.white
-                  : theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _StudentDetailsModal.show(context, student),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Text(
-                  student.name,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundImage: student.photoUrl != null && student.photoUrl!.isNotEmpty ? NetworkImage(student.photoUrl!) : null,
+                  child: student.photoUrl == null || student.photoUrl!.isEmpty
+                      ? Text(student.name.isNotEmpty ? student.name[0] : '?', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: AppColors.primary))
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        student.name,
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      Text(
+                        student.parentName,
+                        style: GoogleFonts.cairo(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  AppLocalizations.of(
-                    context,
-                  )!.parentNameLabel(student.parentName),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isPresent ? const Color(0xFFECFDF5) : const Color(0xFFFFF1F2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    isPresent ? l10n.present : l10n.absent,
+                    style: GoogleFonts.cairo(
+                      color: isPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentDetailsModal extends StatelessWidget {
+  final StudentEntity student;
+
+  const _StudentDetailsModal({required this.student});
+
+  static void show(BuildContext context, StudentEntity student) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _StudentDetailsModal(student: student),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white24 : Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          CircleAvatar(
+            radius: 50,
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+            backgroundImage: student.photoUrl != null && student.photoUrl!.isNotEmpty
+                ? NetworkImage(student.photoUrl!)
+                : null,
+            child: (student.photoUrl == null || student.photoUrl!.isEmpty)
+                ? Icon(
+                    PhosphorIconsRegular.student,
+                    size: 40,
+                    color: theme.colorScheme.primary,
+                  )
+                : null,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            student.name,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            AppLocalizations.of(context)!.classPlaceholder,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          _buildInfoRow(
+            context,
+            icon: PhosphorIconsDuotone.user,
+            label: AppLocalizations.of(context)!.parentGuardian,
+            value: student.parentName,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildInfoRow(
+            context,
+            icon: PhosphorIconsDuotone.phone,
+            label: AppLocalizations.of(context)!.parentPhone,
+            value: student.parentPhone.isNotEmpty ? student.parentPhone : 'N/A',
+            onTap: student.parentPhone.isNotEmpty ? () => _launchCaller(student.parentPhone) : null,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildInfoRow(
+            context,
+            icon: PhosphorIconsDuotone.whatsappLogo,
+            label: AppLocalizations.of(context)!.whatsapp,
+            value: student.parentPhone.isNotEmpty ? student.parentPhone : 'N/A',
+            onTap: student.parentPhone.isNotEmpty ? () => _launchWhatsApp(student.parentPhone) : null,
+          ),
+          const SizedBox(height: AppSpacing.xxl),
         ],
       ),
-    ).animate().fadeIn(delay: (100 * index).ms).slideX(begin: 0.1);
+    );
+  }
+
+  Widget _buildInfoRow(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    VoidCallback? onTap,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(16),
+          border: onTap != null 
+              ? Border.all(color: AppColors.primary.withValues(alpha: 0.1))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Icon(
+                icon,
+                color: onTap != null 
+                    ? AppColors.primary 
+                    : (isDark ? Colors.white70 : Colors.black45),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(
+                PhosphorIconsRegular.arrowSquareOut,
+                size: 16,
+                color: AppColors.primary.withValues(alpha: 0.5),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _launchCaller(String phone) async {
+    debugPrint('Launching caller: $phone');
+  }
+
+  void _launchWhatsApp(String phone) async {
+    debugPrint('Launching WhatsApp: $phone');
+  }
+}
+
+class _EmptyRecordCard extends StatelessWidget {
+  final DateTime date;
+  const _EmptyRecordCard({required this.date});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(AppSpacing.xl),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(PhosphorIconsRegular.calendarX, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context)!.noRecordsForDate,
+              style: GoogleFonts.cairo(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

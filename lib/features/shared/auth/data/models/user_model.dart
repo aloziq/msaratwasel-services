@@ -27,6 +27,45 @@ class UserModel extends UserEntity {
     );
   }
 
+  factory UserModel.fromEntity(UserEntity entity) {
+    return UserModel(
+      id: entity.id,
+      name: entity.name,
+      role: entity.role,
+      token: entity.token,
+      avatar: entity.avatar,
+      busId: entity.busId,
+      email: entity.email,
+      phone: entity.phone,
+      nationalId: entity.nationalId,
+    );
+  }
+
+  @override
+  UserModel copyWith({
+    String? id,
+    String? name,
+    UserRole? role,
+    String? token,
+    String? avatar,
+    int? busId,
+    String? email,
+    String? phone,
+    String? nationalId,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      token: token ?? this.token,
+      avatar: avatar ?? this.avatar,
+      busId: busId ?? this.busId,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      nationalId: nationalId ?? this.nationalId,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

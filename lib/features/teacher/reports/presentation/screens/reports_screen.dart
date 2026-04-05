@@ -136,7 +136,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         crossAxisCount: 2,
         mainAxisSpacing: AppSpacing.md,
         crossAxisSpacing: AppSpacing.md,
-        childAspectRatio: 1.3,
+        childAspectRatio: 1.2, // Made taller to prevent overflow
         children: [
           _SummaryCard(
             title: l10n.totalStudents,
@@ -165,6 +165,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
             icon: PhosphorIconsFill.chartLineUp,
             color: Colors.orange,
             index: 3,
+          ),
+          _SummaryCard(
+            title: l10n.unmarkedToday,
+            value: '${stats.unmarkedToday}',
+            icon: PhosphorIconsFill.warningCircle,
+            color: Colors.blueGrey,
+            index: 4,
           ),
         ],
       ),
@@ -224,7 +231,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     final filteredStudents = students.where((s) {
       if (_searchQuery.isEmpty) return true;
-      return s.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      final query = _searchQuery.toLowerCase();
+      final matchesName = s.name.toLowerCase().contains(query);
+      final matchesCivilId = s.civilId?.toLowerCase().contains(query) ?? false;
+      return matchesName || matchesCivilId;
     }).toList();
 
     if (filteredStudents.isEmpty) {
@@ -306,6 +316,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             fontSize: 16,
                           ),
                         ),
+                        if (student.civilId != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            "${l10n.civilIdPrefix}: ${student.civilId}",
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 6),
                         Row(
                           children: [
@@ -406,7 +426,7 @@ class _SummaryCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: isDark ? theme.cardColor : Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -432,7 +452,7 @@ class _SummaryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(8), // Smaller padding
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -442,24 +462,27 @@ class _SummaryCard extends StatelessWidget {
                           color.withValues(alpha: 0.05),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12), // Slightly smaller radius
                     ),
-                    child: Icon(icon, color: color, size: 22),
+                    child: Icon(icon, color: color, size: 18), // Smaller icon
                   ),
                   // Trend indicator removed as per user request for data accuracy
                 ],
               ),
               const Spacer(),
-              Text(
-                value,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : theme.colorScheme.onSurface,
-                  fontSize: 26,
-                  height: 1.1,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                    fontSize: 26,
+                    height: 1.1,
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4), // Reduced spacing
               Text(
                 title,
                 maxLines: 1,
@@ -467,7 +490,7 @@ class _SummaryCard extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontSize: 12, // Slightly smaller font
                 ),
               ),
             ],

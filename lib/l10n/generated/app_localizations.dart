@@ -2252,6 +2252,12 @@ abstract class AppLocalizations {
   /// **'Sent successfully'**
   String get sentSuccessfully;
 
+  /// No description provided for @attendanceMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance marked successfully'**
+  String get attendanceMarked;
+
   /// No description provided for @navigation.
   ///
   /// In en, this message translates to:
@@ -2731,6 +2737,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Parent: {name}'**
   String parentNameLabel(String name);
+
+  /// No description provided for @unmarkedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmarked Today'**
+  String get unmarkedToday;
+
+  /// No description provided for @civilIdPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Civil ID'**
+  String get civilIdPrefix;
 }
 
 class _AppLocalizationsDelegate

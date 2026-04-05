@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,7 +61,15 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
                   PhosphorIconsRegular.qrCode,
                   color: isDark ? Colors.white : AppColors.primary,
                 ),
-                onPressed: () => context.push(AppRoutes.qrScan),
+                onPressed: () async {
+                  final state = context.read<ClassDetailsCubit>().state;
+                  if (state is ClassDetailsLoaded) {
+                    await context.push(AppRoutes.qrScan, extra: state.classId);
+                    if (context.mounted) {
+                      context.read<ClassDetailsCubit>().loadStudents(state.classId);
+                    }
+                  }
+                },
               ),
             ),
             backgroundColor: theme.scaffoldBackgroundColor.withValues(
@@ -171,15 +180,18 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
         presentCount: presentCount,
         absentCount: absentCount,
         unmarkedCount: unmarkedCount,
-        onConfirm: () {
-          Navigator.of(dialogContext).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.dailyReportSentSuccess),
-              backgroundColor: Colors.green,
-            ),
-          );
-          context.pop();
+        onConfirm: () async {
+          await context.read<ClassDetailsCubit>().submitDailyReport();
+          if (context.mounted) {
+            Navigator.of(dialogContext).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.dailyReportSentSuccess),
+                backgroundColor: Colors.green,
+              ),
+            );
+            context.pop(true);
+          }
         },
       ),
     );
@@ -251,18 +263,18 @@ class _StudentCard extends StatelessWidget {
                         ),
                         child: CircleAvatar(
                           radius: 28,
-                          backgroundColor: theme.colorScheme.primary.withValues(
-                            alpha: 0.1,
-                          ),
-                          backgroundImage: student.photoUrl != null
+                          backgroundColor: _getStatusColor(context, student.status).withValues(alpha: 0.1),
+                          backgroundImage: student.photoUrl != null && student.photoUrl!.isNotEmpty
                               ? NetworkImage(student.photoUrl!)
                               : null,
-                          child: student.photoUrl == null
-                              ? Icon(
-                                  PhosphorIconsRegular.student,
-                                  color: isDark
-                                      ? Colors.white
-                                      : theme.colorScheme.primary,
+                          child: (student.photoUrl == null || student.photoUrl!.isEmpty)
+                              ? Text(
+                                  student.name.isNotEmpty ? student.name[0] : '?',
+                                  style: GoogleFonts.cairo(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: _getStatusColor(context, student.status),
+                                  ),
                                 )
                               : null,
                         ),
@@ -329,6 +341,8 @@ class _StudentCard extends StatelessWidget {
   }
 
   Widget _buildAttendanceButtons(BuildContext context) {
+    final bool isLocked = student.isLocked && student.status != AttendanceStatus.unknown;
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -337,38 +351,44 @@ class _StudentCard extends StatelessWidget {
             : Colors.grey.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _AttendanceButton(
-              label: AppLocalizations.of(context)!.present, // Present
-              icon: PhosphorIconsFill.checkCircle,
-              color: AppColors.successGreen,
-              isSelected: student.status == AttendanceStatus.present,
-              onTap: () => _updateStatus(context, AttendanceStatus.present),
+      child: Opacity(
+        opacity: isLocked ? 0.6 : 1.0,
+        child: Row(
+          children: [
+            Expanded(
+              child: _AttendanceButton(
+                label: AppLocalizations.of(context)!.present, // Present
+                icon: PhosphorIconsFill.checkCircle,
+                color: AppColors.successGreen,
+                isSelected: student.status == AttendanceStatus.present,
+                onTap: isLocked ? null : () => _updateStatus(context, AttendanceStatus.present),
+              ),
             ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _AttendanceButton(
-              label: AppLocalizations.of(context)!.absent, // Absent
-              icon: PhosphorIconsFill.xCircle,
-              color: AppColors.dangerRed,
-              isSelected: student.status == AttendanceStatus.absent,
-              onTap: () => _updateStatus(context, AttendanceStatus.absent),
+            const SizedBox(width: 4),
+            Expanded(
+              child: _AttendanceButton(
+                label: AppLocalizations.of(context)!.absent, // Absent
+                icon: PhosphorIconsFill.xCircle,
+                color: AppColors.dangerRed,
+                isSelected: student.status == AttendanceStatus.absent,
+                onTap: isLocked ? null : () => _updateStatus(context, AttendanceStatus.absent),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   void _updateStatus(BuildContext context, AttendanceStatus status) {
-    context.read<ClassDetailsCubit>().markAttendance(
-      student.id,
-      status,
-      'class_id_placeholder',
-    );
+    final state = context.read<ClassDetailsCubit>().state;
+    if (state is ClassDetailsLoaded) {
+      context.read<ClassDetailsCubit>().markAttendance(
+        student.id,
+        status,
+        state.classId,
+      );
+    }
   }
 
   void _showStudentDetails(BuildContext context) {
@@ -397,7 +417,7 @@ class _AttendanceButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final bool isSelected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _AttendanceButton({
     required this.label,
@@ -531,14 +551,16 @@ class _StudentDetailsModal extends StatelessWidget {
             context,
             icon: PhosphorIconsDuotone.phone,
             label: AppLocalizations.of(context)!.parentPhone,
-            value: '050 123 4567',
+            value: student.parentPhone.isNotEmpty ? student.parentPhone : 'N/A',
+            onTap: student.parentPhone.isNotEmpty ? () => _launchCaller(student.parentPhone) : null,
           ),
           const SizedBox(height: AppSpacing.md),
           _buildInfoRow(
             context,
             icon: PhosphorIconsDuotone.whatsappLogo,
             label: AppLocalizations.of(context)!.whatsapp,
-            value: '050 123 4567',
+            value: student.parentPhone.isNotEmpty ? student.parentPhone : 'N/A',
+            onTap: student.parentPhone.isNotEmpty ? () => _launchWhatsApp(student.parentPhone) : null,
           ),
           const SizedBox(height: AppSpacing.xxl),
         ],
@@ -551,50 +573,78 @@ class _StudentDetailsModal extends StatelessWidget {
     required IconData icon,
     required String label,
     required String value,
+    VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Icon(
-              icon,
-              color: isDark ? Colors.white70 : AppColors.primary,
-              size: 24,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(16),
+          border: onTap != null 
+              ? Border.all(color: AppColors.primary.withValues(alpha: 0.1))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Icon(
+                icon,
+                color: onTap != null 
+                    ? AppColors.primary 
+                    : (isDark ? Colors.white70 : Colors.black45),
+                size: 24,
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                Text(
-                  value,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                  Text(
+                    value,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            if (onTap != null)
+              Icon(
+                PhosphorIconsRegular.arrowSquareOut,
+                size: 16,
+                color: AppColors.primary.withValues(alpha: 0.5),
+              ),
+          ],
+        ),
       ),
     );
+  }
+
+  void _launchCaller(String phone) async {
+    final Uri url = Uri.parse('tel:$phone');
+    // In a real app, use url_launcher package here
+    debugPrint('Launching caller: $url');
+  }
+
+  void _launchWhatsApp(String phone) async {
+    // Basic WhatsApp URL
+    final Uri url = Uri.parse('https://wa.me/$phone');
+    // In a real app, use url_launcher package here
+    debugPrint('Launching WhatsApp: $url');
   }
 }
 

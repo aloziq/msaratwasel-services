@@ -55,17 +55,33 @@ import '../../features/shared/auth/data/repositories/auth_repository_impl.dart'
     as _i452;
 import '../../features/shared/auth/domain/repositories/auth_repository.dart'
     as _i61;
+import '../../features/shared/auth/domain/usecases/change_password_usecase.dart'
+    as _i315;
 import '../../features/shared/auth/domain/usecases/get_current_user_usecase.dart'
     as _i735;
 import '../../features/shared/auth/domain/usecases/login_usecase.dart' as _i758;
 import '../../features/shared/auth/domain/usecases/logout_usecase.dart' as _i29;
 import '../../features/shared/auth/domain/usecases/reset_password_usecase.dart'
     as _i307;
+import '../../features/shared/auth/domain/usecases/update_avatar_usecase.dart'
+    as _i389;
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart' as _i277;
 import '../../features/shared/messages/data/repositories/messages_repository_impl.dart'
     as _i33;
 import '../../features/shared/messages/domain/repositories/messages_repository.dart'
     as _i633;
+import '../../features/shared/qr_scan/presentation/cubit/qr_scan_cubit.dart'
+    as _i989;
+import '../../features/teacher/attendance_history/data/datasources/attendance_history_remote_datasource.dart'
+    as _i587;
+import '../../features/teacher/attendance_history/data/repositories/attendance_history_repository_impl.dart'
+    as _i607;
+import '../../features/teacher/attendance_history/domain/repositories/attendance_history_repository.dart'
+    as _i880;
+import '../../features/teacher/attendance_history/domain/usecases/get_attendance_history_usecase.dart'
+    as _i571;
+import '../../features/teacher/students/data/datasources/students_remote_datasource.dart'
+    as _i222;
 import '../../features/teacher/students/data/repositories/students_repository_impl.dart'
     as _i704;
 import '../../features/teacher/students/domain/repositories/students_repository.dart'
@@ -78,6 +94,8 @@ import '../../features/teacher/students/presentation/cubit/class_details_cubit.d
     as _i272;
 import '../../features/teacher/teacher/data/datasources/teacher_local_datasource.dart'
     as _i70;
+import '../../features/teacher/teacher/data/datasources/teacher_remote_datasource.dart'
+    as _i674;
 import '../../features/teacher/teacher/data/repositories/teacher_repository_impl.dart'
     as _i347;
 import '../../features/teacher/teacher/domain/repositories/teacher_repository.dart'
@@ -108,21 +126,27 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i391.MaintenanceMockRepository(),
     );
     gh.lazySingleton<_i920.HomeRepository>(() => _i215.HomeRepositoryImpl());
+    gh.lazySingleton<_i674.TeacherRemoteDataSource>(
+      () => _i674.TeacherRemoteDataSourceImpl(),
+    );
     gh.factory<_i903.DriverHomeCubit>(
       () => _i903.DriverHomeCubit(gh<_i920.HomeRepository>()),
     );
     gh.lazySingleton<_i517.AuthLocalDataSource>(
       () => _i517.AuthLocalDataSourceImpl(gh<_i460.SharedPreferences>()),
     );
+    gh.lazySingleton<_i222.StudentsRemoteDataSource>(
+      () => _i222.StudentsRemoteDataSourceImpl(),
+    );
     gh.lazySingleton<_i70.TeacherLocalDataSource>(
       () => _i70.TeacherLocalDataSourceImpl(),
     );
     gh.lazySingleton<_i932.TripRepository>(() => _i671.TripRepositoryImpl());
-    gh.lazySingleton<_i319.StudentsRepository>(
-      () => _i704.StudentsRepositoryImpl(),
+    gh.lazySingleton<_i587.AttendanceHistoryRemoteDataSource>(
+      () => _i587.AttendanceHistoryRemoteDataSourceImpl(),
     );
-    gh.lazySingleton<_i962.TeacherRepository>(
-      () => _i347.TeacherRepositoryImpl(gh<_i70.TeacherLocalDataSource>()),
+    gh.lazySingleton<_i319.StudentsRepository>(
+      () => _i704.StudentsRepositoryImpl(gh<_i222.StudentsRemoteDataSource>()),
     );
     gh.lazySingleton<_i627.FleetRemoteDataSource>(
       () => _i627.MockFleetRemoteDataSourceImpl(),
@@ -151,6 +175,12 @@ extension GetItInjectableX on _i174.GetIt {
         remoteDataSource: gh<_i627.FleetRemoteDataSource>(),
       ),
     );
+    gh.lazySingleton<_i962.TeacherRepository>(
+      () => _i347.TeacherRepositoryImpl(gh<_i674.TeacherRemoteDataSource>()),
+    );
+    gh.lazySingleton<_i315.ChangePasswordUseCase>(
+      () => _i315.ChangePasswordUseCase(gh<_i61.AuthRepository>()),
+    );
     gh.lazySingleton<_i735.GetCurrentUserUseCase>(
       () => _i735.GetCurrentUserUseCase(gh<_i61.AuthRepository>()),
     );
@@ -162,6 +192,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i307.ResetPasswordUseCase>(
       () => _i307.ResetPasswordUseCase(gh<_i61.AuthRepository>()),
+    );
+    gh.lazySingleton<_i389.UpdateAvatarUseCase>(
+      () => _i389.UpdateAvatarUseCase(gh<_i61.AuthRepository>()),
     );
     gh.factory<_i514.EndTripCubit>(
       () => _i514.EndTripCubit(gh<_i932.TripRepository>()),
@@ -183,22 +216,37 @@ extension GetItInjectableX on _i174.GetIt {
         getTeacherClassroomUseCase: gh<_i499.GetTeacherClassroomUseCase>(),
       ),
     );
-    gh.lazySingleton<_i277.AuthCubit>(
-      () => _i277.AuthCubit(
-        loginUseCase: gh<_i758.LoginUseCase>(),
-        logoutUseCase: gh<_i29.LogoutUseCase>(),
-        getCurrentUserUseCase: gh<_i735.GetCurrentUserUseCase>(),
-        resetPasswordUseCase: gh<_i307.ResetPasswordUseCase>(),
-      ),
-    );
     gh.factory<_i272.ClassDetailsCubit>(
       () => _i272.ClassDetailsCubit(
         getStudentsUseCase: gh<_i842.GetStudentsUseCase>(),
         markAttendanceUseCase: gh<_i307.MarkAttendanceUseCase>(),
       ),
     );
+    gh.lazySingleton<_i880.AttendanceHistoryRepository>(
+      () => _i607.AttendanceHistoryRepositoryImpl(
+        gh<_i587.AttendanceHistoryRemoteDataSource>(),
+      ),
+    );
+    gh.factory<_i989.QRScanCubit>(
+      () => _i989.QRScanCubit(gh<_i307.MarkAttendanceUseCase>()),
+    );
     gh.lazySingleton<_i301.GetFleetBusesUseCase>(
       () => _i301.GetFleetBusesUseCase(gh<_i26.FleetRepository>()),
+    );
+    gh.lazySingleton<_i277.AuthCubit>(
+      () => _i277.AuthCubit(
+        loginUseCase: gh<_i758.LoginUseCase>(),
+        logoutUseCase: gh<_i29.LogoutUseCase>(),
+        getCurrentUserUseCase: gh<_i735.GetCurrentUserUseCase>(),
+        resetPasswordUseCase: gh<_i307.ResetPasswordUseCase>(),
+        changePasswordUseCase: gh<_i315.ChangePasswordUseCase>(),
+        updateAvatarUseCase: gh<_i389.UpdateAvatarUseCase>(),
+      ),
+    );
+    gh.lazySingleton<_i571.GetAttendanceHistoryUseCase>(
+      () => _i571.GetAttendanceHistoryUseCase(
+        gh<_i880.AttendanceHistoryRepository>(),
+      ),
     );
     gh.factory<_i877.FleetTrackingCubit>(
       () => _i877.FleetTrackingCubit(gh<_i301.GetFleetBusesUseCase>()),

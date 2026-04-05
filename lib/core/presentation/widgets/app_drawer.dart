@@ -554,21 +554,26 @@ class _AppDrawerState extends State<AppDrawer> {
               children: classrooms.map((classroom) {
                 return Padding(
                   padding: const EdgeInsetsDirectional.only(start: 32),
-                  child: _DrawerItem(
-                    title: classroom.name,
-                    icon: PhosphorIconsRegular.door,
-                    isSelected: false,
-                    isDark: isDark,
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.push(
-                        AppRoutes.classDetails.replaceFirst(
-                          ':classId',
-                          classroom.id,
-                        ),
-                        extra: classroom,
+                  child: Builder(
+                    builder: (itemContext) {
+                      return _DrawerItem(
+                        title: classroom.name,
+                        icon: PhosphorIconsRegular.door,
+                        isSelected: false,
+                        isDark: isDark,
+                        onTap: () async {
+                          // Capture router before closing drawer
+                          final router = GoRouter.of(context);
+                          Navigator.pop(context);
+                          await router.push(
+                            AppRoutes.classDetails.replaceFirst(':classId', classroom.id),
+                            extra: classroom,
+                          );
+                          // We might not have the right build context to read Cubits here.
+                          // But we can try utilizing a widely available context if possible.
+                        },
                       );
-                    },
+                    }
                   ),
                 );
               }).toList(),

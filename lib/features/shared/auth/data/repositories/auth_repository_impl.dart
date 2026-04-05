@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 
 import '../../../../../core/error/failure.dart';
 import '../../domain/entities/user_entity.dart';
+import '../models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_local_data_source.dart';
 import '../datasources/auth_remote_data_source.dart';
@@ -93,12 +94,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, String>> updateAvatar(String imagePath) async {
     try {
       final imageUrl = await remoteDataSource.updateAvatar(imagePath: imagePath);
-      
+
       // تحديث بيانات المستخدم في الكاش المحلي
-      final currentUser = await localDataSource.getCachedUser();
+      final UserModel currentUser = await localDataSource.getCachedUser();
       final updatedUser = currentUser.copyWith(avatar: imageUrl);
       await localDataSource.cacheUser(updatedUser);
-      
+
       return Right(imageUrl);
     } catch (e) {
       return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
@@ -112,6 +113,12 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     try {
       await remoteDataSource.updateProfile(phone: phone, email: email);
+
+      // تحديث بيانات المستخدم في الكاش المحلي
+      final UserModel currentUser = await localDataSource.getCachedUser();
+      final updatedUser = currentUser.copyWith(phone: phone, email: email);
+      await localDataSource.cacheUser(updatedUser);
+
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));

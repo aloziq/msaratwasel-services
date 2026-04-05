@@ -9,6 +9,7 @@ class StudentEntity extends Equatable {
   final String parentPhone;
   final String? photoUrl;
   final AttendanceStatus status;
+  final bool isLocked;
 
   const StudentEntity({
     required this.id,
@@ -17,6 +18,7 @@ class StudentEntity extends Equatable {
     required this.parentPhone,
     this.photoUrl,
     this.status = AttendanceStatus.unknown,
+    this.isLocked = false,
   });
 
   StudentEntity copyWith({
@@ -26,6 +28,7 @@ class StudentEntity extends Equatable {
     String? parentPhone,
     String? photoUrl,
     AttendanceStatus? status,
+    bool? isLocked,
   }) {
     return StudentEntity(
       id: id ?? this.id,
@@ -34,6 +37,7 @@ class StudentEntity extends Equatable {
       parentPhone: parentPhone ?? this.parentPhone,
       photoUrl: photoUrl ?? this.photoUrl,
       status: status ?? this.status,
+      isLocked: isLocked ?? this.isLocked,
     );
   }
 
@@ -45,5 +49,6 @@ class StudentEntity extends Equatable {
     parentPhone,
     photoUrl,
     status,
+    isLocked,
   ];
 }

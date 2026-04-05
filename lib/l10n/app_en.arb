@@ -405,6 +405,7 @@
     "savedSuccessfully": "Saved successfully",
     "deletedSuccessfully": "Deleted successfully",
     "sentSuccessfully": "Sent successfully",
+    "attendanceMarked": "Attendance marked successfully",
     
     "navigation": "Navigation",
     "endTrip": "End Trip",
@@ -519,5 +520,7 @@
     "roleDriver": "Driver",
     "roleBusAssistant": "Bus Assistant",
     "roleFieldSupervisor": "Field Supervisor",
-    "roleTeacher": "Teacher"
+    "roleTeacher": "Teacher",
+    "unmarkedToday": "Unmarked Today",
+    "civilIdPrefix": "Civil ID"
 }
