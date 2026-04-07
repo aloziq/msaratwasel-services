@@ -2,7 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:injectable/injectable.dart';
 import '../../domain/entities/user_entity.dart';
 import '../models/user_model.dart';
-// import 'dart:convert'; // Removed unused import
+import 'dart:convert';
 
 abstract class AuthLocalDataSource {
   Future<UserModel> getCachedUser();
@@ -25,6 +25,8 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   static const String _userPhoneKey = 'USER_PHONE';
   static const String _userEmailKey = 'USER_EMAIL';
   static const String _userNationalIdKey = 'USER_NATIONAL_ID';
+  static const String _userSchoolNameKey = 'USER_SCHOOL_NAME';
+  static const String _userBusDetailsKey = 'USER_BUS_DETAILS';
 
   @override
   Future<UserModel> getCachedUser() async {
@@ -38,6 +40,12 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     final phone = sharedPreferences.getString(_userPhoneKey);
     final email = sharedPreferences.getString(_userEmailKey);
     final nationalId = sharedPreferences.getString(_userNationalIdKey);
+    final schoolName = sharedPreferences.getString(_userSchoolNameKey);
+    final busDetailsStr = sharedPreferences.getString(_userBusDetailsKey);
+    Map<String, dynamic>? busDetails;
+    if (busDetailsStr != null) {
+      busDetails = jsonDecode(busDetailsStr);
+    }
 
     if (id != null && name != null && roleString != null && token != null) {
       return UserModel(
@@ -50,6 +58,8 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
         phone: phone,
         email: email,
         nationalId: nationalId,
+        schoolName: schoolName,
+        busDetails: busDetails,
       );
     } else {
       throw Exception('No cached user found');
@@ -92,6 +102,18 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     } else {
       await sharedPreferences.remove(_userNationalIdKey);
     }
+
+    if (user.schoolName != null) {
+      await sharedPreferences.setString(_userSchoolNameKey, user.schoolName!);
+    } else {
+      await sharedPreferences.remove(_userSchoolNameKey);
+    }
+
+    if (user.busDetails != null) {
+      await sharedPreferences.setString(_userBusDetailsKey, jsonEncode(user.busDetails));
+    } else {
+      await sharedPreferences.remove(_userBusDetailsKey);
+    }
   }
 
   @override
@@ -102,5 +124,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     await sharedPreferences.remove(_userTokenKey);
     await sharedPreferences.remove(_userAvatarKey);
     await sharedPreferences.remove(_userBusIdKey);
+    await sharedPreferences.remove(_userSchoolNameKey);
+    await sharedPreferences.remove(_userBusDetailsKey);
   }
 }

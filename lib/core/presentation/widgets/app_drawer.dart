@@ -14,6 +14,7 @@ import 'package:dartz/dartz.dart' hide State;
 import 'package:msaratwasel_services/features/teacher/teacher/domain/entities/classroom_entity.dart';
 import 'package:msaratwasel_services/features/teacher/teacher/domain/usecases/get_teacher_classrooms_usecase.dart';
 import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -637,30 +638,36 @@ class _AppDrawerState extends State<AppDrawer> {
                       width: 2,
                     ),
                   ),
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     radius: 42,
                     backgroundImage: NetworkImage(
-                      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+                      ApiConfig.getImageUrl(user?.avatar),
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary,
-                    shape: BoxShape.circle,
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.edit_rounded,
-                    size: 14,
-                    color: Colors.black,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push(AppRoutes.profile);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      shape: BoxShape.circle,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      size: 14,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ],

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
@@ -83,7 +84,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 );
               } else if (state is ClassDetailsLoaded) {
-                return _buildStudentsSliverList(state.students);
+                return _buildStudentsSliverList(state.students, widget.classroom.name);
               } else if (state is ClassDetailsError) {
                 return SliverFillRemaining(
                   child: Center(child: Text(state.message)),
@@ -98,7 +99,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
     );
   }
 
-  Widget _buildStudentsSliverList(List<StudentEntity> students) {
+  Widget _buildStudentsSliverList(List<StudentEntity> students, String className) {
     return SliverPadding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       sliver: SliverList(
@@ -106,7 +107,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
           final student = students[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: _StudentCard(student: student)
+            child: _StudentCard(student: student, className: className)
                 .animate()
                 .fadeIn(delay: (50 * index).ms)
                 .slideX(begin: 0.1, end: 0),
@@ -200,8 +201,9 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
 
 class _StudentCard extends StatelessWidget {
   final StudentEntity student;
+  final String className;
 
-  const _StudentCard({required this.student});
+  const _StudentCard({required this.student, required this.className});
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +323,7 @@ class _StudentCard extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        PhosphorIconsRegular.caretLeft, // RTL Aware
+                        PhosphorIconsRegular.list,
                         size: 16,
                         color: theme.colorScheme.onSurfaceVariant.withValues(
                           alpha: 0.5,
@@ -396,7 +398,7 @@ class _StudentCard extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _StudentDetailsModal(student: student),
+      builder: (context) => _StudentDetailsModal(student: student, className: className),
     );
   }
 
@@ -479,8 +481,9 @@ class _AttendanceButton extends StatelessWidget {
 
 class _StudentDetailsModal extends StatelessWidget {
   final StudentEntity student;
+  final String className;
 
-  const _StudentDetailsModal({required this.student});
+  const _StudentDetailsModal({required this.student, required this.className});
 
   @override
   Widget build(BuildContext context) {
@@ -532,9 +535,7 @@ class _StudentDetailsModal extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            AppLocalizations.of(
-              context,
-            )!.classPlaceholder, // Placeholder class name
+            className,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -543,6 +544,7 @@ class _StudentDetailsModal extends StatelessWidget {
           _buildInfoRow(
             context,
             icon: PhosphorIconsDuotone.user,
+            imageUrl: student.parentPhotoUrl,
             label: AppLocalizations.of(context)!.parentGuardian,
             value: student.parentName,
           ),
@@ -573,6 +575,7 @@ class _StudentDetailsModal extends StatelessWidget {
     required IconData icon,
     required String label,
     required String value,
+    String? imageUrl,
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
@@ -591,13 +594,20 @@ class _StudentDetailsModal extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: Icon(
-                icon,
-                color: onTap != null 
-                    ? AppColors.primary 
-                    : (isDark ? Colors.white70 : Colors.black45),
+            if (imageUrl != null && imageUrl.isNotEmpty)
+              CircleAvatar(
+                radius: 30,
+                backgroundImage: NetworkImage(imageUrl),
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+              )
+            else
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Icon(
+                  icon,
+                  color: onTap != null 
+                      ? AppColors.primary 
+                      : (isDark ? Colors.white70 : Colors.black45),
                 size: 24,
               ),
             ),
@@ -636,15 +646,20 @@ class _StudentDetailsModal extends StatelessWidget {
 
   void _launchCaller(String phone) async {
     final Uri url = Uri.parse('tel:$phone');
-    // In a real app, use url_launcher package here
-    debugPrint('Launching caller: $url');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      debugPrint('Could not launch caller for $phone');
+    }
   }
 
   void _launchWhatsApp(String phone) async {
-    // Basic WhatsApp URL
     final Uri url = Uri.parse('https://wa.me/$phone');
-    // In a real app, use url_launcher package here
-    debugPrint('Launching WhatsApp: $url');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('Could not launch WhatsApp for $phone');
+    }
   }
 }
 

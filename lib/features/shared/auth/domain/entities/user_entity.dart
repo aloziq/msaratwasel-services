@@ -37,6 +37,8 @@ class UserEntity extends Equatable {
   final String? email;
   final String? phone;
   final String? nationalId;
+  final String? schoolName;
+  final Map<String, dynamic>? busDetails;
 
   const UserEntity({
     required this.id,
@@ -48,6 +50,8 @@ class UserEntity extends Equatable {
     this.email,
     this.phone,
     this.nationalId,
+    this.schoolName,
+    this.busDetails,
   });
 
   UserEntity copyWith({
@@ -60,6 +64,8 @@ class UserEntity extends Equatable {
     String? email,
     String? phone,
     String? nationalId,
+    String? schoolName,
+    Map<String, dynamic>? busDetails,
   }) {
     return UserEntity(
       id: id ?? this.id,
@@ -71,10 +77,12 @@ class UserEntity extends Equatable {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       nationalId: nationalId ?? this.nationalId,
+      schoolName: schoolName ?? this.schoolName,
+      busDetails: busDetails ?? this.busDetails,
     );
   }
 
   @override
   List<Object?> get props =>
-      [id, name, role, token, avatar, busId, email, phone, nationalId];
+      [id, name, role, token, avatar, busId, email, phone, nationalId, schoolName, busDetails];
 }

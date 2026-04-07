@@ -11,6 +11,8 @@ class UserModel extends UserEntity {
     super.email,
     super.phone,
     super.nationalId,
+    super.schoolName,
+    super.busDetails,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,8 @@ class UserModel extends UserEntity {
       email: json['email'],
       phone: json['phone'],
       nationalId: json['national_id'],
+      schoolName: json['school_name'],
+      busDetails: json['bus'],
     );
   }
 
@@ -38,6 +42,8 @@ class UserModel extends UserEntity {
       email: entity.email,
       phone: entity.phone,
       nationalId: entity.nationalId,
+      schoolName: entity.schoolName,
+      busDetails: entity.busDetails,
     );
   }
 
@@ -52,6 +58,8 @@ class UserModel extends UserEntity {
     String? email,
     String? phone,
     String? nationalId,
+    String? schoolName,
+    Map<String, dynamic>? busDetails,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -63,6 +71,8 @@ class UserModel extends UserEntity {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       nationalId: nationalId ?? this.nationalId,
+      schoolName: schoolName ?? this.schoolName,
+      busDetails: busDetails ?? this.busDetails,
     );
   }
 
@@ -77,6 +87,8 @@ class UserModel extends UserEntity {
       'email': email,
       'phone': phone,
       'national_id': nationalId,
+      'school_name': schoolName,
+      'bus': busDetails,
     };
   }
 }

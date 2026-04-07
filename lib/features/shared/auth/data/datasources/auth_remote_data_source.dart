@@ -77,6 +77,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'email': userJson['email'],
         'phone': userJson['phone'],
         'national_id': userJson['national_id'],
+        'school_name': userJson['school_name'],
+        'bus': userJson['bus'],
       });
     } on DioException catch (e) {
       // خطأ من السيرفر (مثلاً 422 Validation Error)

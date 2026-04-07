@@ -10,6 +10,7 @@ import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
 import '../cubit/teacher_cubit.dart';
 import '../cubit/teacher_state.dart';
 import 'package:msaratwasel_services/features/teacher/reports/presentation/cubit/reports_cubit.dart';
@@ -88,12 +89,14 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
           child: BlocBuilder<AuthCubit, AuthState>(
             builder: (context, authState) {
               String teacherName = AppLocalizations.of(context)!.theTeacher;
+              String? teacherAvatar;
               if (authState is AuthAuthenticated) {
                 teacherName = authState.user.name;
+                teacherAvatar = authState.user.avatar;
               }
               return BlocBuilder<TeacherCubit, TeacherState>(
                 builder: (context, teacherState) {
-                  return _buildDashboard(context, teacherName, teacherState);
+                  return _buildDashboard(context, teacherName, teacherAvatar, teacherState);
                 },
               );
             },
@@ -107,6 +110,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
   Widget _buildDashboard(
     BuildContext context,
     String teacherName,
+    String? teacherAvatar,
     TeacherState teacherState,
   ) {
     final l10n = AppLocalizations.of(context)!;
@@ -117,7 +121,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Welcome Section
-          _WelcomeHeader(teacherName: teacherName),
+          _WelcomeHeader(teacherName: teacherName, teacherAvatar: teacherAvatar),
           const SizedBox(height: 20),
 
           // Stats Cards
@@ -152,8 +156,9 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
 
 class _WelcomeHeader extends StatelessWidget {
   final String teacherName;
+  final String? teacherAvatar;
 
-  const _WelcomeHeader({required this.teacherName});
+  const _WelcomeHeader({required this.teacherName, this.teacherAvatar});
 
   @override
   Widget build(BuildContext context) {
@@ -191,10 +196,10 @@ class _WelcomeHeader extends StatelessWidget {
                 width: 2,
               ),
             ),
-            child: const CircleAvatar(
+            child: CircleAvatar(
               radius: 32,
               backgroundImage: NetworkImage(
-                "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400",
+                ApiConfig.getImageUrl(teacherAvatar),
               ),
             ),
           ),

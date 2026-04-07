@@ -13,6 +13,7 @@ import 'package:msaratwasel_services/core/presentation/extensions/user_role_exte
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:msaratwasel_services/features/shared/profile/presentation/screens/change_password_screen.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
@@ -143,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       role: displayRole,
                       isArabic: isArabic,
                       isDark: isDark,
-                      avatarUrl: avatar ?? 'https://i.pravatar.cc/300?img=11',
+                      avatarUrl: avatar != null ? ApiConfig.getImageUrl(avatar) : 'https://i.pravatar.cc/300?img=11',
                       profileImage: null, // We handle preview via NetworkImage/authState
                       onChangePhoto: () =>
                           _showImageSourceActionSheet(context, isArabic),
@@ -204,9 +205,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Builder(
                   builder: (context) {
                     final authState = context.watch<AuthCubit>().state;
-                    final userRole = authState is AuthAuthenticated
-                        ? authState.user.role
-                        : null;
+                    final user = authState is AuthAuthenticated ? authState.user : null;
+                    final userRole = user?.role;
 
                     if (userRole == UserRole.fieldSupervisor) {
                       return const SizedBox.shrink();
@@ -226,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _InfoCard(
                             icon: PhosphorIconsRegular.buildings,
                             label: isArabic ? "اسم المدرسة" : "School Name",
-                            value: isArabic ? "مدرسة الأمل" : "Al-Amal School",
+                            value: user?.schoolName ?? (isArabic ? 'غير محدد' : 'Not specified'),
                             isDark: isDark,
                             delay: 600.ms,
                           ),
@@ -248,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _InfoCard(
                           icon: PhosphorIconsRegular.hash,
                           label: isArabic ? "رقم الحافلة" : "Bus Number",
-                          value: "15",
+                          value: user?.busDetails?['bus_number']?.toString() ?? "---",
                           isDark: isDark,
                           delay: 600.ms,
                         ),
@@ -256,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _InfoCard(
                           icon: PhosphorIconsRegular.columns,
                           label: isArabic ? "رقم اللوحة" : "Plate Number",
-                          value: "أ ب ج 1234",
+                          value: user?.busDetails?['plate_number']?.toString() ?? "---",
                           isDark: isDark,
                           delay: 700.ms,
                         ),
@@ -264,7 +264,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _InfoCard(
                           icon: PhosphorIconsRegular.usersThree,
                           label: isArabic ? "السعة" : "Capacity",
-                          value: isArabic ? "25 طالب" : "25 Students",
+                          value: isArabic 
+                              ? "${user?.busDetails?['capacity'] ?? '---'} طالب" 
+                              : "${user?.busDetails?['capacity'] ?? '---'} Students",
                           isDark: isDark,
                           delay: 800.ms,
                         ),

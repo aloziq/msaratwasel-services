@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +17,7 @@ import '../../domain/entities/attendance_history_entity.dart';
 import '../../../students/domain/entities/student_entity.dart';
 import 'package:go_router/go_router.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 
 class AttendanceHistoryScreen extends StatefulWidget {
   const AttendanceHistoryScreen({super.key});
@@ -46,7 +48,17 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        context.go(AppRoutes.teacherHome);
+        if (selectedClass != null) {
+          setState(() {
+            if (selectedRecord != null) {
+              selectedRecord = null;
+            } else {
+              selectedClass = null;
+            }
+          });
+        } else {
+          context.go(AppRoutes.teacherHome);
+        }
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
@@ -67,17 +79,17 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                       : (selectedClass != null 
                           ? '${selectedClass!.className} (${intl.DateFormat('yyyy/M/d').format(_selectedDay ?? _focusedDay)})'
                           : l10n.attendanceHistory),
-                  leading: selectedClass != null 
-                    ? BackButton(onPressed: () {
-                        setState(() {
-                          if (selectedRecord != null) {
-                            selectedRecord = null;
-                          } else {
-                            selectedClass = null;
-                          }
-                        });
-                      })
-                    : null,
+                  leading: Material(
+                    color: Colors.transparent,
+                    child: IconButton(
+                      icon: Icon(
+                        PhosphorIconsRegular.list,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        size: 32,
+                      ),
+                      onPressed: () => MainShell.of(context)?.openDrawer(),
+                    ),
+                  ),
                 ),
                 if (selectedClass != null)
                   ..._buildClassHistoryContent(selectedClass!)
@@ -176,59 +188,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                 _buildCalendarHeader(),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: TableCalendar(
-                    firstDay: DateTime.utc(2020, 1, 1),
-                    lastDay: DateTime.utc(2030, 12, 31),
-                    focusedDay: _focusedDay,
-                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                    locale: Localizations.localeOf(context).languageCode,
-                    headerVisible: false,
-                    daysOfWeekHeight: 32,
-                    rowHeight: 48,
-                    calendarFormat: CalendarFormat.month,
-                    startingDayOfWeek: StartingDayOfWeek.sunday,
-                    weekendDays: const [DateTime.friday, DateTime.saturday],
-                            onDaySelected: (selectedDay, focusedDay) {
-                              setState(() {
-                                _selectedDay = selectedDay;
-                                _focusedDay = focusedDay;
-                              });
-                            },
-                            calendarStyle: CalendarStyle(
-                              outsideDaysVisible: false,
-                              selectedDecoration: const BoxDecoration(
-                                color: Color(0xFFECFDF5),
-                                shape: BoxShape.circle,
-                              ),
-                              selectedTextStyle: GoogleFonts.cairo(
-                                color: const Color(0xFF10B981),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                              todayDecoration: BoxDecoration(
-                                color: Colors.blue.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              todayTextStyle: GoogleFonts.cairo(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              defaultTextStyle: GoogleFonts.cairo(fontSize: 15, color: const Color(0xFF475569)),
-                              weekendTextStyle: GoogleFonts.cairo(fontSize: 15, color: const Color(0xFF94A3B8)),
-                            ),
-                            daysOfWeekStyle: DaysOfWeekStyle(
-                              weekdayStyle: GoogleFonts.cairo(
-                                color: const Color(0xFF64748B),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                              weekendStyle: GoogleFonts.cairo(
-                                color: const Color(0xFF94A3B8),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                  ),
+                  child: _buildCustomCalendar(),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -284,6 +244,113 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCustomCalendar() {
+    final firstDayOfMonth = DateTime(_focusedDay.year, _focusedDay.month, 1);
+    final daysInMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0).day;
+    
+    int getColumnIndex(int weekday) {
+      if (weekday == DateTime.sunday) return 0;
+      if (weekday >= DateTime.monday && weekday <= DateTime.thursday) return weekday;
+      return -1;
+    }
+    
+    int firstWorkingDay = 1;
+    while (firstWorkingDay <= daysInMonth && getColumnIndex(DateTime(_focusedDay.year, _focusedDay.month, firstWorkingDay).weekday) == -1) {
+      firstWorkingDay++;
+    }
+    
+    int emptyCellsAtStart = firstWorkingDay <= daysInMonth 
+        ? getColumnIndex(DateTime(_focusedDay.year, _focusedDay.month, firstWorkingDay).weekday) 
+        : 0;
+    
+    List<DateTime?> gridDays = List.generate(emptyCellsAtStart, (index) => null, growable: true);
+    for (int i = 1; i <= daysInMonth; i++) {
+      DateTime day = DateTime(_focusedDay.year, _focusedDay.month, i);
+      if (day.weekday != DateTime.friday && day.weekday != DateTime.saturday) {
+        gridDays.add(day);
+      }
+    }
+    
+    return Column(
+      children: [
+        // Days of week header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+                .map((day) => Expanded(
+                      child: Center(
+                        child: Text(
+                          day,
+                          style: GoogleFonts.cairo(
+                            color: const Color(0xFF64748B),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Grid
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1.0,
+            ),
+            itemCount: gridDays.length,
+            itemBuilder: (context, index) {
+              final day = gridDays[index];
+              if (day == null) return const SizedBox();
+              
+              final isSelected = isSameDay(day, _selectedDay);
+              final isToday = isSameDay(day, DateTime.now());
+              
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedDay = day;
+                    _focusedDay = day;
+                  });
+                },
+                borderRadius: BorderRadius.circular(100),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected 
+                        ? const Color(0xFFECFDF5) 
+                        : (isToday ? Colors.blue.withValues(alpha: 0.1) : Colors.transparent),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${day.day}',
+                      style: GoogleFonts.cairo(
+                        color: isSelected
+                            ? const Color(0xFF10B981)
+                            : (isToday ? Colors.blue : const Color(0xFF475569)),
+                        fontWeight: (isSelected || isToday) ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -610,7 +677,7 @@ class _ClassCard extends StatelessWidget {
           AppLocalizations.of(context)!.dailyRecordCount(classModel.dailyRecords.length),
           style: GoogleFonts.cairo(color: Colors.grey[600], fontSize: 13),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF94A3B8)),
+        trailing: const Icon(PhosphorIconsRegular.list, size: 24, color: Color(0xFF94A3B8)),
         onTap: onTap,
       ),
     );
@@ -768,6 +835,7 @@ class _StudentDetailsModal extends StatelessWidget {
           _buildInfoRow(
             context,
             icon: PhosphorIconsDuotone.user,
+            imageUrl: student.parentPhotoUrl,
             label: AppLocalizations.of(context)!.parentGuardian,
             value: student.parentName,
           ),
@@ -778,14 +846,6 @@ class _StudentDetailsModal extends StatelessWidget {
             label: AppLocalizations.of(context)!.parentPhone,
             value: student.parentPhone.isNotEmpty ? student.parentPhone : 'N/A',
             onTap: student.parentPhone.isNotEmpty ? () => _launchCaller(student.parentPhone) : null,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _buildInfoRow(
-            context,
-            icon: PhosphorIconsDuotone.whatsappLogo,
-            label: AppLocalizations.of(context)!.whatsapp,
-            value: student.parentPhone.isNotEmpty ? student.parentPhone : 'N/A',
-            onTap: student.parentPhone.isNotEmpty ? () => _launchWhatsApp(student.parentPhone) : null,
           ),
           const SizedBox(height: AppSpacing.xxl),
         ],
@@ -798,6 +858,7 @@ class _StudentDetailsModal extends StatelessWidget {
     required IconData icon,
     required String label,
     required String value,
+    String? imageUrl,
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
@@ -816,16 +877,23 @@ class _StudentDetailsModal extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: Icon(
-                icon,
-                color: onTap != null 
-                    ? AppColors.primary 
-                    : (isDark ? Colors.white70 : Colors.black45),
-                size: 24,
+            if (imageUrl != null && imageUrl.isNotEmpty)
+              CircleAvatar(
+                radius: 30,
+                backgroundImage: NetworkImage(imageUrl),
+                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+              )
+            else
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Icon(
+                  icon,
+                  color: onTap != null 
+                      ? AppColors.primary 
+                      : (isDark ? Colors.white70 : Colors.black45),
+                  size: 24,
+                ),
               ),
-            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
@@ -860,11 +928,21 @@ class _StudentDetailsModal extends StatelessWidget {
   }
 
   void _launchCaller(String phone) async {
-    debugPrint('Launching caller: $phone');
+    final Uri url = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      debugPrint('Could not launch caller for $phone');
+    }
   }
 
   void _launchWhatsApp(String phone) async {
-    debugPrint('Launching WhatsApp: $phone');
+    final Uri url = Uri.parse('https://wa.me/$phone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('Could not launch WhatsApp for $phone');
+    }
   }
 }
 

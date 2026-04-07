@@ -7,6 +7,7 @@ class StudentModel extends StudentEntity {
     required super.parentName,
     required super.parentPhone,
     super.photoUrl,
+    super.parentPhotoUrl,
     super.status = AttendanceStatus.unknown,
   });
 
@@ -17,6 +18,7 @@ class StudentModel extends StudentEntity {
       parentName: json['parentName'] as String? ?? '',
       parentPhone: json['parentPhone'] as String? ?? '',
       photoUrl: json['photoUrl'] as String?,
+      parentPhotoUrl: json['parentPhotoUrl'] as String?,
       status: AttendanceStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => AttendanceStatus.unknown,
@@ -31,6 +33,7 @@ class StudentModel extends StudentEntity {
       'parentName': parentName,
       'parentPhone': parentPhone,
       'photoUrl': photoUrl,
+      'parentPhotoUrl': parentPhotoUrl,
       'status': status.name,
     };
   }

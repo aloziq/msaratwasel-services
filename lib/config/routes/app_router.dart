@@ -114,7 +114,24 @@ class AppRouter {
             path: AppRoutes.classDetails,
             name: 'classDetails',
             builder: (context, state) {
-              final classroom = state.extra as ClassroomEntity;
+              final extra = state.extra;
+              ClassroomEntity classroom;
+              if (extra is ClassroomEntity) {
+                classroom = extra;
+              } else if (extra is Map<String, dynamic>) {
+                classroom = ClassroomEntity(
+                  id: extra['id']?.toString() ?? '',
+                  name: extra['name']?.toString() ?? '',
+                  grade: extra['grade']?.toString() ?? '',
+                  studentCount: (extra['studentCount'] as int?) ?? 0,
+                );
+              } else {
+                // Fallback: navigate back
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pop();
+                });
+                return const SizedBox.shrink();
+              }
               return ClassDetailsScreen(classroom: classroom);
             },
           ),

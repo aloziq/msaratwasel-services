@@ -8,6 +8,7 @@ class StudentEntity extends Equatable {
   final String parentName;
   final String parentPhone;
   final String? photoUrl;
+  final String? parentPhotoUrl;
   final AttendanceStatus status;
   final bool isLocked;
 
@@ -17,6 +18,7 @@ class StudentEntity extends Equatable {
     required this.parentName,
     required this.parentPhone,
     this.photoUrl,
+    this.parentPhotoUrl,
     this.status = AttendanceStatus.unknown,
     this.isLocked = false,
   });
@@ -27,6 +29,7 @@ class StudentEntity extends Equatable {
     String? parentName,
     String? parentPhone,
     String? photoUrl,
+    String? parentPhotoUrl,
     AttendanceStatus? status,
     bool? isLocked,
   }) {
@@ -36,6 +39,7 @@ class StudentEntity extends Equatable {
       parentName: parentName ?? this.parentName,
       parentPhone: parentPhone ?? this.parentPhone,
       photoUrl: photoUrl ?? this.photoUrl,
+      parentPhotoUrl: parentPhotoUrl ?? this.parentPhotoUrl,
       status: status ?? this.status,
       isLocked: isLocked ?? this.isLocked,
     );
@@ -48,6 +52,7 @@ class StudentEntity extends Equatable {
     parentName,
     parentPhone,
     photoUrl,
+    parentPhotoUrl,
     status,
     isLocked,
   ];
