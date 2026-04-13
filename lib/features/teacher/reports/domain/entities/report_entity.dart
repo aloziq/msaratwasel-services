@@ -15,16 +15,18 @@ class StudentReportEntity extends Equatable {
   final String? civilId;
   final int presentCount;
   final int absentCount;
+  final String? photoUrl;
 
   const StudentReportEntity({
     required this.name,
     this.civilId,
     required this.presentCount,
     required this.absentCount,
+    this.photoUrl,
   });
 
   @override
-  List<Object?> get props => [name, civilId, presentCount, absentCount];
+  List<Object?> get props => [name, civilId, presentCount, absentCount, photoUrl];
 }
 
 class AttendanceStatsEntity extends Equatable {

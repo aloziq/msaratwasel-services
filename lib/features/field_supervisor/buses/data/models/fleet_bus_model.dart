@@ -19,22 +19,26 @@ class FleetBusModel extends FleetBus {
 
   factory FleetBusModel.fromJson(Map<String, dynamic> json) {
     return FleetBusModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      driverName: json['driverName'] as String,
-      supervisorName: json['supervisorName'] as String,
-      schoolName: json['schoolName'] as String,
-      driverPhone: json['driverPhone'] as String,
-      route: json['route'] as String,
-      lat: (json['lat'] as num).toDouble(),
-      lng: (json['lng'] as num).toDouble(),
-      speedKmh: (json['speedKmh'] as num).toDouble(),
-      studentsOnBoard: json['studentsOnBoard'] as int,
+      id: json['id']?.toString() ?? '',
+      name: json['bus_code'] ?? json['name'] ?? '',
+      driverName: json['driver'] ?? json['driverName'] ?? 'N/A',
+      supervisorName: json['supervisor'] ?? json['supervisorName'] ?? 'N/A',
+      schoolName: json['school'] ?? json['schoolName'] ?? 'N/A',
+      driverPhone: json['driverPhone'] ?? '',
+      route: json['route'] ?? '',
+      lat: (json['location_lat'] ?? json['lat'] ?? 0 as num).toDouble(),
+      lng: (json['location_lng'] ?? json['lng'] ?? 0 as num).toDouble(),
+      speedKmh: (json['speed_kmh'] ?? json['speedKmh'] ?? 0 as num).toDouble(),
+      studentsOnBoard: json['studentsOnBoard'] ?? 0,
       status: FleetBusStatus.values.firstWhere(
-        (e) => e.name == json['status'],
+        (e) => e.name == (json['status'] ?? 'stopped'),
         orElse: () => FleetBusStatus.active,
       ),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      updatedAt: json['last_update'] != null
+          ? DateTime.tryParse(json['last_update']) ?? DateTime.now()
+          : json['updatedAt'] != null
+              ? DateTime.parse(json['updatedAt'])
+              : DateTime.now(),
     );
   }
 

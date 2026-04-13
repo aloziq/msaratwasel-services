@@ -24,11 +24,13 @@ class MessagesRepositoryImpl implements MessagesRepository {
       final List<dynamic> data = response.data['data'] ?? [];
       
       return data.map((json) {
-        // Find the other participant's name
+        // Find the other participant's name and avatar
         final List<dynamic> participants = json['participants'] ?? [];
         String parentName = 'ولي أمر';
+        String? avatarUrl;
         if (participants.isNotEmpty) {
           parentName = participants.first['name'] ?? 'ولي أمر';
+          avatarUrl  = participants.first['avatar'];
         }
 
         final lastMessageObj = json['last_message'];
@@ -42,7 +44,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
               ? DateTime.parse(lastMessageObj['created_at'])
               : DateTime.parse(json['updated_at']),
           unreadCount: json['unread_count'] ?? 0,
-          avatarUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(parentName)}&background=random',
+          avatarUrl: avatarUrl,
         );
       }).toList();
     } catch (e) {
@@ -130,7 +132,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
         lastMessage: 'بدء محادثة',
         lastMessageTime: DateTime.now(),
         unreadCount: 0,
-        avatarUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(parentName)}&background=random',
+        avatarUrl: null,
       );
     } catch (e) {
       throw Exception('فشل بدء المحادثة');

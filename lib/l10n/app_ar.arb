@@ -522,5 +522,10 @@
     "roleFieldSupervisor": "مشرف ميداني",
     "roleTeacher": "معلم",
     "unmarkedToday": "غير محددين اليوم",
-    "civilIdPrefix": "الرقم المدني"
+    "civilIdPrefix": "الرقم المدني",
+    "pending": "قيد المعالجة",
+    "resolved": "مكتمل",
+    "photoAttached": "تم إرفاق الصورة",
+    "pleaseDescribeIncident": "يرجى كتابة وصف الحادث",
+    "incidentReportedSuccessfully": "تم إرسال البلاغ بنجاح"
 }

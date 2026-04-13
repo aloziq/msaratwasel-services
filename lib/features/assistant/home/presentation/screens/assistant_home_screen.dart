@@ -12,6 +12,9 @@ import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import '../../../core/domain/entities/bus_student_entity.dart';
 import '../../../core/presentation/cubit/bus_trip_cubit.dart';
 import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
+import '../../../../../core/network/api_config.dart';
+import '../../../../shared/auth/presentation/cubit/auth_cubit.dart';
+import '../../../../shared/auth/presentation/cubit/auth_state.dart';
 
 class AssistantHomeScreen extends StatelessWidget {
   const AssistantHomeScreen({super.key});
@@ -303,66 +306,72 @@ class AssistantHomeScreen extends StatelessWidget {
             ),
           ),
 
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                ),
-                child: const CircleAvatar(
-                  radius: 28,
-                  backgroundImage: NetworkImage(
-                    "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400",
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'مرحباً بك',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 14,
+          BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, authState) {
+              final user = authState is AuthAuthenticated ? authState.user : null;
+              return Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 2,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      UserRole.busAssistant.getDisplayName(context),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 22,
+                    child: CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Colors.white24,
+                      backgroundImage: NetworkImage(
+                        ApiConfig.getImageUrl(user?.avatar),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'نتمنى لك يوماً سعيداً في واصل',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'مرحباً بك',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user?.name ?? UserRole.busAssistant.getDisplayName(context),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 22,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'نتمنى لك يوماً سعيداً في واصل',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

@@ -1,95 +1,58 @@
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import '../../domain/entities/fleet_bus.dart';
 import '../models/fleet_bus_model.dart';
+import 'package:msaratwasel_services/core/network/api_client.dart';
 
 abstract class FleetRemoteDataSource {
   Future<List<FleetBusModel>> getFleetBuses();
 }
 
 @LazySingleton(as: FleetRemoteDataSource)
-class MockFleetRemoteDataSourceImpl implements FleetRemoteDataSource {
+class FleetRemoteDataSourceImpl implements FleetRemoteDataSource {
   @override
   Future<List<FleetBusModel>> getFleetBuses() async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final dio = ApiClient.instance;
+      final response = await dio.get('field/buses');
 
-    final now = DateTime.now();
-    return [
-      FleetBusModel(
-        id: 'B001',
-        name: 'حافلة 1',
-        driverName: 'محمد أحمد',
-        supervisorName: 'فاطمة الحارثي',
-        schoolName: 'مدرسة النور',
-        driverPhone: '96812345678',
-        route: 'المعبيلة → المطار',
-        lat: 23.5880,
-        lng: 58.3829,
-        speedKmh: 45,
-        studentsOnBoard: 18,
-        status: FleetBusStatus.active,
-        updatedAt: now.subtract(const Duration(minutes: 1)),
-      ),
-      FleetBusModel(
-        id: 'B002',
-        name: 'حافلة 2',
-        driverName: 'علي سالم',
-        supervisorName: 'مريم البلوشي',
-        schoolName: 'مدرسة الأمل',
-        driverPhone: '96887654321',
-        route: 'القرم → الخوض',
-        lat: 23.6100,
-        lng: 58.4050,
-        speedKmh: 0,
-        studentsOnBoard: 12,
-        status: FleetBusStatus.stopped,
-        updatedAt: now.subtract(const Duration(minutes: 5)),
-      ),
-      FleetBusModel(
-        id: 'B003',
-        name: 'حافلة 3',
-        driverName: 'خالد ناصر',
-        supervisorName: 'عائشة الراشدي',
-        schoolName: 'مدرسة السلام',
-        driverPhone: '96899887766',
-        route: 'بوشر → السيب',
-        lat: 23.5750,
-        lng: 58.4200,
-        speedKmh: 38,
-        studentsOnBoard: 22,
-        status: FleetBusStatus.active,
-        updatedAt: now.subtract(const Duration(minutes: 2)),
-      ),
-      FleetBusModel(
-        id: 'B004',
-        name: 'حافلة 4',
-        driverName: 'سعيد حمد',
-        supervisorName: 'نورة الكندي',
-        schoolName: 'مدرسة العلم',
-        driverPhone: '96811223344',
-        route: 'الموالح → العامرات',
-        lat: 23.5500,
-        lng: 58.3500,
-        speedKmh: 0,
-        studentsOnBoard: 0,
-        status: FleetBusStatus.maintenance,
-        updatedAt: now.subtract(const Duration(hours: 2)),
-      ),
-      FleetBusModel(
-        id: 'B005',
-        name: 'حافلة 5',
-        driverName: 'ياسر عبدالله',
-        supervisorName: 'سميرة المعمري',
-        schoolName: 'مدرسة المعرفة',
-        driverPhone: '96855667788',
-        route: 'الأنصب → المعبيلة',
-        lat: 23.6000,
-        lng: 58.3600,
-        speedKmh: 52,
-        studentsOnBoard: 15,
-        status: FleetBusStatus.active,
-        updatedAt: now.subtract(const Duration(seconds: 30)),
-      ),
-    ];
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List data = response.data['data'];
+        return data.map((json) {
+          // Map API response fields to FleetBusModel fields
+          return FleetBusModel(
+            id: json['id'].toString(),
+            name: json['bus_code'] ?? 'حافلة ${json['bus_number'] ?? ''}',
+            driverName: json['driver'] ?? 'N/A',
+            supervisorName: json['supervisor'] ?? 'N/A',
+            schoolName: json['school'] ?? 'N/A',
+            driverPhone: '', // Not returned from this endpoint
+            route: '',       // Not returned from this endpoint
+            lat: (json['location_lat'] as num?)?.toDouble() ?? 0.0,
+            lng: (json['location_lng'] as num?)?.toDouble() ?? 0.0,
+            speedKmh: (json['speed_kmh'] as num?)?.toDouble() ?? 0.0,
+            studentsOnBoard: 0, // Not returned from this endpoint
+            status: _mapStatus(json['status']),
+            updatedAt: json['last_update'] != null
+                ? DateTime.tryParse(json['last_update']) ?? DateTime.now()
+                : DateTime.now(),
+          );
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('[FleetRemoteDataSource] Error fetching buses: $e');
+    }
+    return [];
+  }
+
+  FleetBusStatus _mapStatus(String? status) {
+    switch (status) {
+      case 'active':
+        return FleetBusStatus.active;
+      case 'maintenance':
+        return FleetBusStatus.maintenance;
+      default:
+        return FleetBusStatus.stopped;
+    }
   }
 }

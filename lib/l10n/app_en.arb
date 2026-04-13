@@ -522,5 +522,10 @@
     "roleFieldSupervisor": "Field Supervisor",
     "roleTeacher": "Teacher",
     "unmarkedToday": "Unmarked Today",
-    "civilIdPrefix": "Civil ID"
+    "civilIdPrefix": "Civil ID",
+    "pending": "Pending",
+    "resolved": "Resolved",
+    "photoAttached": "Photo attached",
+    "pleaseDescribeIncident": "Please describe the incident",
+    "incidentReportedSuccessfully": "Incident reported successfully"
 }

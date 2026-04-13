@@ -3,9 +3,16 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
+import 'package:msaratwasel_services/features/field_supervisor/home/data/field_supervisor_remote_datasource.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 /// Screen showing list of all drivers and supervisors.
@@ -19,11 +26,42 @@ class DriversListScreen extends StatefulWidget {
 class _DriversListScreenState extends State<DriversListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<_StaffData> _drivers = [];
+  List<_StaffData> _supervisors = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadStaff();
+  }
+
+  Future<void> _loadStaff() async {
+    setState(() => _isLoading = true);
+    final data = await FieldSupervisorRemoteDataSource.getStaff();
+
+    if (mounted) {
+      setState(() {
+        _drivers = (data['drivers'] ?? []).map<_StaffData>((d) => _StaffData(
+          d['name'] ?? '',
+          'سائق',
+          d['is_active'] == true,
+          d['bus_code'] ?? '-',
+          d['phone'] ?? '',
+        )).toList();
+
+        _supervisors = (data['supervisors'] ?? []).map<_StaffData>((s) => _StaffData(
+          s['name'] ?? '',
+          'مشرفة',
+          s['is_active'] == true,
+          s['bus_code'] ?? '-',
+          s['phone'] ?? '',
+        )).toList();
+
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -38,19 +76,6 @@ class _DriversListScreenState extends State<DriversListScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final drivers = [
-      _StaffData('أحمد محمد', 'سائق', true, 'B001'),
-      _StaffData('خالد علي', 'سائق', true, 'B002'),
-      _StaffData('سعيد أحمد', 'سائق', false, 'B003'),
-      _StaffData('محمود خالد', 'سائق', true, 'B004'),
-    ];
-
-    final supervisors = [
-      _StaffData('فاطمة أحمد', 'مشرفة', true, 'B001'),
-      _StaffData('نور الهدى', 'مشرفة', true, 'B002'),
-      _StaffData('سارة محمد', 'مشرفة', false, 'B003'),
-    ];
-
     return Scaffold(
       key: GlobalKey<ScaffoldState>(),
       drawer: SupervisorDrawer(
@@ -64,7 +89,10 @@ class _DriversListScreenState extends State<DriversListScreen>
           physics: const BouncingScrollPhysics(),
           slivers: [
             // App Bar
-            AppSliverHeader(title: l10n.driversAndSupervisors, showMenu: true),
+            AppSliverHeader(
+              title: l10n.driversAndSupervisors,
+              showMenu: true,
+            ),
 
             // Tab Bar
             SliverToBoxAdapter(
@@ -120,13 +148,15 @@ class _DriversListScreenState extends State<DriversListScreen>
 
             // Tab Views
             SliverFillRemaining(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _StaffList(staff: drivers, l10n: l10n, isDark: isDark),
-                  _StaffList(staff: supervisors, l10n: l10n, isDark: isDark),
-                ],
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _StaffList(staff: _drivers, l10n: l10n, isDark: isDark),
+                        _StaffList(staff: _supervisors, l10n: l10n, isDark: isDark),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -140,8 +170,9 @@ class _StaffData {
   final String role;
   final bool isActive;
   final String busId;
+  final String phone;
 
-  _StaffData(this.name, this.role, this.isActive, this.busId);
+  _StaffData(this.name, this.role, this.isActive, this.busId, [this.phone = '']);
 }
 
 class _StaffList extends StatelessWidget {
@@ -287,7 +318,7 @@ class _StaffCard extends StatelessWidget {
                 color: const Color(0xFF0F172A),
                 isDark: isDark,
                 onTap: () async {
-                  final Uri url = Uri.parse('sms:99999999');
+                  final Uri url = Uri.parse('sms:${person.phone}');
                   if (await canLaunchUrl(url)) {
                     await launchUrl(url);
                   }
@@ -299,7 +330,7 @@ class _StaffCard extends StatelessWidget {
                 color: const Color(0xFF22C55E),
                 isDark: isDark,
                 onTap: () async {
-                  final Uri url = Uri.parse('tel:99999999');
+                  final Uri url = Uri.parse('tel:${person.phone}');
                   if (await canLaunchUrl(url)) {
                     await launchUrl(url);
                   }

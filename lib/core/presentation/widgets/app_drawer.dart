@@ -638,10 +638,52 @@ class _AppDrawerState extends State<AppDrawer> {
                       width: 2,
                     ),
                   ),
-                  child: CircleAvatar(
-                    radius: 42,
-                    backgroundImage: NetworkImage(
-                      ApiConfig.getImageUrl(user?.avatar),
+                  child: ClipOval(
+                    child: SizedBox(
+                      width: 84,
+                      height: 84,
+                      child: Image.network(
+                        ApiConfig.getImageUrl(user?.avatar),
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: isDark
+                                ? Colors.white12
+                                : AppColors.primary.withValues(alpha: 0.08),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: isDark ? Colors.white54 : AppColors.primary,
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          final initial = (user?.name.isNotEmpty == true)
+                              ? user!.name[0].toUpperCase()
+                              : '؟';
+                          return Container(
+                            color: isDark
+                                ? Colors.white12
+                                : AppColors.primary.withValues(alpha: 0.1),
+                            child: Center(
+                              child: Text(
+                                initial,
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white70 : AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),

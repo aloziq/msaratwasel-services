@@ -14,6 +14,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:intl/intl.dart';
 
 import 'package:msaratwasel_services/core/di/injection.dart';
@@ -83,21 +84,149 @@ class _DriverHomeContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${l10n.welcome} $userName 👋',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ).animate().fadeIn().slideX(begin: 0.1, end: 0),
-                  Text(
-                    date,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ).animate().fadeIn(delay: 100.ms),
+                  // ── Welcome Header Card ──
+                  BlocBuilder<AuthCubit, AuthState>(
+                    builder: (context, authState) {
+                      final user = authState is AuthAuthenticated ? authState.user : null;
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF2563EB),
+                              Color(0xFF1E40AF),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(32),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            // Decorative circle
+                            Positioned(
+                              right: -20,
+                              top: -20,
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                // Avatar
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.3),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: ClipOval(
+                                    child: SizedBox(
+                                      width: 56,
+                                      height: 56,
+                                      child: Image.network(
+                                        ApiConfig.getImageUrl(user?.avatar),
+                                        fit: BoxFit.cover,
+                                        loadingBuilder: (context, child, progress) {
+                                          if (progress == null) return child;
+                                          return Container(
+                                            color: Colors.white24,
+                                            child: const Center(
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (context, error, _) {
+                                          final initial = (user?.name.isNotEmpty == true)
+                                              ? user!.name[0].toUpperCase()
+                                              : 'D';
+                                          return Container(
+                                            color: Colors.white24,
+                                            child: Center(
+                                              child: Text(
+                                                initial,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Text info
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${l10n.welcome} 👋',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          color: Colors.white.withValues(alpha: 0.8),
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        user?.name ?? userName,
+                                        style: theme.textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          date,
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: Colors.white.withValues(alpha: 0.9),
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ).animate().fadeIn().slideY(begin: -0.2, duration: 500.ms),
 
                   const SizedBox(height: AppSpacing.xl),
 

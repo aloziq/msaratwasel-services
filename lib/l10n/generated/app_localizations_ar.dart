@@ -1385,4 +1385,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get civilIdPrefix => 'الرقم المدني';
+
+  @override
+  String get pending => 'قيد المعالجة';
+
+  @override
+  String get resolved => 'مكتمل';
+
+  @override
+  String get photoAttached => 'تم إرفاق الصورة';
+
+  @override
+  String get pleaseDescribeIncident => 'يرجى كتابة وصف الحادث';
+
+  @override
+  String get incidentReportedSuccessfully => 'تم إرسال البلاغ بنجاح';
 }

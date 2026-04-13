@@ -26,6 +26,7 @@ class StudentReportModel extends StudentReportEntity {
     super.civilId,
     required super.presentCount,
     required super.absentCount,
+    super.photoUrl,
   });
 
   factory StudentReportModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +35,7 @@ class StudentReportModel extends StudentReportEntity {
       civilId: json['civil_id']?.toString() ?? json['civilId']?.toString(),
       presentCount: (json['presentCount'] as num?)?.toInt() ?? 0,
       absentCount: (json['absentCount'] as num?)?.toInt() ?? 0,
+      photoUrl: json['photoUrl']?.toString() ?? json['photo_url']?.toString(),
     );
   }
 
@@ -43,6 +45,7 @@ class StudentReportModel extends StudentReportEntity {
       'civil_id': civilId,
       'presentCount': presentCount,
       'absentCount': absentCount,
+      'photo_url': photoUrl,
     };
   }
 }

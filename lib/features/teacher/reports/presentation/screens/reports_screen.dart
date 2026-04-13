@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart' as intl;
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
@@ -270,8 +273,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
           final student = filteredStudents[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Container(
-              padding: const EdgeInsets.all(16),
+            child: InkWell(
+              onTap: () => _StudentAttendanceModal.show(context, student),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isDark ? theme.cardColor : Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -293,16 +299,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     backgroundColor: theme.colorScheme.primary.withValues(
                       alpha: 0.1,
                     ),
-                    child: Text(
-                      student.name.substring(0, 1).toUpperCase(),
-                      style: TextStyle(
-                        color: isDark
-                            ? Colors.white
-                            : theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
+                    backgroundImage: student.photoUrl != null 
+                      ? NetworkImage(student.photoUrl!) 
+                      : null,
+                    child: student.photoUrl == null 
+                      ? Text(
+                          student.name.substring(0, 1).toUpperCase(),
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.white
+                                : theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        )
+                      : null,
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -349,7 +360,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                 ],
               ),
-            ).animate().fadeIn(delay: 50.ms * index).slideY(begin: 0.1),
+            )).animate().fadeIn(delay: 50.ms * index).slideY(begin: 0.1),
           );
         }, childCount: filteredStudents.length),
       ),
@@ -385,12 +396,6 @@ class _StatBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
           Text(
             "$label: $value",
             style: TextStyle(
@@ -398,6 +403,12 @@ class _StatBadge extends StatelessWidget {
               fontWeight: FontWeight.w600,
               fontSize: isCompact ? 11 : 13,
             ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
         ],
       ),
@@ -464,7 +475,10 @@ class _SummaryCard extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(12), // Slightly smaller radius
                     ),
-                    child: Icon(icon, color: color, size: 18), // Smaller icon
+                    child: Transform.flip(
+                      flipX: Directionality.of(context) == TextDirection.rtl,
+                      child: Icon(icon, color: color, size: 18),
+                    ),
                   ),
                   // Trend indicator removed as per user request for data accuracy
                 ],
@@ -501,3 +515,365 @@ class _SummaryCard extends StatelessWidget {
         .slideY(begin: 0.1, curve: Curves.easeOutQuad);
   }
 }
+
+class _StudentAttendanceModal extends StatefulWidget {
+  final StudentReportEntity student;
+
+  const _StudentAttendanceModal({required this.student});
+
+  static void show(BuildContext context, StudentReportEntity student) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _StudentAttendanceModal(student: student),
+    );
+  }
+
+  @override
+  State<_StudentAttendanceModal> createState() => _StudentAttendanceModalState();
+}
+
+class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
+  DateTime _focusedDay = DateTime.now();
+  
+  // Mocking markers for presence/absence based on student name to ensure consistent but random-looking data
+  bool _isPresent(DateTime day) {
+    if (day.isAfter(DateTime.now())) return false;
+    if (day.weekday == DateTime.friday || day.weekday == DateTime.saturday) return false;
+    
+    // Simple deterministic random based on date and student name hash
+    final hash = (day.day * 31 + day.month * 7 + widget.student.name.hashCode) % 10;
+    return hash > 2; // ~70% attendance
+  }
+
+  bool _isAbsent(DateTime day) {
+    if (day.isAfter(DateTime.now())) return false;
+    if (day.weekday == DateTime.friday || day.weekday == DateTime.saturday) return false;
+    return !_isPresent(day);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: EdgeInsets.only(
+        top: 20,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white24 : Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Header Student Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: theme.colorScheme.primary,
+                  backgroundImage: widget.student.photoUrl != null 
+                    ? NetworkImage(widget.student.photoUrl!) 
+                    : null,
+                  child: widget.student.photoUrl == null 
+                    ? const Icon(PhosphorIconsFill.user, color: Colors.white, size: 20)
+                    : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.student.name,
+                    style: GoogleFonts.cairo(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Summary Rows
+          Row(
+            children: [
+              Expanded(
+                child: _ModalSummaryBox(
+                  label: 'أيام الحضور',
+                  value: '${widget.student.presentCount}',
+                  color: const Color(0xFF10B981),
+                  icon: PhosphorIconsFill.checkCircle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ModalSummaryBox(
+                  label: 'أيام الغياب',
+                  value: '${widget.student.absentCount}',
+                  color: const Color(0xFFEF4444),
+                  icon: PhosphorIconsFill.xCircle,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Calendar
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF334155).withValues(alpha: 0.5) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: isDark ? [] : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+            ),
+            child: Column(
+              children: [
+                _buildCalendarHeader(),
+                const SizedBox(height: 16),
+                _buildCustomCalendar(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarHeader() {
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final monthName = intl.DateFormat.MMMM(languageCode).format(_focusedDay);
+    final year = _focusedDay.year;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_right, color: Color(0xFF1E293B)),
+          onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
+        ),
+        Text(
+          '$monthName $year',
+          style: GoogleFonts.cairo(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF1E293B),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.chevron_left, color: Color(0xFF1E293B)),
+          onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomCalendar() {
+    final daysInMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0).day;
+    
+    int getColumnIndex(int weekday) {
+      if (weekday == DateTime.sunday) return 0;
+      if (weekday >= DateTime.monday && weekday <= DateTime.thursday) return weekday;
+      return -1;
+    }
+    
+    int firstWorkingDay = 1;
+    while (firstWorkingDay <= daysInMonth) {
+      DateTime day = DateTime(_focusedDay.year, _focusedDay.month, firstWorkingDay);
+      if (getColumnIndex(day.weekday) != -1) break;
+      firstWorkingDay++;
+    }
+    
+    int emptyCellsAtStart = 0;
+    if (firstWorkingDay <= daysInMonth) {
+      emptyCellsAtStart = getColumnIndex(DateTime(_focusedDay.year, _focusedDay.month, firstWorkingDay).weekday);
+    }
+    
+    List<DateTime?> gridDays = List.generate(emptyCellsAtStart, (index) => null);
+    for (int i = 1; i <= daysInMonth; i++) {
+        DateTime day = DateTime(_focusedDay.year, _focusedDay.month, i);
+        if (day.weekday != DateTime.friday && day.weekday != DateTime.saturday) {
+          gridDays.add(day);
+        }
+    }
+    
+    while (gridDays.length % 5 != 0) {
+      gridDays.add(null);
+    }
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+              .map((day) => Expanded(
+                    child: Center(
+                      child: Text(
+                        day,
+                        style: GoogleFonts.cairo(
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ))
+              .toList(),
+        ),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 5,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1.0,
+          ),
+          itemCount: gridDays.length,
+          itemBuilder: (context, index) {
+            final day = gridDays[index];
+            if (day == null) return const SizedBox();
+            
+            if (_isPresent(day)) {
+              return _buildCalendarDay(day, const Color(0xFF10B981));
+            } else if (_isAbsent(day)) {
+              return _buildCalendarDay(day, const Color(0xFFEF4444));
+            }
+            
+            return Center(
+              child: Text(
+                '${day.day}',
+                style: GoogleFonts.cairo(
+                  color: const Color(0xFF475569),
+                  fontSize: 15,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarDay(DateTime day, Color color) {
+    return Center(
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            '${day.day}',
+            style: GoogleFonts.cairo(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModalSummaryBox extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  const _ModalSummaryBox({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF334155) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
+        boxShadow: isDark ? [] : [
+           BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+           ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.cairo(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Transform.flip(
+                flipX: Directionality.of(context) == TextDirection.rtl,
+                child: Icon(icon, color: color, size: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

@@ -83,11 +83,27 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                     color: Colors.transparent,
                     child: IconButton(
                       icon: Icon(
-                        PhosphorIconsRegular.list,
+                        selectedClass != null 
+                          ? (Directionality.of(context) == TextDirection.rtl 
+                              ? PhosphorIconsRegular.arrowLeft 
+                              : PhosphorIconsRegular.arrowRight)
+                          : PhosphorIconsRegular.list,
                         color: Theme.of(context).colorScheme.onSurface,
-                        size: 32,
+                        size: 28,
                       ),
-                      onPressed: () => MainShell.of(context)?.openDrawer(),
+                      onPressed: () {
+                        if (selectedClass != null) {
+                          setState(() {
+                            if (selectedRecord != null) {
+                              selectedRecord = null;
+                            } else {
+                              selectedClass = null;
+                            }
+                          });
+                        } else {
+                          MainShell.of(context)?.openDrawer();
+                        }
+                      },
                     ),
                   ),
                 ),
@@ -677,7 +693,13 @@ class _ClassCard extends StatelessWidget {
           AppLocalizations.of(context)!.dailyRecordCount(classModel.dailyRecords.length),
           style: GoogleFonts.cairo(color: Colors.grey[600], fontSize: 13),
         ),
-        trailing: const Icon(PhosphorIconsRegular.list, size: 24, color: Color(0xFF94A3B8)),
+        trailing: Icon(
+          Directionality.of(context) == TextDirection.rtl 
+            ? PhosphorIconsRegular.caretRight 
+            : PhosphorIconsRegular.caretLeft, 
+          size: 20, 
+          color: const Color(0xFF94A3B8)
+        ),
         onTap: onTap,
       ),
     );

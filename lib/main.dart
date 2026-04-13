@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:msaratwasel_services/config/routes/app_router.dart';
@@ -33,8 +35,11 @@ class AppBlocObserver extends BlocObserver {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Handle Flutter errors
+
+  // إخفاء أزرار التنقل الخاصة بنظام أندرويد (الرجوع / الرئيسية / المهام الأخيرة)
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     developer.log('Flutter Error: ${details.exception}', stackTrace: details.stack);

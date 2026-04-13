@@ -2749,6 +2749,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Civil ID'**
   String get civilIdPrefix;
+
+  /// No description provided for @pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pending;
+
+  /// No description provided for @resolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get resolved;
+
+  /// No description provided for @photoAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo attached'**
+  String get photoAttached;
+
+  /// No description provided for @pleaseDescribeIncident.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the incident'**
+  String get pleaseDescribeIncident;
+
+  /// No description provided for @incidentReportedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Incident reported successfully'**
+  String get incidentReportedSuccessfully;
 }
 
 class _AppLocalizationsDelegate

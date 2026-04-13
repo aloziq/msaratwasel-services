@@ -13,6 +13,7 @@ import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../../../../core/network/api_config.dart';
 
 class BusStudentsScreen extends StatefulWidget {
   const BusStudentsScreen({super.key});
@@ -484,8 +485,6 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
   }
 }
 
-// Removed _SummaryItem since it's replaced by a better layout in _buildTripSummary
-
 class _StudentCard extends StatelessWidget {
   final BusStudentEntity student;
   final VoidCallback? onCall;
@@ -553,12 +552,9 @@ class _StudentCard extends StatelessWidget {
                     child: CircleAvatar(
                       radius: 32,
                       backgroundColor: statusColor.withValues(alpha: 0.1),
-                      backgroundImage: student.photoUrl != null
-                          ? NetworkImage(student.photoUrl!)
-                          : null,
-                      child: student.photoUrl == null
-                          ? Icon(PhosphorIconsRegular.user, color: statusColor)
-                          : null,
+                      backgroundImage: NetworkImage(
+                        ApiConfig.getImageUrl(student.photoUrl),
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),

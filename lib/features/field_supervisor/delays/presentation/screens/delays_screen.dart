@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
+import 'package:msaratwasel_services/features/field_supervisor/home/data/field_supervisor_remote_datasource.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
+import 'package:msaratwasel_services/features/field_supervisor/home/utils/time_formatter.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 /// Screen for registering student and bus delays.
@@ -17,17 +19,38 @@ class DelaysScreen extends StatefulWidget {
 class _DelaysScreenState extends State<DelaysScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<Map<String, dynamic>> _studentDelays = [];
+  List<Map<String, dynamic>> _busDelays = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    final results = await Future.wait([
+      FieldSupervisorRemoteDataSource.getDelays(type: 'student'),
+      FieldSupervisorRemoteDataSource.getDelays(type: 'bus'),
+    ]);
+
+    if (mounted) {
+      setState(() {
+        _studentDelays = results[0];
+        _busDelays = results[1];
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -43,76 +66,91 @@ class _DelaysScreenState extends State<DelaysScreen>
       ),
       body: SafeArea(
         top: false,
-        child: CustomScrollView(
-          slivers: [
-            AppSliverHeader(
-              title: l10n.registerDelays,
-              showMenu: true,
-              trailing: IconButton(
-                icon: Icon(
-                  Icons.add_circle_outline_rounded,
-                  color: AppColors.primary,
-                  size: 28,
-                ),
-                onPressed: () => _showNewDelaySheet(context, l10n, isDark),
-              ),
-            ),
-
-            // Tab Bar
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.grey.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadData,
+                child: CustomScrollView(
+                  slivers: [
+                    AppSliverHeader(
+                      title: l10n.registerDelays,
+                      showMenu: true,
+                      trailing: IconButton(
+                        icon: Icon(
+                          Icons.add_circle_outline_rounded,
+                          color: AppColors.primary,
+                          size: 28,
                         ),
-                      ],
+                        onPressed: () => _showNewDelaySheet(context, l10n, isDark),
+                      ),
                     ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
-                    labelColor: Colors.white,
-                    unselectedLabelColor: isDark
-                        ? Colors.white70
-                        : AppColors.textSecondary,
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+
+                    // Tab Bar
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: TabBar(
+                            controller: _tabController,
+                            indicator: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            dividerColor: Colors.transparent,
+                            labelColor: Colors.white,
+                            unselectedLabelColor: isDark
+                                ? Colors.white70
+                                : AppColors.textSecondary,
+                            labelStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                            tabs: [
+                              Tab(text: l10n.studentDelays),
+                              Tab(text: l10n.busDelays),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                    tabs: [
-                      Tab(text: l10n.studentDelays),
-                      Tab(text: l10n.busDelays),
-                    ],
-                  ),
+
+                    // Tab Views
+                    SliverFillRemaining(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _DelaysList(
+                            delays: _studentDelays,
+                            isStudent: true,
+                            l10n: l10n,
+                            isDark: isDark,
+                          ),
+                          _DelaysList(
+                            delays: _busDelays,
+                            isStudent: false,
+                            l10n: l10n,
+                            isDark: isDark,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-
-            // Tab Views
-            SliverFillRemaining(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _StudentDelaysList(l10n: l10n, isDark: isDark),
-                  _BusDelaysList(l10n: l10n, isDark: isDark),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -129,28 +167,53 @@ class _DelaysScreenState extends State<DelaysScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => _NewDelaySheet(l10n: l10n, isDark: isDark),
+      builder: (context) => _NewDelaySheet(
+        l10n: l10n,
+        isDark: isDark,
+        onSubmitted: _loadData,
+      ),
     );
   }
 }
 
-class _StudentDelaysList extends StatelessWidget {
-  const _StudentDelaysList({required this.l10n, required this.isDark});
+// ─── Delays List ──────────────────────────────────────────────
+class _DelaysList extends StatelessWidget {
+  const _DelaysList({
+    required this.delays,
+    required this.isStudent,
+    required this.l10n,
+    required this.isDark,
+  });
 
+  final List<Map<String, dynamic>> delays;
+  final bool isStudent;
   final AppLocalizations l10n;
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    final delays = [
-      _DelayData('أحمد محمد', '10 ${l10n.minutes}', 'B001', DateTime.now()),
-      _DelayData(
-        'سارة علي',
-        '15 ${l10n.minutes}',
-        'B002',
-        DateTime.now().subtract(const Duration(hours: 1)),
-      ),
-    ];
+    if (delays.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isStudent ? Icons.person_off : Icons.no_transfer,
+              size: 64,
+              color: Colors.grey.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'لا توجد تأخيرات مسجلة',
+              style: TextStyle(
+                color: isDark ? Colors.white54 : AppColors.textSecondary,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -158,11 +221,16 @@ class _StudentDelaysList extends StatelessWidget {
       itemBuilder: (context, index) {
         final delay = delays[index];
         return _DelayCard(
-          name: delay.name,
-          duration: delay.duration,
-          busId: delay.busId,
-          time: delay.time,
-          isStudent: true,
+          name: isStudent
+              ? (delay['student_name'] ?? 'N/A')
+              : (delay['bus_code'] ?? 'حافلة'),
+          duration: '${delay['duration_minutes']} ${l10n.minutes}',
+          subtitle: isStudent
+              ? (delay['bus_code'] ?? '')
+              : (delay['reason'] ?? ''),
+          time: DateTime.tryParse(delay['created_at'] ?? '') ?? DateTime.now(),
+          isStudent: isStudent,
+          reason: delay['reason'] ?? '',
           l10n: l10n,
           isDark: isDark,
         );
@@ -171,73 +239,25 @@ class _StudentDelaysList extends StatelessWidget {
   }
 }
 
-class _BusDelaysList extends StatelessWidget {
-  const _BusDelaysList({required this.l10n, required this.isDark});
-
-  final AppLocalizations l10n;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final delays = [
-      _DelayData(
-        'حافلة 1',
-        '20 ${l10n.minutes}',
-        l10n.technicalIssue,
-        DateTime.now(),
-      ),
-      _DelayData(
-        'حافلة 3',
-        '30 ${l10n.minutes}',
-        l10n.trafficJam,
-        DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-    ];
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: delays.length,
-      itemBuilder: (context, index) {
-        final delay = delays[index];
-        return _DelayCard(
-          name: delay.name,
-          duration: delay.duration,
-          busId: delay.busId,
-          time: delay.time,
-          isStudent: false,
-          l10n: l10n,
-          isDark: isDark,
-        );
-      },
-    );
-  }
-}
-
-class _DelayData {
-  final String name;
-  final String duration;
-  final String busId;
-  final DateTime time;
-
-  _DelayData(this.name, this.duration, this.busId, this.time);
-}
-
+// ─── Delay Card ──────────────────────────────────────────────
 class _DelayCard extends StatelessWidget {
   const _DelayCard({
     required this.name,
     required this.duration,
-    required this.busId,
+    required this.subtitle,
     required this.time,
     required this.isStudent,
+    required this.reason,
     required this.l10n,
     required this.isDark,
   });
 
   final String name;
   final String duration;
-  final String busId;
+  final String subtitle;
   final DateTime time;
   final bool isStudent;
+  final String reason;
   final AppLocalizations l10n;
   final bool isDark;
 
@@ -293,52 +313,78 @@ class _DelayCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       duration,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFFEC4899),
+                        color: Color(0xFFEC4899),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      isStudent ? Icons.directions_bus : Icons.info,
-                      size: 12,
-                      color: isDark ? Colors.white54 : AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      busId,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark
-                            ? Colors.white54
-                            : AppColors.textSecondary,
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      Icon(
+                        isStudent ? Icons.directions_bus : Icons.info,
+                        size: 12,
+                        color: isDark ? Colors.white54 : AppColors.textSecondary,
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? Colors.white54
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  formatRelativeTime(time),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.white38 : Colors.grey,
+                  ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.send_rounded, color: AppColors.primary),
-            onPressed: () {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(l10n.reportSent)));
-            },
-          ),
+          if (reason.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                reason,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFF59E0B),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
+// ─── New Delay Sheet ──────────────────────────────────────────────
 class _NewDelaySheet extends StatefulWidget {
-  const _NewDelaySheet({required this.l10n, required this.isDark});
+  const _NewDelaySheet({
+    required this.l10n,
+    required this.isDark,
+    required this.onSubmitted,
+  });
 
   final AppLocalizations l10n;
   final bool isDark;
+  final VoidCallback onSubmitted;
 
   @override
   State<_NewDelaySheet> createState() => _NewDelaySheetState();
@@ -346,27 +392,25 @@ class _NewDelaySheet extends StatefulWidget {
 
 class _NewDelaySheetState extends State<_NewDelaySheet> {
   String _delayType = 'student';
-  String? _selectedItem;
+  Map<String, dynamic>? _selectedStudent;
+  Map<String, dynamic>? _selectedBus;
   String? _selectedReason;
   final _durationController = TextEditingController();
+  bool _isSubmitting = false;
 
-  // Mock data — students with civil IDs, buses with numbers
-  static const _students = [
-    _SearchableItem(name: 'أحمد محمد', subtitle: '12345678'),
-    _SearchableItem(name: 'سارة علي', subtitle: '23456789'),
-    _SearchableItem(name: 'خالد أحمد', subtitle: '34567890'),
-    _SearchableItem(name: 'فاطمة سالم', subtitle: '45678901'),
-    _SearchableItem(name: 'عبدالله يوسف', subtitle: '56789012'),
-    _SearchableItem(name: 'مريم ناصر', subtitle: '67890123'),
-  ];
+  // These will be loaded from API
+  List<Map<String, dynamic>> _buses = [];
 
-  static const _buses = [
-    _SearchableItem(name: 'حافلة 1', subtitle: 'B001'),
-    _SearchableItem(name: 'حافلة 2', subtitle: 'B002'),
-    _SearchableItem(name: 'حافلة 3', subtitle: 'B003'),
-    _SearchableItem(name: 'حافلة 4', subtitle: 'B004'),
-    _SearchableItem(name: 'حافلة 5', subtitle: 'B005'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadBuses();
+  }
+
+  Future<void> _loadBuses() async {
+    final buses = await FieldSupervisorRemoteDataSource.getBuses();
+    if (mounted) setState(() => _buses = buses);
+  }
 
   @override
   void dispose() {
@@ -376,20 +420,46 @@ class _NewDelaySheetState extends State<_NewDelaySheet> {
 
   void _openSearchSheet() async {
     final isStudent = _delayType == 'student';
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _SearchableSelectionSheet(
-        title: isStudent ? widget.l10n.selectStudent : widget.l10n.selectBus,
-        hint: widget.l10n.searchPlaceholder,
-        items: isStudent ? _students : _buses,
-        subtitleLabel: isStudent ? widget.l10n.civilId : widget.l10n.bus,
-        isDark: widget.isDark,
-      ),
-    );
-    if (result != null) {
-      setState(() => _selectedItem = result);
+
+    if (isStudent) {
+      // Open student search
+      final result = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _StudentSearchSheet(
+          isDark: widget.isDark,
+          l10n: widget.l10n,
+        ),
+      );
+      if (result != null && mounted) {
+        setState(() => _selectedStudent = result);
+      }
+    } else {
+      // Open bus search
+      final result = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _BusSearchSheet(
+          isDark: widget.isDark,
+          l10n: widget.l10n,
+          buses: _buses,
+        ),
+      );
+      if (result != null && mounted) {
+        setState(() => _selectedBus = result);
+      }
+    }
+  }
+
+  String get _selectionLabel {
+    if (_delayType == 'student') {
+      return _selectedStudent?['name'] ?? '';
+    } else {
+      return _selectedBus != null
+          ? (_selectedBus!['bus_code'] ?? 'حافلة ${_selectedBus!['id']}')
+          : '';
     }
   }
 
@@ -435,7 +505,8 @@ class _NewDelaySheetState extends State<_NewDelaySheet> {
             onSelectionChanged: (value) {
               setState(() {
                 _delayType = value.first;
-                _selectedItem = null;
+                _selectedStudent = null;
+                _selectedBus = null;
               });
             },
           ),
@@ -456,10 +527,10 @@ class _NewDelaySheetState extends State<_NewDelaySheet> {
                 suffixIcon: const Icon(Icons.search_rounded),
               ),
               child: Text(
-                _selectedItem ?? '',
+                _selectionLabel,
                 style: TextStyle(
                   fontSize: 16,
-                  color: _selectedItem != null
+                  color: _selectionLabel.isNotEmpty
                       ? (widget.isDark ? Colors.white : AppColors.textPrimary)
                       : Colors.grey,
                 ),
@@ -481,7 +552,7 @@ class _NewDelaySheetState extends State<_NewDelaySheet> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            initialValue: _selectedReason,
+            value: _selectedReason,
             decoration: InputDecoration(
               labelText: widget.l10n.delayReason,
               border: OutlineInputBorder(
@@ -520,15 +591,17 @@ class _NewDelaySheetState extends State<_NewDelaySheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(widget.l10n.delaySavedAndReported),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.save, size: 18),
+                  onPressed: _isSubmitting ? null : _submit,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.save, size: 18),
                   label: Text(widget.l10n.saveAndSend),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -545,50 +618,81 @@ class _NewDelaySheetState extends State<_NewDelaySheet> {
       ),
     );
   }
-}
 
-/// Data model for searchable items (student or bus).
-class _SearchableItem {
-  final String name;
-  final String subtitle; // Civil ID for students, bus number for buses
+  Future<void> _submit() async {
+    final duration = int.tryParse(_durationController.text);
+    if (duration == null || duration <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى إدخال مدة التأخير')),
+      );
+      return;
+    }
 
-  const _SearchableItem({required this.name, required this.subtitle});
+    if (_delayType == 'student' && _selectedStudent == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى اختيار الطالب')),
+      );
+      return;
+    }
 
-  bool matches(String query) {
-    final q = query.toLowerCase();
-    return name.toLowerCase().contains(q) || subtitle.toLowerCase().contains(q);
+    if (_delayType == 'bus' && _selectedBus == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى اختيار الحافلة')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final int? busId = _delayType == 'bus' ? (_selectedBus?['id'] as int?) : null;
+
+    final result = await FieldSupervisorRemoteDataSource.storeDelay(
+      type: _delayType,
+      studentId: _selectedStudent?['id'] as int?,
+      busId: busId,
+      durationMinutes: duration,
+      reason: _selectedReason,
+    );
+
+    if (mounted) {
+      Navigator.pop(context);
+      if (result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(widget.l10n.delaySavedAndReported)),
+        );
+        widget.onSubmitted();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ في حفظ التأخير')),
+        );
+      }
+    }
   }
 }
 
-/// A bottom sheet with a search bar to pick a student or bus.
-class _SearchableSelectionSheet extends StatefulWidget {
-  const _SearchableSelectionSheet({
-    required this.title,
-    required this.hint,
-    required this.items,
-    required this.subtitleLabel,
+// ─── Student Search Sheet ──────────────────────────────────────────────
+class _StudentSearchSheet extends StatefulWidget {
+  const _StudentSearchSheet({
     required this.isDark,
+    required this.l10n,
   });
 
-  final String title;
-  final String hint;
-  final List<_SearchableItem> items;
-  final String subtitleLabel;
   final bool isDark;
+  final AppLocalizations l10n;
 
   @override
-  State<_SearchableSelectionSheet> createState() =>
-      _SearchableSelectionSheetState();
+  State<_StudentSearchSheet> createState() => _StudentSearchSheetState();
 }
 
-class _SearchableSelectionSheetState extends State<_SearchableSelectionSheet> {
+class _StudentSearchSheetState extends State<_StudentSearchSheet> {
   final _searchController = TextEditingController();
-  late List<_SearchableItem> _filteredItems;
+  List<Map<String, dynamic>> _students = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _filteredItems = widget.items;
+    _loadStudents();
   }
 
   @override
@@ -597,16 +701,19 @@ class _SearchableSelectionSheetState extends State<_SearchableSelectionSheet> {
     super.dispose();
   }
 
+  Future<void> _loadStudents([String? search]) async {
+    setState(() => _isLoading = true);
+    final data = await FieldSupervisorRemoteDataSource.getStudents(search: search);
+    if (mounted) {
+      setState(() {
+        _students = data;
+        _isLoading = false;
+      });
+    }
+  }
+
   void _onSearchChanged(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredItems = widget.items;
-      } else {
-        _filteredItems = widget.items
-            .where((item) => item.matches(query))
-            .toList();
-      }
-    });
+    _loadStudents(query.isEmpty ? null : query);
   }
 
   @override
@@ -637,7 +744,7 @@ class _SearchableSelectionSheetState extends State<_SearchableSelectionSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
-              widget.title,
+              widget.l10n.selectStudent,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -655,11 +762,11 @@ class _SearchableSelectionSheetState extends State<_SearchableSelectionSheet> {
               onChanged: _onSearchChanged,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: widget.hint,
+                hintText: widget.l10n.searchPlaceholder,
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _searchController,
-                  builder: (_, value, _) {
+                  builder: (_, value, __) {
                     if (value.text.isEmpty) return const SizedBox.shrink();
                     return IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 20),
@@ -689,7 +796,209 @@ class _SearchableSelectionSheetState extends State<_SearchableSelectionSheet> {
 
           // Results
           Expanded(
-            child: _filteredItems.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _students.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.search_off_rounded,
+                              size: 48,
+                              color: Colors.grey.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'لا توجد نتائج',
+                              style: TextStyle(
+                                color: widget.isDark
+                                    ? Colors.white54
+                                    : AppColors.textSecondary,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        itemCount: _students.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final student = _students[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.primary.withValues(
+                                alpha: 0.1,
+                              ),
+                              child: Icon(
+                                Icons.person_rounded,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              student['name'] ?? '',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: widget.isDark
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${widget.l10n.civilId}: ${student['national_id'] ?? student['code'] ?? ''}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: widget.isDark
+                                    ? Colors.white54
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            onTap: () => Navigator.pop(context, student),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Bus Search Sheet ──────────────────────────────────────────────
+class _BusSearchSheet extends StatefulWidget {
+  const _BusSearchSheet({
+    required this.isDark,
+    required this.l10n,
+    required this.buses,
+  });
+
+  final bool isDark;
+  final AppLocalizations l10n;
+  final List<Map<String, dynamic>> buses;
+
+  @override
+  State<_BusSearchSheet> createState() => _BusSearchSheetState();
+}
+
+class _BusSearchSheetState extends State<_BusSearchSheet> {
+  final _searchController = TextEditingController();
+  late List<Map<String, dynamic>> _filteredBuses;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredBuses = widget.buses;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredBuses = widget.buses;
+      } else {
+        final q = query.toLowerCase();
+        _filteredBuses = widget.buses
+            .where((bus) {
+              final code = (bus['bus_code'] ?? '').toString().toLowerCase();
+              final plate = (bus['plate_number'] ?? '').toString().toLowerCase();
+              return code.contains(q) || plate.contains(q);
+            })
+            .toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: BoxDecoration(
+        color: widget.isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              widget.l10n.selectBus,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: widget.isDark ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: widget.l10n.searchPlaceholder,
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _searchController,
+                  builder: (_, value, __) {
+                    if (value.text.isEmpty) return const SizedBox.shrink();
+                    return IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                        _onSearchChanged('');
+                      },
+                    );
+                  },
+                ),
+                filled: true,
+                fillColor: widget.isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.grey.withValues(alpha: 0.08),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          Expanded(
+            child: _filteredBuses.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -717,25 +1026,23 @@ class _SearchableSelectionSheetState extends State<_SearchableSelectionSheet> {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    itemCount: _filteredItems.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemCount: _filteredBuses.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      final item = _filteredItems[index];
+                      final bus = _filteredBuses[index];
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: AppColors.primary.withValues(
                             alpha: 0.1,
                           ),
                           child: Icon(
-                            widget.subtitleLabel.contains('ID')
-                                ? Icons.person_rounded
-                                : Icons.directions_bus_rounded,
+                            Icons.directions_bus_rounded,
                             color: AppColors.primary,
                             size: 20,
                           ),
                         ),
                         title: Text(
-                          item.name,
+                          bus['bus_code'] ?? 'حافلة ${bus['id']}',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: widget.isDark
@@ -744,7 +1051,7 @@ class _SearchableSelectionSheetState extends State<_SearchableSelectionSheet> {
                           ),
                         ),
                         subtitle: Text(
-                          '${widget.subtitleLabel}: ${item.subtitle}',
+                          '${widget.l10n.bus}: ${bus['bus_code'] ?? ''}',
                           style: TextStyle(
                             fontSize: 13,
                             color: widget.isDark
@@ -755,7 +1062,7 @@ class _SearchableSelectionSheetState extends State<_SearchableSelectionSheet> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        onTap: () => Navigator.pop(context, item.name),
+                        onTap: () => Navigator.pop(context, bus),
                       );
                     },
                   ),

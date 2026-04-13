@@ -1,14 +1,47 @@
 import 'package:flutter/material.dart';
 
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
+import 'package:msaratwasel_services/features/field_supervisor/home/data/field_supervisor_remote_datasource.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 /// Reports screen with completed trips, issues, delays, violations.
-class ReportsScreen extends StatelessWidget {
+class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
+
+  @override
+  State<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  Map<String, dynamic> _report = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    final data = await FieldSupervisorRemoteDataSource.getDashboardReport();
+
+    if (mounted) {
+      setState(() {
+        _report = data;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,128 +57,248 @@ class ReportsScreen extends StatelessWidget {
       ),
       body: SafeArea(
         top: false,
-        child: CustomScrollView(
-          slivers: [
-            AppSliverHeader(
-              title: l10n.reports,
-              showMenu: true,
-              trailing: IconButton(
-                icon: Icon(Icons.download, color: AppColors.primary),
-                onPressed: () {},
-              ),
-            ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadData,
+                child: CustomScrollView(
+                  slivers: [
+                    AppSliverHeader(
+                      title: l10n.reports,
+                      showMenu: true,
+                    ),
 
-            // Summary Cards
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    _SummaryCard(
-                      value: '156',
-                      label: l10n.completedTrips,
-                      color: const Color(0xFF16A34A),
-                      icon: Icons.check_circle,
-                      isDark: isDark,
+                    // Summary Cards
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            _SummaryCard(
+                              value: '${_report['today_trips'] ?? 0}',
+                              label: l10n.completedTrips,
+                              color: const Color(0xFF16A34A),
+                              icon: Icons.check_circle,
+                              isDark: isDark,
+                            ),
+                            const SizedBox(width: 12),
+                            _SummaryCard(
+                              value: '${_report['today_incidents'] ?? 0}',
+                              label: l10n.issues,
+                              color: AppColors.error,
+                              icon: Icons.warning,
+                              isDark: isDark,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    _SummaryCard(
-                      value: '12',
-                      label: l10n.issues,
-                      color: AppColors.error,
-                      icon: Icons.warning,
-                      isDark: isDark,
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            _SummaryCard(
+                              value: '${_report['today_inspections'] ?? 0}',
+                              label: l10n.delays,
+                              color: const Color(0xFFEC4899),
+                              icon: Icons.fact_check,
+                              isDark: isDark,
+                            ),
+                            const SizedBox(width: 12),
+                            _SummaryCard(
+                              value: '${_report['pending_incidents'] ?? 0}',
+                              label: l10n.violations,
+                              color: const Color(0xFFF59E0B),
+                              icon: Icons.pending_actions,
+                              isDark: isDark,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+
+                    // Overview section
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          'نظرة عامة',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverToBoxAdapter(
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurface : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              _OverviewRow(
+                                label: 'إجمالي الحافلات',
+                                value: '${_report['total_buses'] ?? 0}',
+                                subValue: '${_report['active_buses'] ?? 0} نشطة',
+                                isDark: isDark,
+                              ),
+                              const Divider(height: 24),
+                              _OverviewRow(
+                                label: 'إجمالي السائقين',
+                                value: '${_report['total_drivers'] ?? 0}',
+                                subValue: '${_report['active_drivers'] ?? 0} نشط',
+                                isDark: isDark,
+                              ),
+                              const Divider(height: 24),
+                              _OverviewRow(
+                                label: 'رحلات اليوم',
+                                value: '${_report['today_trips'] ?? 0}',
+                                subValue: '',
+                                isDark: isDark,
+                              ),
+                              const Divider(height: 24),
+                              _OverviewRow(
+                                label: 'حوادث اليوم',
+                                value: '${_report['today_incidents'] ?? 0}',
+                                subValue: '${_report['pending_incidents'] ?? 0} معلقة',
+                                isDark: isDark,
+                              ),
+                              const Divider(height: 24),
+                              _OverviewRow(
+                                label: 'تفتيشات اليوم',
+                                value: '${_report['today_inspections'] ?? 0}',
+                                subValue: '',
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Report Categories
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          l10n.reportCategories,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          _ReportTile(
+                            icon: Icons.route,
+                            title: l10n.completedTrips,
+                            subtitle: l10n.viewAllTrips,
+                            color: const Color(0xFF16A34A),
+                            isDark: isDark,
+                          ),
+                          _ReportTile(
+                            icon: Icons.report_problem,
+                            title: l10n.issues,
+                            subtitle: l10n.viewAllIssues,
+                            color: AppColors.error,
+                            isDark: isDark,
+                          ),
+                          _ReportTile(
+                            icon: Icons.timer_off,
+                            title: l10n.delays,
+                            subtitle: l10n.viewAllDelays,
+                            color: const Color(0xFFEC4899),
+                            isDark: isDark,
+                          ),
+                          _ReportTile(
+                            icon: Icons.gavel,
+                            title: l10n.violations,
+                            subtitle: l10n.viewAllViolations,
+                            color: const Color(0xFFF59E0B),
+                            isDark: isDark,
+                          ),
+                          _ReportTile(
+                            icon: Icons.explore,
+                            title: l10n.fieldTrips,
+                            subtitle: l10n.viewFieldTrips,
+                            color: const Color(0xFF10B981),
+                            isDark: isDark,
+                          ),
+                        ]),
+                      ),
+                    ),
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
                   ],
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    _SummaryCard(
-                      value: '8',
-                      label: l10n.delays,
-                      color: const Color(0xFFEC4899),
-                      icon: Icons.timer_off,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: 12),
-                    _SummaryCard(
-                      value: '3',
-                      label: l10n.violations,
-                      color: const Color(0xFFF59E0B),
-                      icon: Icons.gavel,
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Report Categories
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-              sliver: SliverToBoxAdapter(
-                child: Text(
-                  l10n.reportCategories,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _ReportTile(
-                    icon: Icons.route,
-                    title: l10n.completedTrips,
-                    subtitle: l10n.viewAllTrips,
-                    color: const Color(0xFF16A34A),
-                    isDark: isDark,
-                  ),
-                  _ReportTile(
-                    icon: Icons.report_problem,
-                    title: l10n.issues,
-                    subtitle: l10n.viewAllIssues,
-                    color: AppColors.error,
-                    isDark: isDark,
-                  ),
-                  _ReportTile(
-                    icon: Icons.timer_off,
-                    title: l10n.delays,
-                    subtitle: l10n.viewAllDelays,
-                    color: const Color(0xFFEC4899),
-                    isDark: isDark,
-                  ),
-                  _ReportTile(
-                    icon: Icons.gavel,
-                    title: l10n.violations,
-                    subtitle: l10n.viewAllViolations,
-                    color: const Color(0xFFF59E0B),
-                    isDark: isDark,
-                  ),
-                  _ReportTile(
-                    icon: Icons.explore,
-                    title: l10n.fieldTrips,
-                    subtitle: l10n.viewFieldTrips,
-                    color: const Color(0xFF10B981),
-                    isDark: isDark,
-                  ),
-                ]),
-              ),
-            ),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-          ],
-        ),
       ),
+    );
+  }
+}
+
+class _OverviewRow extends StatelessWidget {
+  const _OverviewRow({
+    required this.label,
+    required this.value,
+    required this.subValue,
+    required this.isDark,
+  });
+
+  final String label;
+  final String value;
+  final String subValue;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.white70 : AppColors.textSecondary,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : AppColors.textPrimary,
+          ),
+        ),
+        if (subValue.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Text(
+            subValue,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.primary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

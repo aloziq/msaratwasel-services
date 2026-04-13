@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
+import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 
 /// Premium drawer for Field Supervisor navigation.
 /// Inspired by parent app's RootShell design.
@@ -39,91 +43,115 @@ class SupervisorDrawer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 42),
-            decoration: BoxDecoration(
-              color: drawerBg,
-              borderRadius: const BorderRadiusDirectional.only(
-                bottomEnd: Radius.circular(30),
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
+          BlocBuilder<AuthCubit, AuthState>(
+            builder: (context, state) {
+              String name = l10n.fieldSupervisor;
+              String? avatar;
+              
+              if (state is AuthAuthenticated) {
+                name = state.user.name;
+                avatar = state.user.avatar;
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 42),
+                decoration: BoxDecoration(
+                  color: drawerBg,
+                  borderRadius: const BorderRadiusDirectional.only(
+                    bottomEnd: Radius.circular(30),
+                  ),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white24
-                                : AppColors.primary.withValues(alpha: 0.2),
-                            width: 2,
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 42,
-                          backgroundColor: AppColors.primary.withValues(
-                            alpha: 0.1,
-                          ),
-                          child: Icon(
-                            Icons.supervisor_account_rounded,
-                            size: 40,
-                            color: AppColors.primary,
-                          ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.push(AppRoutes.profile);
+                        },
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white24
+                                      : AppColors.primary.withValues(alpha: 0.2),
+                                  width: 2,
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 42,
+                                backgroundColor: AppColors.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                backgroundImage: avatar != null && avatar.isNotEmpty
+                                    ? NetworkImage(ApiConfig.getImageUrl(avatar))
+                                    : null,
+                                child: avatar == null || avatar.isEmpty
+                                    ? Icon(
+                                        Icons.supervisor_account_rounded,
+                                        size: 40,
+                                        color: AppColors.primary,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: AppColors.secondary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.verified,
+                                size: 14,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: AppColors.secondary,
-                          shape: BoxShape.circle,
+                      const SizedBox(height: 12),
+                      Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
                         ),
-                        child: const Icon(
-                          Icons.verified,
-                          size: 14,
-                          color: Colors.black,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.grey.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          l10n.supervisorRole,
+                          style: TextStyle(
+                            color: subTextColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.fieldSupervisor,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      l10n.supervisorRole,
-                      style: TextStyle(
-                        color: subTextColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
 
           // Menu Items

@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
+import 'package:msaratwasel_services/features/field_supervisor/home/data/field_supervisor_remote_datasource.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 /// Main dashboard screen for Field Supervisor role.
@@ -32,8 +41,45 @@ class _SupervisorHomeScreenState extends State<SupervisorHomeScreen> {
 }
 
 /// The main dashboard view with stats and quick actions.
-class _SupervisorDashboard extends StatelessWidget {
+class _SupervisorDashboard extends StatefulWidget {
   const _SupervisorDashboard();
+
+  @override
+  State<_SupervisorDashboard> createState() => _SupervisorDashboardState();
+}
+
+class _SupervisorDashboardState extends State<_SupervisorDashboard> {
+  int _activeBuses = 0;
+  int _activeDrivers = 0;
+  int _activeTrips = 0;
+  bool _isLoading = true;
+  String _userName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // Load user name from SharedPreferences
+    try {
+      final prefs = GetIt.instance<SharedPreferences>();
+      _userName = prefs.getString('USER_NAME') ?? '';
+    } catch (_) {}
+
+    // Fetch stats from API
+    final stats = await FieldSupervisorRemoteDataSource.getDashboardStats();
+
+    if (mounted) {
+      setState(() {
+        _activeBuses = stats['active_buses'] ?? 0;
+        _activeDrivers = stats['active_drivers'] ?? 0;
+        _activeTrips = stats['active_trips'] ?? 0;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,157 +87,161 @@ class _SupervisorDashboard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return CustomScrollView(
-      slivers: [
-        AppSliverHeader(
-          title: l10n.fieldSupervisor,
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: IconButton(
-              icon: Icon(
-                Icons.menu_rounded,
-                size: 28,
-                color: isDark ? Colors.white : AppColors.textPrimary,
-              ),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
-          ),
-          trailing: IconButton(
-            icon: Icon(
-              Icons.notifications_outlined,
-              color: isDark ? Colors.white : AppColors.textPrimary,
-            ),
-            onPressed: () {},
-          ),
-        ),
-
-        // Welcome Header
-        SliverToBoxAdapter(
-          child: _WelcomeHeader(l10n: l10n, isDark: isDark),
-        ),
-
-        // Stats Cards
-        SliverToBoxAdapter(
-          child: _StatsSection(l10n: l10n, isDark: isDark),
-        ),
-
-        // Quick Actions Title
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              l10n.quickActions,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : AppColors.textPrimary,
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: CustomScrollView(
+        slivers: [
+          AppSliverHeader(
+            title: l10n.fieldSupervisor,
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: IconButton(
+                icon: Icon(
+                  Icons.menu_rounded,
+                  size: 28,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                ),
+                onPressed: () => Scaffold.of(context).openDrawer(),
               ),
             ),
           ),
-        ),
 
-        // Quick Actions Grid
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.95,
-            ),
-            delegate: SliverChildListDelegate([
-              _QuickActionCard(
-                icon: Icons.directions_bus_rounded,
-                label: l10n.busTracking,
-                color: AppColors.primary,
-                onTap: () => handleSupervisorNavigation(
-                  context,
-                  1,
-                  0,
-                  closeDrawer: false,
-                ),
-              ),
-              _QuickActionCard(
-                icon: Icons.people_alt_rounded,
-                label: l10n.driversAndSupervisors,
-                color: const Color(0xFF7C3AED),
-                onTap: () => handleSupervisorNavigation(
-                  context,
-                  2,
-                  0,
-                  closeDrawer: false,
-                ),
-              ),
-              _QuickActionCard(
-                icon: Icons.sos_rounded,
-                label: l10n.incidentsAndEmergencies,
-                color: AppColors.error,
-                onTap: () => handleSupervisorNavigation(
-                  context,
-                  4,
-                  0,
-                  closeDrawer: false,
-                ),
-              ),
-              _QuickActionCard(
-                icon: Icons.fact_check_rounded,
-                label: l10n.fieldInspection,
-                color: const Color(0xFFF59E0B),
-                onTap: () => handleSupervisorNavigation(
-                  context,
-                  5,
-                  0,
-                  closeDrawer: false,
-                ),
-              ),
-              _QuickActionCard(
-                icon: Icons.timer_off_rounded,
-                label: l10n.registerDelays,
-                color: const Color(0xFFF59E0B),
-                onTap: () => handleSupervisorNavigation(
-                  context,
-                  6,
-                  0,
-                  closeDrawer: false,
-                ),
-              ),
-              _QuickActionCard(
-                icon: Icons.explore_rounded,
-                label: l10n.fieldTrips,
-                color: const Color(0xFF10B981),
-                onTap: () => handleSupervisorNavigation(
-                  context,
-                  7,
-                  0,
-                  closeDrawer: false,
-                ),
-              ),
-              _QuickActionCard(
-                icon: Icons.bar_chart_rounded,
-                label: l10n.reports,
-                color: const Color(0xFF8B5CF6),
-                onTap: () => handleSupervisorNavigation(
-                  context,
-                  8,
-                  0,
-                  closeDrawer: false,
-                ),
-              ),
-            ]),
+          // Welcome Header
+          SliverToBoxAdapter(
+            child: _WelcomeHeader(l10n: l10n, isDark: isDark, userName: _userName),
           ),
-        ),
 
-        const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-      ],
+          // Stats Cards
+          SliverToBoxAdapter(
+            child: _StatsSection(
+              l10n: l10n,
+              isDark: isDark,
+              activeBuses: _activeBuses,
+              activeDrivers: _activeDrivers,
+              activeTrips: _activeTrips,
+              isLoading: _isLoading,
+            ),
+          ),
+
+          // Quick Actions Title
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                l10n.quickActions,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+
+          // Quick Actions Grid
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.95,
+              ),
+              delegate: SliverChildListDelegate([
+                _QuickActionCard(
+                  icon: Icons.directions_bus_rounded,
+                  label: l10n.busTracking,
+                  color: AppColors.primary,
+                  onTap: () => handleSupervisorNavigation(
+                    context,
+                    1,
+                    0,
+                    closeDrawer: false,
+                  ),
+                ),
+                _QuickActionCard(
+                  icon: Icons.people_alt_rounded,
+                  label: l10n.driversAndSupervisors,
+                  color: const Color(0xFF7C3AED),
+                  onTap: () => handleSupervisorNavigation(
+                    context,
+                    2,
+                    0,
+                    closeDrawer: false,
+                  ),
+                ),
+                _QuickActionCard(
+                  icon: Icons.sos_rounded,
+                  label: l10n.incidentsAndEmergencies,
+                  color: AppColors.error,
+                  onTap: () => handleSupervisorNavigation(
+                    context,
+                    4,
+                    0,
+                    closeDrawer: false,
+                  ),
+                ),
+                _QuickActionCard(
+                  icon: Icons.fact_check_rounded,
+                  label: l10n.fieldInspection,
+                  color: const Color(0xFFF59E0B),
+                  onTap: () => handleSupervisorNavigation(
+                    context,
+                    5,
+                    0,
+                    closeDrawer: false,
+                  ),
+                ),
+                _QuickActionCard(
+                  icon: Icons.timer_off_rounded,
+                  label: l10n.registerDelays,
+                  color: const Color(0xFFF59E0B),
+                  onTap: () => handleSupervisorNavigation(
+                    context,
+                    6,
+                    0,
+                    closeDrawer: false,
+                  ),
+                ),
+                _QuickActionCard(
+                  icon: Icons.explore_rounded,
+                  label: l10n.fieldTrips,
+                  color: const Color(0xFF10B981),
+                  onTap: () => handleSupervisorNavigation(
+                    context,
+                    7,
+                    0,
+                    closeDrawer: false,
+                  ),
+                ),
+                _QuickActionCard(
+                  icon: Icons.bar_chart_rounded,
+                  label: l10n.reports,
+                  color: const Color(0xFF8B5CF6),
+                  onTap: () => handleSupervisorNavigation(
+                    context,
+                    8,
+                    0,
+                    closeDrawer: false,
+                  ),
+                ),
+              ]),
+            ),
+          ),
+
+          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+        ],
+      ),
     );
   }
 }
 
 class _WelcomeHeader extends StatelessWidget {
-  const _WelcomeHeader({required this.l10n, required this.isDark});
+  const _WelcomeHeader({required this.l10n, required this.isDark, this.userName = ''});
 
   final AppLocalizations l10n;
   final bool isDark;
+  final String userName;
 
   @override
   Widget build(BuildContext context) {
@@ -205,91 +255,127 @@ class _WelcomeHeader extends StatelessWidget {
       greeting = l10n.greetingEvening;
     }
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.85),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.welcome,
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.fieldSupervisor,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    greeting,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        String name = userName.isNotEmpty ? userName : l10n.fieldSupervisor;
+        String? avatar;
+        
+        if (state is AuthAuthenticated) {
+          name = state.user.name;
+          avatar = state.user.avatar;
+        }
+
+        return Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary,
+                AppColors.primary.withValues(alpha: 0.85),
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.supervisor_account_rounded,
-              color: Colors.white,
-              size: 40,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.welcome,
+                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        greeting,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 36,
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  backgroundImage: avatar != null && avatar.isNotEmpty
+                      ? NetworkImage(ApiConfig.getImageUrl(avatar))
+                      : null,
+                  child: avatar == null || avatar.isEmpty
+                      ? const Icon(
+                          Icons.supervisor_account_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        )
+                      : null,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 class _StatsSection extends StatelessWidget {
-  const _StatsSection({required this.l10n, required this.isDark});
+  const _StatsSection({
+    required this.l10n,
+    required this.isDark,
+    required this.activeBuses,
+    required this.activeDrivers,
+    required this.activeTrips,
+    required this.isLoading,
+  });
 
   final AppLocalizations l10n;
   final bool isDark;
+  final int activeBuses;
+  final int activeDrivers;
+  final int activeTrips;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +387,7 @@ class _StatsSection extends StatelessWidget {
             child: _StatCard(
               icon: Icons.directions_bus,
               label: l10n.activeBuses,
-              value: '12',
+              value: isLoading ? '...' : '$activeBuses',
               color: AppColors.primary,
               isDark: isDark,
             ),
@@ -311,7 +397,7 @@ class _StatsSection extends StatelessWidget {
             child: _StatCard(
               icon: Icons.person,
               label: l10n.activeDrivers,
-              value: '15',
+              value: isLoading ? '...' : '$activeDrivers',
               color: const Color(0xFF16A34A),
               isDark: isDark,
             ),
@@ -321,7 +407,7 @@ class _StatsSection extends StatelessWidget {
             child: _StatCard(
               icon: Icons.route,
               label: l10n.activeTrips,
-              value: '8',
+              value: isLoading ? '...' : '$activeTrips',
               color: const Color(0xFFF59E0B),
               isDark: isDark,
             ),

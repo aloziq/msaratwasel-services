@@ -149,7 +149,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i704.StudentsRepositoryImpl(gh<_i222.StudentsRemoteDataSource>()),
     );
     gh.lazySingleton<_i627.FleetRemoteDataSource>(
-      () => _i627.MockFleetRemoteDataSourceImpl(),
+      () => _i627.FleetRemoteDataSourceImpl(),
     );
     gh.lazySingleton<_i423.RouteRepository>(() => _i973.RouteRepositoryImpl());
     gh.lazySingleton<_i554.AuthRemoteDataSource>(

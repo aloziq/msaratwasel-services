@@ -1394,4 +1394,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get civilIdPrefix => 'Civil ID';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get resolved => 'Resolved';
+
+  @override
+  String get photoAttached => 'Photo attached';
+
+  @override
+  String get pleaseDescribeIncident => 'Please describe the incident';
+
+  @override
+  String get incidentReportedSuccessfully => 'Incident reported successfully';
 }
