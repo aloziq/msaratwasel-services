@@ -51,7 +51,9 @@ class FieldSupervisorRemoteDataSource {
         final data = response.data['data'];
         return {
           'drivers': List<Map<String, dynamic>>.from(data['drivers'] ?? []),
-          'supervisors': List<Map<String, dynamic>>.from(data['supervisors'] ?? []),
+          'supervisors': List<Map<String, dynamic>>.from(
+            data['supervisors'] ?? [],
+          ),
         };
       }
     } catch (e) {
@@ -81,15 +83,53 @@ class FieldSupervisorRemoteDataSource {
     required String overallStatus,
     required List<Map<String, dynamic>> results,
     String? notes,
+    List<File>? photos,
   }) async {
     try {
       final dio = ApiClient.instance;
-      final response = await dio.post('field/inspections', data: {
+
+      if (photos == null || photos.isEmpty) {
+        final response = await dio.post(
+          'field/inspections',
+          data: {
+            'bus_id': busId,
+            'overall_status': overallStatus,
+            'results': results,
+            'notes': notes,
+          },
+        );
+
+        if (response.statusCode == 201 && response.data['success'] == true) {
+          return response.data['data'];
+        }
+        return null;
+      }
+
+      final Map<String, dynamic> mapData = {
         'bus_id': busId,
         'overall_status': overallStatus,
-        'results': results,
-        'notes': notes,
-      });
+      };
+      if (notes != null) mapData['notes'] = notes;
+
+      for (int i = 0; i < results.length; i++) {
+        mapData['results[$i][item_id]'] = results[i]['item_id'];
+        mapData['results[$i][is_passed]'] = results[i]['is_passed'] ?? false;
+        if (results[i]['notes'] != null) {
+          mapData['results[$i][notes]'] = results[i]['notes'];
+        }
+      }
+
+      for (int i = 0; i < photos.length; i++) {
+        final file = photos[i];
+        final fileName = file.path.split('/').last;
+        mapData['photos[$i]'] = await MultipartFile.fromFile(
+          file.path,
+          filename: fileName,
+        );
+      }
+
+      final formData = FormData.fromMap(mapData);
+      final response = await dio.post('field/inspections', data: formData);
 
       if (response.statusCode == 201 && response.data['success'] == true) {
         return response.data['data'];
@@ -109,11 +149,11 @@ class FieldSupervisorRemoteDataSource {
     double? locationLat,
     double? locationLng,
     List<int>? studentIds,
-    File? attachedPhoto,
+    List<File>? photos,
   }) async {
     try {
       final dio = ApiClient.instance;
-      
+
       final Map<String, dynamic> mapData = {
         'bus_id': busId,
         'type': type,
@@ -123,7 +163,7 @@ class FieldSupervisorRemoteDataSource {
 
       if (locationLat != null) mapData['location_lat'] = locationLat;
       if (locationLng != null) mapData['location_lng'] = locationLng;
-      
+
       if (studentIds != null && studentIds.isNotEmpty) {
         // Send array of integers
         for (int i = 0; i < studentIds.length; i++) {
@@ -131,12 +171,15 @@ class FieldSupervisorRemoteDataSource {
         }
       }
 
-      if (attachedPhoto != null) {
-        final fileName = attachedPhoto.path.split('/').last;
-        mapData['photo'] = await MultipartFile.fromFile(
-          attachedPhoto.path,
-          filename: fileName,
-        );
+      if (photos != null && photos.isNotEmpty) {
+        for (int i = 0; i < photos.length; i++) {
+          final file = photos[i];
+          final fileName = file.path.split('/').last;
+          mapData['photos[$i]'] = await MultipartFile.fromFile(
+            file.path,
+            filename: fileName,
+          );
+        }
       }
 
       final formData = FormData.fromMap(mapData);
@@ -160,11 +203,10 @@ class FieldSupervisorRemoteDataSource {
   }) async {
     try {
       final dio = ApiClient.instance;
-      final response = await dio.post('field/violations', data: {
-        'bus_id': busId,
-        'type': type,
-        'description': description,
-      });
+      final response = await dio.post(
+        'field/violations',
+        data: {'bus_id': busId, 'type': type, 'description': description},
+      );
 
       if (response.statusCode == 201 && response.data['success'] == true) {
         return response.data['data'];
@@ -241,7 +283,10 @@ class FieldSupervisorRemoteDataSource {
       final dio = ApiClient.instance;
       final queryParams = <String, dynamic>{};
       if (type != null) queryParams['type'] = type;
-      final response = await dio.get('field/delays', queryParameters: queryParams);
+      final response = await dio.get(
+        'field/delays',
+        queryParameters: queryParams,
+      );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         return List<Map<String, dynamic>>.from(response.data['data']);
@@ -263,14 +308,17 @@ class FieldSupervisorRemoteDataSource {
   }) async {
     try {
       final dio = ApiClient.instance;
-      final response = await dio.post('field/delays', data: {
-        'type': type,
-        'student_id': studentId,
-        'bus_id': busId,
-        'duration_minutes': durationMinutes,
-        'reason': reason,
-        'notes': notes,
-      });
+      final response = await dio.post(
+        'field/delays',
+        data: {
+          'type': type,
+          'student_id': studentId,
+          'bus_id': busId,
+          'duration_minutes': durationMinutes,
+          'reason': reason,
+          'notes': notes,
+        },
+      );
 
       if (response.statusCode == 201 && response.data['success'] == true) {
         return response.data['data'];
@@ -282,12 +330,17 @@ class FieldSupervisorRemoteDataSource {
   }
 
   /// Fetches list of students for search.
-  static Future<List<Map<String, dynamic>>> getStudents({String? search}) async {
+  static Future<List<Map<String, dynamic>>> getStudents({
+    String? search,
+  }) async {
     try {
       final dio = ApiClient.instance;
       final queryParams = <String, dynamic>{};
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
-      final response = await dio.get('field/students', queryParameters: queryParams);
+      final response = await dio.get(
+        'field/students',
+        queryParameters: queryParams,
+      );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         return List<Map<String, dynamic>>.from(response.data['data']);

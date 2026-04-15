@@ -33,7 +33,11 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final data = await FieldSupervisorRemoteDataSource.getIncidents();
-    if (mounted) setState(() { _incidents = data; _isLoading = false; });
+    if (mounted)
+      setState(() {
+        _incidents = data;
+        _isLoading = false;
+      });
   }
 
   @override
@@ -62,7 +66,9 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
                         icon: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFDC2626).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFFDC2626,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -71,7 +77,8 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
                             size: 22,
                           ),
                         ),
-                        onPressed: () => _showNewIncidentSheet(context, l10n, isDark),
+                        onPressed: () =>
+                            _showNewIncidentSheet(context, l10n, isDark),
                       ),
                     ),
 
@@ -95,7 +102,9 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -108,13 +117,18 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.check_circle_outline, size: 64,
-                                      color: Colors.green.withValues(alpha: 0.4)),
+                                  Icon(
+                                    Icons.check_circle_outline,
+                                    size: 64,
+                                    color: Colors.green.withValues(alpha: 0.4),
+                                  ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'لا توجد حوادث مسجلة',
                                     style: TextStyle(
-                                      color: isDark ? Colors.white54 : AppColors.textSecondary,
+                                      color: isDark
+                                          ? Colors.white54
+                                          : AppColors.textSecondary,
                                       fontSize: 15,
                                     ),
                                   ),
@@ -140,22 +154,30 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
   }
 
   bool _hasActiveEmergency() {
-    return _incidents.any((i) =>
-        i['status'] == 'pending' &&
-        (i['type'] == 'sos' || i['severity'] == 'critical'));
+    return _incidents.any(
+      (i) =>
+          i['status'] == 'pending' &&
+          (i['type'] == 'sos' || i['severity'] == 'critical'),
+    );
   }
 
   Map<String, dynamic>? _getActiveEmergency() {
     try {
-      return _incidents.firstWhere((i) =>
-          i['status'] == 'pending' &&
-          (i['type'] == 'sos' || i['severity'] == 'critical'));
+      return _incidents.firstWhere(
+        (i) =>
+            i['status'] == 'pending' &&
+            (i['type'] == 'sos' || i['severity'] == 'critical'),
+      );
     } catch (_) {
       return null;
     }
   }
 
-  void _showNewIncidentSheet(BuildContext context, AppLocalizations l10n, bool isDark) {
+  void _showNewIncidentSheet(
+    BuildContext context,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -163,11 +185,8 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => _NewIncidentSheet(
-        l10n: l10n,
-        isDark: isDark,
-        onSubmitted: _loadData,
-      ),
+      builder: (context) =>
+          _NewIncidentSheet(l10n: l10n, isDark: isDark, onSubmitted: _loadData),
     );
   }
 }
@@ -196,7 +215,9 @@ class _ActiveEmergencyBanner extends StatelessWidget {
           colors: [Color(0xFFFEE2E2), Color(0xFFFEF2F2)],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
@@ -206,7 +227,11 @@ class _ActiveEmergencyBanner extends StatelessWidget {
               color: const Color(0xFFDC2626).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.sos_rounded, color: Color(0xFFDC2626), size: 28),
+            child: const Icon(
+              Icons.sos_rounded,
+              color: Color(0xFFDC2626),
+              size: 28,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -237,7 +262,9 @@ class _ActiveEmergencyBanner extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFDC2626),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: Text(l10n.respond, style: const TextStyle(fontSize: 13)),
           ),
@@ -248,12 +275,18 @@ class _ActiveEmergencyBanner extends StatelessWidget {
 
   String _typeLabel(String? type) {
     switch (type) {
-      case 'sos': return 'طوارئ';
-      case 'behavioral': return 'سلوكي';
-      case 'health': return 'صحي';
-      case 'technical': return 'تقني';
-      case 'traffic': return 'مروري';
-      default: return 'بلاغ';
+      case 'sos':
+        return 'طوارئ';
+      case 'behavioral':
+        return 'سلوكي';
+      case 'health':
+        return 'صحي';
+      case 'technical':
+        return 'تقني';
+      case 'traffic':
+        return 'مروري';
+      default:
+        return 'بلاغ';
     }
   }
 }
@@ -272,41 +305,60 @@ class _IncidentCard extends StatelessWidget {
 
   Color get _typeColor {
     switch (incident['type']) {
-      case 'sos': return const Color(0xFFDC2626);
-      case 'behavioral': return const Color(0xFF7C3AED);
-      case 'health': return const Color(0xFF059669);
-      case 'technical': return const Color(0xFFF59E0B);
-      case 'traffic': return const Color(0xFFEA580C);
-      default: return Colors.grey;
+      case 'sos':
+        return const Color(0xFFDC2626);
+      case 'behavioral':
+        return const Color(0xFF7C3AED);
+      case 'health':
+        return const Color(0xFF059669);
+      case 'technical':
+        return const Color(0xFFF59E0B);
+      case 'traffic':
+        return const Color(0xFFEA580C);
+      default:
+        return Colors.grey;
     }
   }
 
   IconData get _typeIcon {
     switch (incident['type']) {
-      case 'sos': return Icons.sos_rounded;
-      case 'behavioral': return Icons.psychology_rounded;
-      case 'health': return Icons.health_and_safety_rounded;
-      case 'technical': return Icons.build_rounded;
-      case 'traffic': return Icons.traffic_rounded;
-      default: return Icons.warning_rounded;
+      case 'sos':
+        return Icons.sos_rounded;
+      case 'behavioral':
+        return Icons.psychology_rounded;
+      case 'health':
+        return Icons.health_and_safety_rounded;
+      case 'technical':
+        return Icons.build_rounded;
+      case 'traffic':
+        return Icons.traffic_rounded;
+      default:
+        return Icons.warning_rounded;
     }
   }
 
   String get _typeLabel {
     switch (incident['type']) {
-      case 'sos': return 'SOS';
-      case 'behavioral': return 'سلوكي';
-      case 'health': return 'صحي';
-      case 'technical': return 'تقني';
-      case 'traffic': return 'مروري';
-      default: return 'بلاغ';
+      case 'sos':
+        return 'SOS';
+      case 'behavioral':
+        return 'سلوكي';
+      case 'health':
+        return 'صحي';
+      case 'technical':
+        return 'تقني';
+      case 'traffic':
+        return 'مروري';
+      default:
+        return 'بلاغ';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isPending = incident['status'] == 'pending';
-    final time = DateTime.tryParse(incident['created_at'] ?? '') ?? DateTime.now();
+    final time =
+        DateTime.tryParse(incident['created_at'] ?? '') ?? DateTime.now();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -317,10 +369,17 @@ class _IncidentCard extends StatelessWidget {
         border: Border.all(
           color: isPending
               ? _typeColor.withValues(alpha: 0.3)
-              : (isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border),
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : AppColors.border),
         ),
         boxShadow: isPending
-            ? [BoxShadow(color: _typeColor.withValues(alpha: 0.08), blurRadius: 8)]
+            ? [
+                BoxShadow(
+                  color: _typeColor.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                ),
+              ]
             : null,
       ),
       child: Row(
@@ -341,7 +400,10 @@ class _IncidentCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: _typeColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
@@ -376,7 +438,8 @@ class _IncidentCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (incident['photos'] != null && (incident['photos'] as List).isNotEmpty) ...[
+                if (incident['photos'] != null &&
+                    (incident['photos'] as List).isNotEmpty) ...[
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () {
@@ -407,7 +470,10 @@ class _IncidentCard extends StatelessWidget {
                                       color: Colors.black54,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.close, color: Colors.white),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                   onPressed: () => Navigator.pop(context),
                                 ),
@@ -423,7 +489,9 @@ class _IncidentCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isDark ? Colors.white12 : Colors.grey.withOpacity(0.2),
+                          color: isDark
+                              ? Colors.white12
+                              : Colors.grey.withOpacity(0.2),
                         ),
                       ),
                       child: Stack(
@@ -457,10 +525,14 @@ class _IncidentCard extends StatelessWidget {
                           ),
                           const Positioned(
                             bottom: 8,
-                            right: 12, 
+                            right: 12,
                             child: Row(
                               children: [
-                                Icon(Icons.fullscreen, color: Colors.white, size: 18),
+                                Icon(
+                                  Icons.fullscreen,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   'عرض المرفق',
@@ -482,21 +554,29 @@ class _IncidentCard extends StatelessWidget {
                 if (incident['bus_code'] != null)
                   Row(
                     children: [
-                      Icon(Icons.directions_bus, size: 13,
-                          color: isDark ? Colors.white54 : AppColors.textSecondary),
+                      Icon(
+                        Icons.directions_bus,
+                        size: 13,
+                        color: isDark
+                            ? Colors.white54
+                            : AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         incident['bus_code'] ?? '',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? Colors.white54 : AppColors.textSecondary,
+                          color: isDark
+                              ? Colors.white54
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
 
                 // Display students if it's a behavioral incident or has students attached
-                if (incident['student_names'] != null && (incident['student_names'] as List).isNotEmpty) ...[
+                if (incident['student_names'] != null &&
+                    (incident['student_names'] as List).isNotEmpty) ...[
                   const SizedBox(height: 10),
                   InkWell(
                     onTap: () {
@@ -507,30 +587,49 @@ class _IncidentCard extends StatelessWidget {
                           content: SingleChildScrollView(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
-                              children: (incident['student_names'] as List).map((name) => ListTile(
-                                leading: const Icon(Icons.person, color: AppColors.primary),
-                                title: Text(name.toString()),
-                              )).toList(),
+                              children: (incident['student_names'] as List)
+                                  .map(
+                                    (name) => ListTile(
+                                      leading: const Icon(
+                                        Icons.person,
+                                        color: AppColors.primary,
+                                      ),
+                                      title: Text(name.toString()),
+                                    ),
+                                  )
+                                  .toList(),
                             ),
                           ),
                           actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق')),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('إغلاق'),
+                            ),
                           ],
                         ),
                       );
                     },
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: _typeColor.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: _typeColor.withValues(alpha: 0.15)),
+                        border: Border.all(
+                          color: _typeColor.withValues(alpha: 0.15),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.people_alt_rounded, size: 16, color: _typeColor),
+                          Icon(
+                            Icons.people_alt_rounded,
+                            size: 16,
+                            color: _typeColor,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'عرض الطلاب المعنيين (${(incident['student_names'] as List).length})',
@@ -541,7 +640,11 @@ class _IncidentCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(Icons.arrow_right_alt_rounded, size: 16, color: _typeColor),
+                          Icon(
+                            Icons.arrow_right_alt_rounded,
+                            size: 16,
+                            color: _typeColor,
+                          ),
                         ],
                       ),
                     ),
@@ -562,7 +665,9 @@ class _IncidentCard extends StatelessWidget {
             child: Text(
               isPending ? l10n.pending : l10n.resolved,
               style: TextStyle(
-                color: isPending ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                color: isPending
+                    ? const Color(0xFFF59E0B)
+                    : const Color(0xFF10B981),
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -637,7 +742,10 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
+    final image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,
+    );
     if (image != null && mounted) {
       setState(() => _attachedPhoto = File(image.path));
     }
@@ -645,10 +753,14 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
 
   String get _severity {
     switch (_selectedType) {
-      case 'sos': return 'critical';
-      case 'traffic': return 'high';
-      case 'behavioral': return 'medium';
-      default: return 'medium';
+      case 'sos':
+        return 'critical';
+      case 'traffic':
+        return 'high';
+      case 'behavioral':
+        return 'medium';
+      default:
+        return 'medium';
     }
   }
 
@@ -656,7 +768,9 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        left: 24, right: 24, top: 24,
+        left: 24,
+        right: 24,
+        top: 24,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: SingleChildScrollView(
@@ -667,7 +781,8 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
             // Handle
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: Colors.grey.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
@@ -681,7 +796,8 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
               child: Text(
                 widget.l10n.newIncident,
                 style: TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
                   color: widget.isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
@@ -692,7 +808,8 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
             Text(
               widget.l10n.incidentType,
               style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w600,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
                 color: widget.isDark ? Colors.white70 : AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
@@ -711,27 +828,34 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
                     onTap: () => setState(() => _selectedType = type['key']!),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppColors.primary
                             : (widget.isDark
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : Colors.grey.withValues(alpha: 0.08)),
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.grey.withValues(alpha: 0.08)),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.primary
                               : (widget.isDark
-                                  ? Colors.white.withValues(alpha: 0.2)
-                                  : Colors.grey.withValues(alpha: 0.3)),
+                                    ? Colors.white.withValues(alpha: 0.2)
+                                    : Colors.grey.withValues(alpha: 0.3)),
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (isSelected) ...[
-                            const Icon(Icons.check, color: Colors.white, size: 16),
+                            const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                             const SizedBox(width: 6),
                           ],
                           Text(
@@ -739,8 +863,12 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : (widget.isDark ? Colors.white : AppColors.textPrimary),
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  : (widget.isDark
+                                        ? Colors.white
+                                        : AppColors.textPrimary),
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               fontSize: 14,
                             ),
                           ),
@@ -758,31 +886,50 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
               Text(
                 'اختر الحافلة (المركبة)',
                 style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600,
-                  color: widget.isDark ? Colors.white70 : AppColors.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: widget.isDark
+                      ? Colors.white70
+                      : AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: widget.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.05),
+                  color: widget.isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.grey.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: widget.isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border),
+                  border: Border.all(
+                    color: widget.isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : AppColors.border,
+                  ),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
                     value: _selectedBusId,
                     isExpanded: true,
-                    dropdownColor: widget.isDark ? AppColors.darkSurface : Colors.white,
+                    dropdownColor: widget.isDark
+                        ? AppColors.darkSurface
+                        : Colors.white,
                     hint: const Text('-- اختر الحافلة --'),
-                    items: _buses.map((bus) => DropdownMenuItem<int>(
-                      value: bus['id'],
-                      child: Text(
-                        bus['bus_code'] ?? 'حافلة ${bus['id']}',
-                        style: TextStyle(color: widget.isDark ? Colors.white : AppColors.textPrimary),
-                      ),
-                    )).toList(),
+                    items: _buses
+                        .map(
+                          (bus) => DropdownMenuItem<int>(
+                            value: bus['id'],
+                            child: Text(
+                              bus['bus_code'] ?? 'حافلة ${bus['id']}',
+                              style: TextStyle(
+                                color: widget.isDark
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (val) => setState(() => _selectedBusId = val),
                   ),
                 ),
@@ -794,8 +941,11 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
                 Text(
                   'الطلاب المعنيين بالمخالفة السلوكية',
                   style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600,
-                    color: widget.isDark ? Colors.white70 : AppColors.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: widget.isDark
+                        ? Colors.white70
+                        : AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -805,9 +955,15 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: widget.isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.05),
+                      color: widget.isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.grey.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: widget.isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border),
+                      border: Border.all(
+                        color: widget.isDark
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : AppColors.border,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -820,9 +976,15 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
                                 : 'تم اختيار ${_selectedStudentIds.length} طالب(ة)',
                             style: TextStyle(
                               color: _selectedStudentIds.isEmpty
-                                  ? (widget.isDark ? Colors.white38 : Colors.grey)
-                                  : (widget.isDark ? Colors.white : AppColors.textPrimary),
-                              fontWeight: _selectedStudentIds.isEmpty ? null : FontWeight.bold,
+                                  ? (widget.isDark
+                                        ? Colors.white38
+                                        : Colors.grey)
+                                  : (widget.isDark
+                                        ? Colors.white
+                                        : AppColors.textPrimary),
+                              fontWeight: _selectedStudentIds.isEmpty
+                                  ? null
+                                  : FontWeight.bold,
                             ),
                           ),
                         ),
@@ -872,15 +1034,21 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
             OutlinedButton.icon(
               onPressed: _pickImage,
               icon: Icon(
-                _attachedPhoto != null ? Icons.check_circle : Icons.camera_alt_rounded,
-                color: _attachedPhoto != null ? Colors.green : AppColors.primary,
+                _attachedPhoto != null
+                    ? Icons.check_circle
+                    : Icons.camera_alt_rounded,
+                color: _attachedPhoto != null
+                    ? Colors.green
+                    : AppColors.primary,
               ),
               label: Text(
                 _attachedPhoto != null
                     ? widget.l10n.photoAttached
                     : widget.l10n.attachPhoto,
                 style: TextStyle(
-                  color: _attachedPhoto != null ? Colors.green : AppColors.primary,
+                  color: _attachedPhoto != null
+                      ? Colors.green
+                      : AppColors.primary,
                 ),
               ),
               style: OutlinedButton.styleFrom(
@@ -902,7 +1070,9 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
               onPressed: _isSubmitting ? null : _submit,
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFDC2626),
-                disabledBackgroundColor: const Color(0xFFDC2626).withValues(alpha: 0.5),
+                disabledBackgroundColor: const Color(
+                  0xFFDC2626,
+                ).withValues(alpha: 0.5),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -910,15 +1080,18 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
               ),
               child: _isSubmitting
                   ? const SizedBox(
-                      width: 22, height: 22,
+                      width: 22,
+                      height: 22,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white,
+                        strokeWidth: 2,
+                        color: Colors.white,
                       ),
                     )
                   : Text(
                       widget.l10n.sendUrgentReport,
                       style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
@@ -947,7 +1120,9 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
 
     if (_selectedType == 'behavioral' && _selectedStudentIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء اختيار الطلاب المعنيين بالمخالفة السلوكية')),
+        const SnackBar(
+          content: Text('الرجاء اختيار الطلاب المعنيين بالمخالفة السلوكية'),
+        ),
       );
       return;
     }
@@ -960,7 +1135,7 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
       severity: _severity,
       description: _descriptionController.text.trim(),
       studentIds: _selectedType == 'behavioral' ? _selectedStudentIds : null,
-      attachedPhoto: _attachedPhoto,
+      photos: _attachedPhoto != null ? [_attachedPhoto!] : null,
     );
 
     if (mounted) {
@@ -991,10 +1166,14 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              backgroundColor: widget.isDark ? AppColors.darkSurface : Colors.white,
+              backgroundColor: widget.isDark
+                  ? AppColors.darkSurface
+                  : Colors.white,
               title: Text(
                 'اختر الطلاب',
-                style: TextStyle(color: widget.isDark ? Colors.white : AppColors.textPrimary),
+                style: TextStyle(
+                  color: widget.isDark ? Colors.white : AppColors.textPrimary,
+                ),
               ),
               content: SizedBox(
                 width: double.maxFinite,
@@ -1010,11 +1189,20 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
                           return CheckboxListTile(
                             title: Text(
                               student['name'] ?? '',
-                              style: TextStyle(color: widget.isDark ? Colors.white : AppColors.textPrimary),
+                              style: TextStyle(
+                                color: widget.isDark
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
+                              ),
                             ),
                             subtitle: Text(
                               student['uuid'] ?? '',
-                              style: TextStyle(color: widget.isDark ? Colors.white54 : AppColors.textSecondary, fontSize: 12),
+                              style: TextStyle(
+                                color: widget.isDark
+                                    ? Colors.white54
+                                    : AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
                             ),
                             value: isSelected,
                             onChanged: (val) {

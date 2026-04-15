@@ -93,7 +93,9 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, String>> updateAvatar(String imagePath) async {
     try {
-      final imageUrl = await remoteDataSource.updateAvatar(imagePath: imagePath);
+      final imageUrl = await remoteDataSource.updateAvatar(
+        imagePath: imagePath,
+      );
 
       // تحديث بيانات المستخدم في الكاش المحلي
       final UserModel currentUser = await localDataSource.getCachedUser();
@@ -110,9 +112,18 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, void>> updateProfile({
     required String phone,
     required String email,
+    String? address,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
-      await remoteDataSource.updateProfile(phone: phone, email: email);
+      await remoteDataSource.updateProfile(
+        phone: phone,
+        email: email,
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
+      );
 
       // تحديث بيانات المستخدم في الكاش المحلي
       final UserModel currentUser = await localDataSource.getCachedUser();

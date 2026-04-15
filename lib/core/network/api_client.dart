@@ -31,7 +31,7 @@ class ApiClient {
             final token = prefs.getString('USER_TOKEN');
             if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';
-              debugPrint('[ApiClient] ✅ Token attached to ${options.path}');
+              // تم إخفاء طباعة إضافة التوكن العادية لتقليل الزحمة
             } else {
               debugPrint('[ApiClient] ⚠️ No token found for ${options.path}');
             }
@@ -43,13 +43,34 @@ class ApiClient {
         onError: (DioException e, handler) {
           // معالجة خطأ 401 - التوكن منتهي أو غير صالح
           if (e.response?.statusCode == 401) {
-            debugPrint('[ApiClient] 🚫 401 Unauthenticated - Token expired or invalid');
+            debugPrint(
+              '[ApiClient] 🚫 401 Unauthenticated - Token expired or invalid',
+            );
             _handleUnauthorized();
           }
           return handler.next(e);
         },
       ),
     );
+
+    // ── إضافة أداة طباعة فقط في حالة الأخطاء لتجنب الزحمة ──
+    if (kDebugMode) {
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onError: (DioException e, handler) {
+            debugPrint('\n================ [API ERROR] ================');
+            debugPrint(
+              '❌ URI: ${e.requestOptions.method} ${e.requestOptions.uri}',
+            );
+            debugPrint('❌ StatusCode: ${e.response?.statusCode}');
+            debugPrint('❌ Response: ${e.response?.data}');
+            debugPrint('=============================================\n');
+            return handler.next(e);
+          },
+          // تم إخفاء طباعة الطلبات والردود العادية (الناجحة)
+        ),
+      );
+    }
 
     return dio;
   }

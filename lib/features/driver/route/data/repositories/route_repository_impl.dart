@@ -35,38 +35,43 @@ class RouteRepositoryImpl implements RouteRepository {
       final userResponse = await _dio.get('auth/user');
       final data = userResponse.data['data'] ?? userResponse.data['user'];
       final busId = data['has_bus'] ?? data['bus_id'];
-      
+
       if (busId == null) {
         throw Exception('لا يوجد باص مخصص لهذا الحساب');
       }
 
       // 2. Fetch passengers
       final response = await _dio.get('bus/$busId/passengers');
-      
+
       final List<dynamic> passengersJson = response.data['passengers'] ?? [];
-      
-      // Map passengers to StudentStop
+
       return passengersJson.map((json) {
-        final isOnBus = json['is_on_bus'] == true;
-        final lastEvent = json['last_event'];
-        final isDroppedOff = lastEvent != null && lastEvent['type'] == 'alighting';
-        
+        final isOnBus = json['isOnBus'] == true;
+        final lastEvent = json['lastEvent'];
+        final isDroppedOff =
+            lastEvent != null && lastEvent['type'] == 'alighting';
+
         return StudentStopModel(
           id: json['id'].toString(),
-          nameAr: json['name'],
-          nameEn: json['name'],
+          nameAr: json['name'] ?? '',
+          nameEn: json['name'] ?? '',
           parentAr: json['parentName'] ?? 'ولي الأمر',
           parentEn: json['parentName'] ?? 'Parent',
           parentUserId: json['parentUserId']?.toString(),
-          location: _generateMockLocationForStudent(json['id']),
-          photoUrl: json['photoUrl'] ?? 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['name'])}&background=random',
+          location: _generateMockLocationForStudent(
+            int.tryParse(json['id'].toString()) ?? 0,
+          ),
+          photoUrl:
+              json['photoUrl'] ??
+              'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['name'] ?? 'User')}&background=random',
           isBoarded: isOnBus,
           isDroppedOff: isDroppedOff,
           isAbsent: false,
         );
       }).toList();
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? 'Network error';
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
       throw Exception('فشل جلب قائمة الطلاب: $message');
     } catch (e) {
       throw Exception('فشل جلب قائمة الطلاب: ${e.toString()}');
@@ -74,20 +79,24 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> boardStudent({required String studentId, required String direction}) async {
+  Future<void> boardStudent({
+    required String studentId,
+    required String direction,
+  }) async {
     try {
       if (_cachedBusId == null) {
         final userResponse = await _dio.get('auth/user');
         final data = userResponse.data['data'] ?? userResponse.data['user'];
         _cachedBusId = data['bus_id'] ?? data['has_bus'];
       }
-      
-      await _dio.post('bus/$_cachedBusId/board', data: {
-        'student_id': studentId,
-        'direction': direction,
-      });
+
+      await _dio.post(
+        'bus/$_cachedBusId/board',
+        data: {'student_id': studentId, 'direction': direction},
+      );
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? 'Network error';
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
       throw Exception('فشل تسجيل ركوب الطالب: $message');
     } catch (e) {
       throw Exception('فشل تسجيل ركوب الطالب');
@@ -95,20 +104,24 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> alightStudent({required String studentId, required String direction}) async {
+  Future<void> alightStudent({
+    required String studentId,
+    required String direction,
+  }) async {
     try {
       if (_cachedBusId == null) {
         final userResponse = await _dio.get('auth/user');
         final data = userResponse.data['data'] ?? userResponse.data['user'];
         _cachedBusId = data['bus_id'] ?? data['has_bus'];
       }
-      
-      await _dio.post('bus/$_cachedBusId/alight', data: {
-        'student_id': studentId,
-        'direction': direction,
-      });
+
+      await _dio.post(
+        'bus/$_cachedBusId/alight',
+        data: {'student_id': studentId, 'direction': direction},
+      );
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? 'Network error';
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
       throw Exception('فشل تسجيل نزول الطالب: $message');
     } catch (e) {
       throw Exception('فشل تسجيل نزول الطالب');
@@ -118,19 +131,22 @@ class RouteRepositoryImpl implements RouteRepository {
   int? _cachedBusId;
 
   @override
-  Future<void> updateLocation({required double latitude, required double longitude}) async {
+  Future<void> updateLocation({
+    required double latitude,
+    required double longitude,
+  }) async {
     try {
       if (_cachedBusId == null) {
         final userResponse = await _dio.get('auth/user');
         final data = userResponse.data['data'] ?? userResponse.data['user'];
         _cachedBusId = data['bus_id'] ?? data['has_bus'];
       }
-      
+
       if (_cachedBusId != null) {
-        await _dio.post('bus/$_cachedBusId/location', data: {
-          'latitude': latitude,
-          'longitude': longitude,
-        });
+        await _dio.post(
+          'bus/$_cachedBusId/location',
+          data: {'latitude': latitude, 'longitude': longitude},
+        );
       }
     } on DioException catch (e) {
       // Quietly log location update failures to avoid spamming the user
@@ -139,7 +155,7 @@ class RouteRepositoryImpl implements RouteRepository {
       debugPrint('Location update failed: ${e.toString()}');
     }
   }
-  
+
   // Helper to give them map locations since the API doesn't return student geolocations
   LatLng _generateMockLocationForStudent(int studentId) {
     final mockLocations = [

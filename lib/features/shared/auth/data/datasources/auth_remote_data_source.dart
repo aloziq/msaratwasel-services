@@ -25,6 +25,9 @@ abstract class AuthRemoteDataSource {
   Future<void> updateProfile({
     required String phone,
     required String email,
+    String? address,
+    double? latitude,
+    double? longitude,
   });
 }
 
@@ -82,9 +85,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       });
     } on DioException catch (e) {
       // خطأ من السيرفر (مثلاً 422 Validation Error)
-      final serverMessage = e.response?.data?['message']
-          ?? e.response?.data?['errors']?['national_id']?.first
-          ?? 'فشل تسجيل الدخول. تحقق من بياناتك.';
+      final serverMessage =
+          e.response?.data?['message'] ??
+          e.response?.data?['errors']?['national_id']?.first ??
+          'فشل تسجيل الدخول. تحقق من بياناتك.';
       throw Exception(serverMessage);
     } catch (e) {
       throw Exception(e.toString().replaceFirst('Exception: ', ''));
@@ -108,11 +112,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String confirmPassword,
   }) async {
     try {
-      await _dio.post('/auth/change-password', data: {
-        'current_password': currentPassword,
-        'new_password': newPassword,
-        'new_password_confirmation': confirmPassword,
-      });
+      await _dio.post(
+        '/auth/change-password',
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+          'new_password_confirmation': confirmPassword,
+        },
+      );
     } on DioException catch (e) {
       final message = e.response?.data?['message'] ?? 'فشل تغيير كلمة السر';
       throw Exception(message);
@@ -123,7 +130,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<String> updateAvatar({required String imagePath}) async {
     try {
       final formData = FormData.fromMap({
-        'avatar': await MultipartFile.fromFile(imagePath, filename: 'avatar.jpg'),
+        'avatar': await MultipartFile.fromFile(
+          imagePath,
+          filename: 'avatar.jpg',
+        ),
       });
       final response = await _dio.post('/auth/profile/avatar', data: formData);
       return response.data['image_url'] ?? '';
@@ -133,12 +143,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> updateProfile({required String phone, required String email}) async {
+  Future<void> updateProfile({
+    required String phone,
+    required String email,
+    String? address,
+    double? latitude,
+    double? longitude,
+  }) async {
     try {
-      await _dio.post('/auth/profile/update', data: {
-        'phone': phone,
-        'email': email,
-      });
+      final Map<String, dynamic> data = {'phone': phone, 'email': email};
+      if (address != null) data['address'] = address;
+      if (latitude != null) data['latitude'] = latitude;
+      if (longitude != null) data['longitude'] = longitude;
+
+      await _dio.post('/auth/profile/update', data: data);
     } on DioException catch (e) {
       throw Exception(e.response?.data?['message'] ?? 'فشل تحديث البيانات');
     }

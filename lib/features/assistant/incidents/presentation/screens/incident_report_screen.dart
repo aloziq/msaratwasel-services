@@ -64,7 +64,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       final busIdStr = prefs.getString('USER_BUS_ID');
       final busCode = prefs.getString('USER_BUS_CODE');
       final driverName = prefs.getString('USER_DRIVER_NAME');
-      final assistantName = prefs.getString('USER_NAME') ?? prefs.getString('user_name');
+      final assistantName =
+          prefs.getString('USER_NAME') ?? prefs.getString('user_name');
 
       if (busIdStr != null) {
         final busId = int.tryParse(busIdStr);
@@ -89,19 +90,27 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   Future<void> _loadStudents(int busId) async {
     try {
-      final response = await ApiClient.instance.get('/bus/$busId/passengers', queryParameters: {'trip_type': 'all'});
+      final response = await ApiClient.instance.get(
+        '/bus/$busId/passengers',
+        queryParameters: {'trip_type': 'all'},
+      );
       if (response.statusCode == 200) {
-
         final passengers = response.data['passengers'] as List? ?? [];
         if (mounted) {
           setState(() {
             _busStudents = passengers
-                .map<Map<String, dynamic>>((p) => {
-                      'id': p['student_id'] ?? p['id'],
-                      'name': p['student_name'] ?? p['name'] ?? '',
-                      'uuid': p['uuid'] ?? '',
-                      'photoUrl': p['photoUrl'] ?? p['student_photo'] ?? p['photo_url'] ?? p['photo'],
-                    })
+                .map<Map<String, dynamic>>(
+                  (p) => {
+                    'id': p['student_id'] ?? p['id'],
+                    'name': p['student_name'] ?? p['name'] ?? '',
+                    'uuid': p['uuid'] ?? '',
+                    'photoUrl':
+                        p['photoUrl'] ??
+                        p['student_photo'] ??
+                        p['photo_url'] ??
+                        p['photo'],
+                  },
+                )
                 .toList();
           });
         }
@@ -123,7 +132,9 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             height: MediaQuery.of(context).size.height * 0.7,
             decoration: BoxDecoration(
               color: theme.scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
             ),
             child: Column(
               children: [
@@ -139,14 +150,16 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 const SizedBox(height: 20),
                 Text(
                   'اختيار الطلاب المعنيين',
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'يمكنك اختيار أكثر من طالب',
                   style: theme.textTheme.bodySmall,
                 ),
-                   Expanded(
+                Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: _busStudents.length,
@@ -154,7 +167,9 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                     itemBuilder: (ctx, index) {
                       final student = _busStudents[index];
                       final String studentId = (student['id'] ?? '').toString();
-                      final bool isSelected = _selectedStudentIds.contains(studentId);
+                      final bool isSelected = _selectedStudentIds.contains(
+                        studentId,
+                      );
 
                       return CheckboxListTile(
                         value: isSelected,
@@ -177,8 +192,13 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                           ),
                         ),
                         subtitle: null,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         activeColor: theme.colorScheme.primary,
                         onChanged: (bool? val) {
                           setModalState(() {
@@ -203,7 +223,9 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(56),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                     child: const Text('تم'),
                   ),
@@ -215,7 +237,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ),
     );
   }
-
 
   Future<void> _pickPhoto() async {
     final source = await showModalBottomSheet<ImageSource>(
@@ -261,7 +282,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       return;
     }
     if (_selectedTypeKey == 'behavioral' && _selectedStudentIds.isEmpty) {
-      _showSnack('يرجى اختيار طالب واحد على الأقل للبلاغ السلوكي', isError: true);
+      _showSnack(
+        'يرجى اختيار طالب واحد على الأقل للبلاغ السلوكي',
+        isError: true,
+      );
       return;
     }
 
@@ -286,7 +310,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
       // إضافة الصورة إن وجدت
       if (_attachedPhoto != null) {
-        dataMap['photo'] = await MultipartFile.fromFile(
+        dataMap['photos[0]'] = await MultipartFile.fromFile(
           _attachedPhoto!.path,
           filename: 'incident_photo.jpg',
         );
@@ -298,7 +322,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
         'field/incidents',
         data: formData,
       );
-
 
       if ((response.statusCode == 200 || response.statusCode == 201) &&
           response.data['success'] == true) {
@@ -353,7 +376,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             leading: Material(
               color: Colors.transparent,
               child: IconButton(
-                icon: Icon(Icons.menu_rounded, color: theme.colorScheme.onSurface),
+                icon: Icon(
+                  Icons.menu_rounded,
+                  color: theme.colorScheme.onSurface,
+                ),
                 onPressed: () => MainShell.of(context)?.openDrawer(),
               ),
             ),
@@ -384,7 +410,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         ],
 
                         // ── Incident Type ──
-                        Text(l10n.incidentType, style: theme.textTheme.titleMedium),
+                        Text(
+                          l10n.incidentType,
+                          style: theme.textTheme.titleMedium,
+                        ),
                         const SizedBox(height: 12),
                         Wrap(
                           spacing: 8,
@@ -415,11 +444,15 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                           ),
                           const SizedBox(height: 12),
                           InkWell(
-                            onTap: _busStudents.isEmpty ? null : _showStudentSelectionSheet,
+                            onTap: _busStudents.isEmpty
+                                ? null
+                                : _showStudentSelectionSheet,
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 16),
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? Colors.white.withOpacity(0.05)
@@ -444,11 +477,14 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                       _selectedStudentIds.isEmpty
                                           ? 'اختر الطلاب المعنيين بالبلاغ...'
                                           : 'تم اختيار ${_selectedStudentIds.length} طلاب',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: _selectedStudentIds.isEmpty
-                                            ? theme.colorScheme.onSurfaceVariant
-                                            : theme.colorScheme.onSurface,
-                                      ),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: _selectedStudentIds.isEmpty
+                                                ? theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant
+                                                : theme.colorScheme.onSurface,
+                                          ),
                                     ),
                                   ),
                                   Icon(
@@ -462,7 +498,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                           ),
                           const SizedBox(height: 24),
                         ],
-
 
                         // ── Description ──
                         Text(
@@ -481,8 +516,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         const SizedBox(height: 24),
 
                         // ── Photo Attachment ──
-                        Text(l10n.attachPhotoOptional,
-                            style: theme.textTheme.titleMedium),
+                        Text(
+                          l10n.attachPhotoOptional,
+                          style: theme.textTheme.titleMedium,
+                        ),
                         const SizedBox(height: 12),
 
                         if (_attachedPhoto != null) ...[
@@ -512,8 +549,11 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                                       color: Colors.black54,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.close,
-                                        color: Colors.white, size: 18),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -590,7 +630,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 ),
               ),
       ),
-
     );
   }
 }
@@ -650,7 +689,9 @@ class _BusInfoCard extends StatelessWidget {
                     'حافلة $busCode',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                      color: isDark
+                          ? Colors.white
+                          : theme.colorScheme.onSurface,
                     ),
                   ),
                   Text(
@@ -761,7 +802,7 @@ class _StudentAvatar extends StatelessWidget {
               color: theme.colorScheme.primary,
               value: loadingProgress.expectedTotalBytes != null
                   ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
+                        loadingProgress.expectedTotalBytes!
                   : null,
             ),
           ),

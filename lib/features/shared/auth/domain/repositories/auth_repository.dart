@@ -13,7 +13,7 @@ abstract class AuthRepository {
   Future<Either<Failure, UserEntity>> getCurrentUser();
 
   Future<Either<Failure, void>> resetPassword({required String id});
-  
+
   Future<Either<Failure, void>> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -25,5 +25,8 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> updateProfile({
     required String phone,
     required String email,
+    String? address,
+    double? latitude,
+    double? longitude,
   });
 }
