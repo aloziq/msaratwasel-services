@@ -8,7 +8,7 @@ extension UserRoleX on UserRole {
     switch (this) {
       case UserRole.driver:
         return l10n.roleDriver;
-      case UserRole.busAssistant:
+      case UserRole.assistant:
         return l10n.roleBusAssistant;
       case UserRole.fieldSupervisor:
         return l10n.roleFieldSupervisor;

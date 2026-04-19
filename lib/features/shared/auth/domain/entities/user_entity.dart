@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 enum UserRole {
   driver,
-  busAssistant,
+  assistant,
   fieldSupervisor,
   teacher;
 
@@ -12,15 +12,14 @@ enum UserRole {
     switch (role.toLowerCase()) {
       case 'driver':
         return UserRole.driver;
-      case 'supervisor':
-        return UserRole.busAssistant; // supervisor في Laravel → مشرف/مشرفة الحافلة
+      case 'assistant':
+      case 'bus_assistant':
+        return UserRole.assistant;
       case 'field_supervisor':
       case 'fieldsupervisor':
-        return UserRole.fieldSupervisor; // field_supervisor في Laravel → المشرف الميداني
+        return UserRole.fieldSupervisor;
       case 'teacher':
         return UserRole.teacher;
-      case 'busassistant':
-        return UserRole.busAssistant;
       default:
         return UserRole.driver;
     }

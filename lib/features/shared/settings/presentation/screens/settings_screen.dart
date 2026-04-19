@@ -107,7 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           subtitle: l10n.manageKids,
                           onTap: () {
                             if (authState.user.role == UserRole.driver ||
-                                authState.user.role == UserRole.busAssistant) {
+                                authState.user.role == UserRole.assistant) {
                               context.push(AppRoutes.driverStudents);
                             } else {
                               context.push(AppRoutes.myClasses);

@@ -433,11 +433,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get privacyOtherData1 =>
-      'بيانات ولي الأمر: الاسم، رقم الهاتف، البريد الإلكتروني، رقم الهوية المدنية.';
+      'بيانات ولي الأمر: الاسم، رقم الهاتف، البريد الإلكتروني، الرقم المدني.';
 
   @override
   String get privacyOtherData2 =>
-      'بيانات السائق والمشرفين والمعلمين: الاسم، رقم الهوية/الوظيفة، بيانات الاتصال.';
+      'بيانات السائق والمشرفين والمعلمين: الاسم، الرقم المدني/الوظيفة، بيانات الاتصال.';
 
   @override
   String get privacyOtherData3 =>

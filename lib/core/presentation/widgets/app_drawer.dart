@@ -226,7 +226,7 @@ class _AppDrawerState extends State<AppDrawer> {
     }
 
     // ---------------- ASSISTANT ROLE ----------------
-    if (role == UserRole.busAssistant) {
+    if (role == UserRole.assistant) {
       items.add(
         _DrawerItem(
           title: l10n.home,

@@ -320,7 +320,7 @@ class _LoginScreenState extends State<LoginScreen>
       switch (role) {
         case UserRole.driver:
           return l10n.driverLogin;
-        case UserRole.busAssistant:
+        case UserRole.assistant:
           return l10n.assistantLogin;
         case UserRole.fieldSupervisor:
           return l10n.supervisorLogin;
@@ -519,7 +519,7 @@ class _RoleItem extends StatelessWidget {
     switch (role) {
       case UserRole.driver:
         return PhosphorIconsRegular.steeringWheel;
-      case UserRole.busAssistant:
+      case UserRole.assistant:
         return PhosphorIconsRegular.users;
       case UserRole.fieldSupervisor:
         return PhosphorIconsRegular.userList;
@@ -533,7 +533,7 @@ class _RoleItem extends StatelessWidget {
     switch (role) {
       case UserRole.driver:
         return l10n.roleDriver;
-      case UserRole.busAssistant:
+      case UserRole.assistant:
         return l10n.roleBusAssistant;
       case UserRole.fieldSupervisor:
         return l10n.roleFieldSupervisor;

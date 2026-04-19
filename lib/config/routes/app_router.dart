@@ -349,7 +349,7 @@ class AppRouter {
 
     // If authenticated and on login page, redirect to home
     if (isAuthenticated && state.matchedLocation == AppRoutes.login) {
-      if (authState.user.role == UserRole.busAssistant) {
+      if (authState.user.role == UserRole.assistant) {
         return AppRoutes.assistantHome;
       } else if (authState.user.role == UserRole.driver) {
         return AppRoutes.driverHome;

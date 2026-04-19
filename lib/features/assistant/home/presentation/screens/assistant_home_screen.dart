@@ -342,7 +342,7 @@ class AssistantHomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          user?.name ?? UserRole.busAssistant.getDisplayName(context),
+                          user?.name ?? UserRole.assistant.getDisplayName(context),
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
