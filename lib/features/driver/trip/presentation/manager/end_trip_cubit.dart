@@ -10,18 +10,18 @@ abstract class EndTripState extends Equatable {
   List<Object?> get props => [];
 }
 
-class EndTripInitial extends EndTripState {} // Step 0: Waiting for first scan
-
+class EndTripInitial extends EndTripState {} 
 class EndTripScanningFront extends EndTripState {}
-
 class EndTripRecording extends EndTripState {}
-
 class EndTripScanningBack extends EndTripState {}
-
-class EndTripSubmitting extends EndTripState {}
-
+class EndTripCompressing extends EndTripState {}
+class EndTripUploading extends EndTripState {
+  final double progress;
+  const EndTripUploading(this.progress);
+  @override
+  List<Object?> get props => [progress];
+}
 class EndTripSuccess extends EndTripState {}
-
 class EndTripError extends EndTripState {
   final String message;
   const EndTripError(this.message);
@@ -33,35 +33,54 @@ class EndTripError extends EndTripState {
 @injectable
 class EndTripCubit extends Cubit<EndTripState> {
   final TripRepository _repository;
+  String? _frontData;
+  String? _backData;
+  String? _videoPath;
 
   EndTripCubit(this._repository) : super(EndTripInitial());
 
-  // Step 1: Scan Front QR
+  void restart() => emit(EndTripInitial());
+
   void scanFrontQr(String code) {
-    // Validate code...
+    _frontData = code;
     emit(EndTripRecording());
   }
 
-  // Step 2: Record Video
-  void recordVideo(String videoPath) {
-    // Save video path temporarily...
-    emit(EndTripScanningBack());
-  }
-
-  // Step 3: Scan Back QR
-  void scanBackQr(String code) {
-    // Validate code...
+  void scanBackQr(String code, String videoPath) {
+    _backData = code;
+    _videoPath = videoPath;
     submitTripEnd();
   }
 
   Future<void> submitTripEnd() async {
-    emit(EndTripSubmitting());
+    if (_frontData == null || _backData == null || _videoPath == null) {
+      emit(const EndTripError('بيانات التحقق غير مكتملة'));
+      return;
+    }
+
+    emit(EndTripCompressing());
+    
+    // Compression logic will be triggered from UI or a service
+    // For now, assume it's done and we move to uploading
+  }
+
+  void updateUploadProgress(double progress) {
+    emit(EndTripUploading(progress));
+  }
+
+  Future<void> finalizeUpload(String compressedPath) async {
     try {
-      await _repository.endTrip('current_trip_id');
+      await _repository.endTrip(
+        videoPath: compressedPath,
+        startQrData: _frontData!,
+        endQrData: _backData!,
+        onProgress: (sent, total) {
+          updateUploadProgress(sent / total);
+        },
+      );
       emit(EndTripSuccess());
     } catch (e) {
       emit(EndTripError(e.toString()));
-      // Reset to last valid state or handle retry
     }
   }
 }

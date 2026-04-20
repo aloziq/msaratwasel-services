@@ -13,6 +13,7 @@ import 'package:msaratwasel_services/core/presentation/widgets/omani_rial_icon.d
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_text_field.dart';
 import 'package:msaratwasel_services/features/driver/maintenance/presentation/manager/maintenance_cubit.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 class MaintenanceRequestScreen extends StatelessWidget {
@@ -93,6 +94,13 @@ class _MaintenanceRequestContentState
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: BackButton(color: theme.colorScheme.onSurface),
+        actions: [
+          IconButton(
+            onPressed: () => context.push(AppRoutes.driverMaintenanceLogs),
+            icon: Icon(PhosphorIconsRegular.clipboardText, color: theme.colorScheme.onSurface),
+            tooltip: l10n.recentLogs,
+          ),
+        ],
       ),
       body: BlocListener<MaintenanceCubit, MaintenanceState>(
         listener: (context, state) {

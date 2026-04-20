@@ -1,3 +1,5 @@
+import 'package:msaratwasel_services/features/driver/maintenance/domain/entities/bus_expense.dart';
+
 abstract class MaintenanceRepository {
   Future<void> submitFuelRefill({
     required double amount,
@@ -11,4 +13,5 @@ abstract class MaintenanceRepository {
     double? cost,
     String? photoPath,
   });
+  Future<List<BusExpense>> getExpenses({int page = 1});
 }

@@ -3,7 +3,7 @@ class ApiConfig {
   static const bool isLocal = true;
 
   // رابط السيرفر المحلي (تأكد من IP جهازك إذا كنت تختبر على هاتف حقيقي بدلاً من 10.0.2.2)
-  static const String _localDomain = "http://10.60.17.139:8001";
+  static const String _localDomain = "http://192.168.8.124:8000";
   static const String _localUrl = "$_localDomain/api/"; 
   
   // رابط الاستضافة الحية

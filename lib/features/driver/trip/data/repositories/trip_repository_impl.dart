@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
@@ -15,12 +16,30 @@ class TripRepositoryImpl implements TripRepository {
   }
 
   @override
-  Future<void> endTrip(String tripId) async {
+  Future<void> endTrip({
+    required String videoPath,
+    required String startQrData,
+    required String endQrData,
+    void Function(int sent, int total)? onProgress,
+  }) async {
     final busId = _busId;
     if (busId == null) throw Exception('No bus assigned');
 
-    final response = await ApiClient.instance.post('/bus/$busId/end-trip');
-    if (response.statusCode != 200) {
+    final formData = FormData.fromMap({
+      'video': await MultipartFile.fromFile(videoPath, filename: 'verify.mp4'),
+      'start_qr_scanned': true,
+      'end_qr_scanned': true,
+      'start_qr_data': startQrData,
+      'end_qr_data': endQrData,
+    });
+
+    final response = await ApiClient.instance.post(
+      '/bus/$busId/end-trip',
+      data: formData,
+      onSendProgress: onProgress,
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception(response.data['message'] ?? 'Failed to end trip');
     }
   }

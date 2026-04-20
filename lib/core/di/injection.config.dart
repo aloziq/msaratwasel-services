@@ -19,7 +19,7 @@ import '../../features/driver/home/domain/repositories/home_repository.dart'
     as _i920;
 import '../../features/driver/home/presentation/manager/driver_home_cubit.dart'
     as _i903;
-import '../../features/driver/maintenance/data/repositories/maintenance_mock_repository.dart'
+import '../../features/driver/maintenance/data/repositories/maintenance_repository_impl.dart'
     as _i391;
 import '../../features/driver/maintenance/domain/repositories/maintenance_repository.dart'
     as _i71;
@@ -80,6 +80,12 @@ import '../../features/teacher/attendance_history/domain/repositories/attendance
     as _i880;
 import '../../features/teacher/attendance_history/domain/usecases/get_attendance_history_usecase.dart'
     as _i571;
+import '../../features/teacher/reports/data/datasources/reports_remote_datasource.dart'
+    as _i573;
+import '../../features/teacher/reports/data/repositories/reports_repository_impl.dart'
+    as _i803;
+import '../../features/teacher/reports/domain/repositories/reports_repository.dart'
+    as _i377;
 import '../../features/teacher/students/data/datasources/students_remote_datasource.dart'
     as _i222;
 import '../../features/teacher/students/data/repositories/students_repository_impl.dart'
@@ -123,9 +129,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i928.FcmService>(() => _i928.FcmService());
     gh.lazySingleton<_i71.MaintenanceRepository>(
-      () => _i391.MaintenanceMockRepository(),
+      () => _i391.MaintenanceRepositoryImpl(),
     );
     gh.lazySingleton<_i920.HomeRepository>(() => _i215.HomeRepositoryImpl());
+    gh.lazySingleton<_i573.ReportsRemoteDataSource>(
+      () => _i573.ReportsRemoteDataSourceImpl(),
+    );
     gh.lazySingleton<_i674.TeacherRemoteDataSource>(
       () => _i674.TeacherRemoteDataSourceImpl(),
     );
@@ -145,11 +154,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i587.AttendanceHistoryRemoteDataSource>(
       () => _i587.AttendanceHistoryRemoteDataSourceImpl(),
     );
-    gh.lazySingleton<_i319.StudentsRepository>(
-      () => _i704.StudentsRepositoryImpl(gh<_i222.StudentsRemoteDataSource>()),
-    );
     gh.lazySingleton<_i627.FleetRemoteDataSource>(
       () => _i627.FleetRemoteDataSourceImpl(),
+    );
+    gh.lazySingleton<_i319.StudentsRepository>(
+      () => _i704.StudentsRepositoryImpl(gh<_i222.StudentsRemoteDataSource>()),
     );
     gh.lazySingleton<_i423.RouteRepository>(() => _i973.RouteRepositoryImpl());
     gh.lazySingleton<_i554.AuthRemoteDataSource>(
@@ -198,6 +207,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i514.EndTripCubit>(
       () => _i514.EndTripCubit(gh<_i932.TripRepository>()),
+    );
+    gh.lazySingleton<_i377.ReportsRepository>(
+      () => _i803.ReportsRepositoryImpl(gh<_i573.ReportsRemoteDataSource>()),
     );
     gh.lazySingleton<_i499.GetTeacherClassroomUseCase>(
       () => _i499.GetTeacherClassroomUseCase(gh<_i962.TeacherRepository>()),

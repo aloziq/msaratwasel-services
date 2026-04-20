@@ -28,12 +28,60 @@ class MaintenanceError extends MaintenanceState {
   List<Object?> get props => [message];
 }
 
+class MaintenanceLoadingLogs extends MaintenanceState {}
+
+class MaintenanceLogsLoaded extends MaintenanceState {
+  final List<dynamic> expenses;
+  final bool hasReachedMax;
+  const MaintenanceLogsLoaded({required this.expenses, this.hasReachedMax = false});
+  @override
+  List<Object?> get props => [expenses, hasReachedMax];
+}
+
+class MaintenanceLogsError extends MaintenanceState {
+  final String message;
+  const MaintenanceLogsError(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
 // Cubit
 @injectable
 class MaintenanceCubit extends Cubit<MaintenanceState> {
   final MaintenanceRepository _repository;
 
   MaintenanceCubit(this._repository) : super(MaintenanceInitial());
+
+  int _currentPage = 1;
+  List<dynamic> _allExpenses = [];
+
+  Future<void> fetchLogs({bool refresh = false}) async {
+    if (refresh) {
+      _currentPage = 1;
+      _allExpenses = [];
+    }
+
+    if (_currentPage == 1) {
+      emit(MaintenanceLoadingLogs());
+    }
+
+    try {
+      final newExpenses = await _repository.getExpenses(page: _currentPage);
+      
+      if (newExpenses.isEmpty) {
+        emit(MaintenanceLogsLoaded(expenses: _allExpenses, hasReachedMax: true));
+      } else {
+        _allExpenses.addAll(newExpenses);
+        _currentPage++;
+        emit(MaintenanceLogsLoaded(
+          expenses: List.from(_allExpenses),
+          hasReachedMax: newExpenses.length < 15,
+        ));
+      }
+    } catch (e) {
+      emit(MaintenanceLogsError(e.toString()));
+    }
+  }
 
   Future<void> submitFuelRefill({
     required double amount,

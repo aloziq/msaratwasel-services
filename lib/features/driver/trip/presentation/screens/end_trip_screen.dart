@@ -1,10 +1,10 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import 'package:video_compress/video_compress.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
@@ -33,59 +33,120 @@ class _EndTripContent extends StatefulWidget {
 }
 
 class _EndTripContentState extends State<_EndTripContent> {
-  final MobileScannerController _scannerController = MobileScannerController();
-  final ImagePicker _picker = ImagePicker();
-  bool _isScanning = false;
-  XFile? _videoFile;
+  CameraController? _cameraController;
+  final BarcodeScanner _barcodeScanner = BarcodeScanner();
+  bool _isCameraInitialized = false;
+  bool _isProcessingFrame = false;
+  int _processCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    final cameras = await availableCameras();
+    if (cameras.isEmpty) return;
+
+    _cameraController = CameraController(
+      cameras.first,
+      ResolutionPreset.medium,
+      enableAudio: true,
+    );
+
+    try {
+      await _cameraController!.initialize();
+      if (!mounted) return;
+      
+      setState(() => _isCameraInitialized = true);
+      
+      // Start processing frames for QR detection
+      _cameraController!.startImageStream(_processImageFrame);
+    } catch (e) {
+      debugPrint('Camera error: $e');
+    }
+  }
+
+  void _processImageFrame(CameraImage image) async {
+    if (_isProcessingFrame) return;
+    
+    // We only process every 30th frame to save battery/CPU, unless we are scanning
+    _processCount++;
+    if (_processCount % 10 != 0) return;
+
+    final cubit = context.read<EndTripCubit>();
+    if (cubit.state is EndTripSuccess || cubit.state is EndTripUploading) return;
+
+    _isProcessingFrame = true;
+
+    try {
+      final inputImage = _convertImage(image);
+      final barcodes = await _barcodeScanner.processImage(inputImage);
+
+      if (barcodes.isNotEmpty && mounted) {
+        final String? code = barcodes.first.rawValue;
+        if (code != null) {
+          _handleBarcodeDetection(code, cubit);
+        }
+      }
+    } catch (e) {
+      debugPrint('ML Kit Frame error: $e');
+    } finally {
+      _isProcessingFrame = false;
+    }
+  }
+
+  InputImage _convertImage(CameraImage image) {
+    // Basic conversion for ML Kit
+    // In real app, we use complex coordinate conversion, but ML Kit handles standard cases
+    return InputImage.fromBytes(
+      bytes: image.planes[0].bytes,
+      metadata: InputImageMetadata(
+        size: Size(image.width.toDouble(), image.height.toDouble()),
+        rotation: InputImageRotation.rotation90deg, // Adjust based on platform
+        format: InputImageFormat.nv21,
+        bytesPerRow: image.planes[0].bytesPerRow,
+      ),
+    );
+  }
+
+  void _handleBarcodeDetection(String code, EndTripCubit cubit) async {
+    if (cubit.state is EndTripInitial) {
+      if (code.startsWith('FRONT-')) {
+        cubit.scanFrontQr(code);
+        await _cameraController!.startVideoRecording();
+      }
+    } else if (cubit.state is EndTripRecording) {
+      if (code.startsWith('BACK-')) {
+        final video = await _cameraController!.stopVideoRecording();
+        cubit.scanBackQr(code, video.path);
+        _startCompressionAndUpload(video.path, cubit);
+      }
+    }
+  }
+
+  Future<void> _startCompressionAndUpload(String path, EndTripCubit cubit) async {
+    // 1. Compression
+    final MediaInfo? info = await VideoCompress.compressVideo(
+      path,
+      quality: VideoQuality.MediumQuality,
+      deleteOrigin: true,
+    );
+
+    if (info?.path != null) {
+      await cubit.finalizeUpload(info!.path!);
+    } else {
+      // Fallback to original if compression failed
+      await cubit.finalizeUpload(path);
+    }
+  }
 
   @override
   void dispose() {
-    _scannerController.dispose();
+    _cameraController?.dispose();
+    _barcodeScanner.close();
     super.dispose();
-  }
-
-  void _handleQrScan(
-    BarcodeCapture capture,
-    EndTripCubit cubit,
-    int currentStep,
-  ) {
-    final List<Barcode> barcodes = capture.barcodes;
-    if (barcodes.isNotEmpty && _isScanning) {
-      final String? code = barcodes.first.rawValue;
-      if (code != null) {
-        setState(() {
-          _isScanning = false;
-        }); // Stop showing scanner locally
-
-        if (currentStep == 0) {
-          cubit.scanFrontQr(code);
-        } else if (currentStep == 2) {
-          cubit.scanBackQr(code);
-        }
-      }
-    }
-  }
-
-  Future<void> _recordVideo(EndTripCubit cubit) async {
-    try {
-      final XFile? video = await _picker.pickVideo(
-        source: ImageSource.camera,
-        maxDuration: const Duration(minutes: 1),
-      );
-      if (video != null) {
-        setState(() {
-          _videoFile = video;
-        });
-        cubit.recordVideo(video.path);
-      }
-    } catch (e) {
-      // Handle error
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error recording video: $e')));
-      }
-    }
   }
 
   @override
@@ -94,287 +155,187 @@ class _EndTripContentState extends State<_EndTripContent> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.endTripTitle),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: CustomMenuButton(),
-        ),
-      ),
+      backgroundColor: Colors.black,
       body: BlocConsumer<EndTripCubit, EndTripState>(
         listener: (context, state) {
           if (state is EndTripSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.tripEndedSuccess),
-                backgroundColor: Colors.green,
-              ),
-            );
-            context.go(AppRoutes.driverHome);
+            _showSuccessAndExit(context, l10n);
           } else if (state is EndTripError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+            _showError(context, state.message);
           }
         },
         builder: (context, state) {
-          int currentStep = 0;
-          if (state is EndTripRecording) currentStep = 1;
-          if (state is EndTripScanningBack) currentStep = 2;
-          if (state is EndTripSubmitting || state is EndTripSuccess) {
-            currentStep = 3;
-          }
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // Camera Preview
+              if (_isCameraInitialized)
+                CameraPreview(_cameraController!)
+              else
+                const Center(child: CircularProgressIndicator()),
 
-          final cubit = context.read<EndTripCubit>();
-
-          if (_isScanning) {
-            return Stack(
-              children: [
-                MobileScanner(
-                  controller: _scannerController,
-                  onDetect: (capture) =>
-                      _handleQrScan(capture, cubit, currentStep),
-                ),
-                Positioned(
-                  bottom: 50,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: SizedBox(
-                      width: 150,
-                      child: PremiumButton(
-                        text: l10n.cancel,
-                        onTap: () => setState(() => _isScanning = false),
-                      ),
-                    ),
-                  ),
-                ),
-                // Overlay guide
-                Center(
-                  child: Container(
-                    width: 250,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white, width: 2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          }
-
-          return Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              children: [
-                // Progress Steps
-                Row(
-                  children: [
-                    _StepIndicator(
-                      isActive: currentStep >= 0,
-                      isCompleted: currentStep > 0,
-                      label: '1',
-                    ),
-                    const _StepLine(),
-                    _StepIndicator(
-                      isActive: currentStep >= 1,
-                      isCompleted: currentStep > 1,
-                      label: '2',
-                    ),
-                    const _StepLine(),
-                    _StepIndicator(
-                      isActive: currentStep >= 2,
-                      isCompleted: currentStep == 3,
-                      label: '3',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-
-                // Content based on step
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: currentStep == 0
-                        ? _StepContent(
-                            key: const ValueKey(0),
-                            title: l10n.scanFrontCode,
-                            description: l10n.scanFrontDesc,
-                            icon: PhosphorIconsRegular.qrCode,
-                            buttonText: l10n.scanFrontCode,
-                            onTap: () {
-                              setState(() {
-                                _isScanning = true;
-                              });
-                            },
-                          )
-                        : currentStep == 1
-                        ? _StepContent(
-                            key: const ValueKey(1),
-                            title: l10n.recordVideo,
-                            description: l10n.recordVideoDesc,
-                            icon: PhosphorIconsRegular.videoCamera,
-                            buttonText: _videoFile != null
-                                ? l10n.reRecord
-                                : l10n.recordVideo,
-                            onTap: () => _recordVideo(cubit),
-                            extraContent: _videoFile != null
-                                ? Padding(
-                                    padding: const EdgeInsets.only(top: 20),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(
-                                          Icons.check_circle,
-                                          color: Colors.green,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          l10n.videoRecorded,
-                                          style: TextStyle(
-                                            color: theme.colorScheme.onSurface,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : null,
-                          )
-                        : _StepContent(
-                            key: const ValueKey(2),
-                            title: l10n.scanBackCode,
-                            description: l10n.scanBackDesc,
-                            icon: PhosphorIconsRegular.qrCode,
-                            buttonText: l10n.scanBackCode,
-                            onTap: () {
-                              setState(() {
-                                _isScanning = true;
-                              });
-                            },
-                          ),
-                  ),
-                ),
-              ],
-            ),
+              // Overlays
+              _buildUIOverlay(context, state, l10n),
+              
+              // Scanning Indicator
+              if (state is EndTripInitial || state is EndTripRecording)
+                _buildScanningGuide(),
+            ],
           );
         },
       ),
     );
   }
-}
 
-class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({
-    required this.isActive,
-    required this.isCompleted,
-    required this.label,
-  });
+  Widget _buildUIOverlay(BuildContext context, EndTripState state, AppLocalizations l10n) {
+    String title = "قم بمسح الكود الأمامي";
+    String desc = "ابدأ بمسح كود QR الموجود في مقدمة الحافلة";
+    Color overlayColor = Colors.black45;
 
-  final bool isActive;
-  final bool isCompleted;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: isCompleted
-            ? Colors.green
-            : isActive
-            ? Colors.blue
-            : Colors.grey.withValues(alpha: 0.3),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: isCompleted
-          ? const Icon(Icons.check, color: Colors.white)
-          : Text(
-              label,
-              style: TextStyle(
-                color: isActive ? Colors.white : Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-    ).animate().scale(duration: 300.ms);
-  }
-}
-
-class _StepLine extends StatelessWidget {
-  const _StepLine();
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(height: 2, color: Colors.grey.withValues(alpha: 0.3)),
-    );
-  }
-}
-
-class _StepContent extends StatelessWidget {
-  const _StepContent({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.buttonText,
-    required this.onTap,
-    this.extraContent,
-  });
-
-  final String title;
-  final String description;
-  final IconData icon;
-  final String buttonText;
-  final VoidCallback onTap;
-  final Widget? extraContent;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    if (state is EndTripRecording) {
+      title = "جاري تسجيل التحقق...";
+      desc = "توجه إلى خلف الحافلة لضمان خلو المقاعد وامسح الكود الخلفي";
+      overlayColor = Colors.red.withOpacity(0.2);
+    } else if (state is EndTripCompressing) {
+      title = "جاري معالجة الفديو...";
+      desc = "يرجى الانتظار، نقوم بضغط الفديو لتقليل الحجم";
+    } else if (state is EndTripUploading) {
+      title = "جاري رفع التوثيق...";
+      desc = "نقوم الآن بنقل العمل للوحة التحكم";
+    }
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 80,
-          color: theme.colorScheme.primary,
-        ).animate().fadeIn().scale(),
-        const SizedBox(height: AppSpacing.xl),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
+        // Top Header
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const CustomMenuButton(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, py: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.security, color: Colors.emerald, size: 16),
+                      const SizedBox(width: 6),
+                      Text("نظام التوثيق الآمن", style: TextStyle(color: Colors.white, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          description,
-          style: TextStyle(
-            fontSize: 16,
-            color: theme.colorScheme.onSurfaceVariant,
+
+        const Spacer(),
+
+        // Bottom Info Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            color: Colors.black87,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        PremiumButton(text: buttonText, onTap: onTap, icon: icon),
-        if (extraContent != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          extraContent!,
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (state is EndTripUploading)
+                 _buildProgressIndicator(state.progress)
+              else if (state is EndTripCompressing)
+                 const CircularProgressIndicator(color: Colors.blue)
+              else
+                 Icon(
+                   state is EndTripRecording ? Icons.videocam : Icons.qr_code_scanner, 
+                   color: Colors.white, 
+                   size: 32
+                 ).animate(onPlay: (c) => c.repeat()).scale(duration: 1000.ms),
+              
+              const SizedBox(height: 20),
+              Text(
+                title, 
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                desc,
+                style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              
+              if (state is EndTripError)
+                PremiumButton(
+                  text: "إعادة المحاولة", 
+                  onTap: () => context.read<EndTripCubit>().restart()
+                ),
+            ],
+          ),
+        ).animate().slideY(begin: 1, end: 0, duration: 500.ms),
       ],
+    );
+  }
+
+  Widget _buildProgressIndicator(double progress) {
+    return Column(
+      children: [
+        LinearProgressIndicator(
+          value: progress,
+          backgroundColor: Colors.white12,
+          color: Colors.emerald,
+          minHeight: 10,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          "${(progress * 100).toInt()}%",
+          style: const TextStyle(color: Colors.emerald, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScanningGuide() {
+    return Center(
+      child: Container(
+        width: 250,
+        height: 250,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white54, width: 2),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Stack(
+          children: [
+            // Scanning line animation
+            Container(
+              width: double.infinity,
+              height: 2,
+              color: Colors.white,
+            ).animate(onPlay: (c) => c.repeat()).slideY(begin: 0, end: 125, duration: 2.seconds),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessAndExit(BuildContext context, AppLocalizations l10n) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("تم إنهاء الرحلة بنجاح"), backgroundColor: Colors.green),
+    );
+    context.go(AppRoutes.driverHome);
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 }

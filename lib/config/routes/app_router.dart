@@ -46,6 +46,7 @@ import '../../features/driver/route/presentation/screens/route_navigation_screen
 import '../../features/driver/maintenance/presentation/screens/maintenance_entry_screen.dart';
 import '../../features/driver/maintenance/presentation/screens/fuel_refill_screen.dart';
 import '../../features/driver/maintenance/presentation/screens/maintenance_request_screen.dart';
+import '../../features/driver/maintenance/presentation/screens/maintenance_logs_screen.dart';
 import '../../features/driver/trip/presentation/screens/end_trip_screen.dart';
 import 'app_routes.dart';
 import '../../features/field_supervisor/buses/presentation/screens/buses_list_screen.dart';
@@ -268,6 +269,11 @@ class AppRouter {
             path: AppRoutes.driverMaintenanceRequest,
             name: 'driverMaintenanceRequest',
             builder: (context, state) => const MaintenanceRequestScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverMaintenanceLogs,
+            name: 'driverMaintenanceLogs',
+            builder: (context, state) => const MaintenanceLogsScreen(),
           ),
           GoRoute(
             path: AppRoutes.driverEndTrip,

@@ -1,5 +1,10 @@
 abstract class TripRepository {
-  Future<void> endTrip(String tripId);
+  Future<void> endTrip({
+    required String videoPath,
+    required String startQrData,
+    required String endQrData,
+    void Function(int sent, int total)? onProgress,
+  });
   Future<void> updateStudentStatus(
     String studentId, {
     bool? isAbsent,

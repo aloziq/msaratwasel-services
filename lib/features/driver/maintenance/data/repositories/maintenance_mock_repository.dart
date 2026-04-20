@@ -1,7 +1,8 @@
 import 'package:injectable/injectable.dart';
+import '../../domain/entities/bus_expense.dart';
 import '../../domain/repositories/maintenance_repository.dart';
 
-@LazySingleton(as: MaintenanceRepository)
+// @LazySingleton(as: MaintenanceRepository)
 class MaintenanceMockRepository implements MaintenanceRepository {
   @override
   Future<void> submitFuelRefill({
@@ -21,5 +22,11 @@ class MaintenanceMockRepository implements MaintenanceRepository {
     String? photoPath,
   }) async {
     await Future.delayed(const Duration(seconds: 1));
+  }
+
+  @override
+  Future<List<BusExpense>> getExpenses({int page = 1}) async {
+    await Future.delayed(const Duration(seconds: 1));
+    return [];
   }
 }

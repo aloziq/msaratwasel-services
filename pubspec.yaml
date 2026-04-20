@@ -39,6 +39,9 @@ dependencies:
   fl_chart: ^0.70.2
   url_launcher: ^6.3.2
   image_picker: ^1.1.2
+  camera: ^0.11.0
+  video_compress: ^3.1.2
+  google_mlkit_barcode_scanning: ^0.10.0
   google_maps_flutter: ^2.14.0
   widget_to_marker: ^1.0.6
   permission_handler: ^11.3.1
