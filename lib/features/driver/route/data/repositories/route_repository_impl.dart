@@ -7,6 +7,7 @@ import '../models/student_stop_model.dart';
 import '../../domain/entities/student_stop.dart';
 import '../../domain/repositories/route_repository.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../mappers/student_mapper.dart';
 
 @LazySingleton(as: RouteRepository)
 class RouteRepositoryImpl implements RouteRepository {
@@ -66,7 +67,7 @@ class RouteRepositoryImpl implements RouteRepository {
               'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['name'] ?? 'User')}&background=random',
           isBoarded: isOnBus,
           isDroppedOff: isDroppedOff,
-          isAbsent: false,
+          isAbsent: StudentMapper.mapIsAbsent(json),
         );
       }).toList();
     } on DioException catch (e) {

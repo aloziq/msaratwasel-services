@@ -21,7 +21,7 @@ class BusStudentModel extends BusStudentEntity {
       studentCode: json['student_code'] as String? ?? json['id'] as String,
       name: json['name'] as String,
       grade: json['grade'] as String,
-      schoolId: json['schoolId'] as String,
+      schoolId: (json['schoolId'] ?? json['school_id'] ?? json['classroom']?['school_id'])?.toString() ?? '',
       parentName: json['parentName'] as String,
       parentPhone: json['parentPhone'] as String,
       parentUserId: json['parentUserId']?.toString(),

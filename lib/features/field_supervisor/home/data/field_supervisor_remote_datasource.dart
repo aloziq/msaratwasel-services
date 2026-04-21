@@ -350,4 +350,28 @@ class FieldSupervisorRemoteDataSource {
     }
     return [];
   }
+
+  /// Reassigns a driver or assistant to a bus.
+  static Future<bool> reassignStaff({
+    required int busId,
+    required int userId,
+    required String type, // 'driver' or 'assistant'
+  }) async {
+    try {
+      final dio = ApiClient.instance;
+      final response = await dio.post(
+        'field/reassign-staff',
+        data: {
+          'bus_id': busId,
+          'user_id': userId,
+          'type': type,
+        },
+      );
+
+      return response.statusCode == 200 && response.data['success'] == true;
+    } catch (e) {
+      debugPrint('[FieldSupervisor] Error reassigning staff: $e');
+      return false;
+    }
+  }
 }

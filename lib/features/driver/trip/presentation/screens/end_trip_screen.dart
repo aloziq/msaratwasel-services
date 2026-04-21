@@ -215,14 +215,14 @@ class _EndTripContentState extends State<_EndTripContent> {
               children: [
                 const CustomMenuButton(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, py: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.security, color: Colors.emerald, size: 16),
+                      const Icon(Icons.security, color: Colors.green, size: 16),
                       const SizedBox(width: 6),
                       Text("نظام التوثيق الآمن", style: TextStyle(color: Colors.white, fontSize: 12)),
                     ],
@@ -290,14 +290,14 @@ class _EndTripContentState extends State<_EndTripContent> {
         LinearProgressIndicator(
           value: progress,
           backgroundColor: Colors.white12,
-          color: Colors.emerald,
+          color: Colors.green,
           minHeight: 10,
           borderRadius: BorderRadius.circular(10),
         ),
         const SizedBox(height: 10),
         Text(
           "${(progress * 100).toInt()}%",
-          style: const TextStyle(color: Colors.emerald, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
         ),
       ],
     );

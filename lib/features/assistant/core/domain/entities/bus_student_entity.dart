@@ -50,6 +50,13 @@ class BusStudentEntity extends Equatable {
     this.behavioralNote,
   });
 
+  bool get isAbsent => status == BusStudentStatus.absent;
+
+  bool shouldShowAbsentBadge(bool isDriver) {
+    // Hide 'Absent' badge for drivers, show for everyone else
+    return !isDriver && isAbsent;
+  }
+
   BusStudentEntity copyWith({
     String? id,
     String? studentCode,

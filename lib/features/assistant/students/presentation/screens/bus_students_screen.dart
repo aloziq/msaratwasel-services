@@ -14,6 +14,9 @@ import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../../core/network/api_config.dart';
+import '../../../../shared/auth/domain/entities/user_entity.dart';
+import '../../../../shared/auth/presentation/cubit/auth_cubit.dart';
+import '../../../../shared/auth/presentation/cubit/auth_state.dart';
 
 class BusStudentsScreen extends StatefulWidget {
   const BusStudentsScreen({super.key});
@@ -133,6 +136,9 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
             }
 
             if (state is BusTripLoaded) {
+              final authState = context.read<AuthCubit>().state;
+              final isDriver = authState is AuthAuthenticated && authState.user.role == UserRole.driver;
+
               final filteredStudents = state.trip.students.where((student) {
                 final matchesSearch =
                     student.name.toLowerCase().contains(
@@ -243,6 +249,7 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                           final isSelected = _selectedStudentIds.contains(student.id);
                           return _StudentCard(
                                 student: student,
+                                isDriver: isDriver,
                                 isSelected: isSelected,
                                 isSelectionMode: _isSelectionMode,
                                 onLongPress: () {
@@ -290,6 +297,8 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
 
   Widget _buildSearchAndFilter(BuildContext context, bool isDark) {
     final l10n = AppLocalizations.of(context)!;
+    final authState = context.read<AuthCubit>().state;
+    final isDriver = authState is AuthAuthenticated && authState.user.role == UserRole.driver;
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -323,8 +332,10 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                 _buildFilterChip(BusStudentStatus.onBus, l10n.onBus),
                 const SizedBox(width: AppSpacing.xs),
                 _buildFilterChip(BusStudentStatus.atSchool, l10n.atSchool),
-                const SizedBox(width: AppSpacing.xs),
-                _buildFilterChip(BusStudentStatus.absent, l10n.absent),
+                if (!isDriver) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  _buildFilterChip(BusStudentStatus.absent, l10n.absent),
+                ],
               ],
             ),
           ),
@@ -487,6 +498,7 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
 
 class _StudentCard extends StatelessWidget {
   final BusStudentEntity student;
+  final bool isDriver;
   final VoidCallback? onCall;
   final bool isSelected;
   final bool isSelectionMode;
@@ -495,6 +507,7 @@ class _StudentCard extends StatelessWidget {
 
   const _StudentCard({
     required this.student,
+    required this.isDriver,
     this.onCall,
     this.isSelected = false,
     this.isSelectionMode = false,
@@ -511,163 +524,167 @@ class _StudentCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected 
-                ? theme.colorScheme.primary 
-                : (isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.grey.withValues(alpha: 0.1)),
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: Opacity(
+        opacity: student.isAbsent ? 0.6 : 1.0,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isSelected 
+                  ? theme.colorScheme.primary 
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.grey.withValues(alpha: 0.1)),
+              width: isSelected ? 2 : 1,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: statusColor.withValues(alpha: 0.5),
-                        width: 2,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 32,
-                      backgroundColor: statusColor.withValues(alpha: 0.1),
-                      backgroundImage: NetworkImage(
-                        ApiConfig.getImageUrl(student.photoUrl),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          student.name,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: statusColor.withValues(alpha: 0.5),
+                            width: 2,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Row(
+                        child: CircleAvatar(
+                          radius: 32,
+                          backgroundColor: statusColor.withValues(alpha: 0.1),
+                          backgroundImage: NetworkImage(
+                            ApiConfig.getImageUrl(student.photoUrl),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              PhosphorIconsRegular.graduationCap,
-                              size: 14,
-                              color: theme.textTheme.bodySmall?.color,
-                            ),
-                            const SizedBox(width: 4),
                             Text(
-                              student.grade,
-                              style: theme.textTheme.bodySmall,
+                              student.name,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              PhosphorIconsRegular.identificationCard,
-                              size: 14,
-                              color: theme.textTheme.bodySmall?.color,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              student.schoolId,
-                              style: theme.textTheme.bodySmall,
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(
+                                  PhosphorIconsRegular.graduationCap,
+                                  size: 14,
+                                  color: theme.textTheme.bodySmall?.color,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  student.grade,
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  PhosphorIconsRegular.identificationCard,
+                                  size: 14,
+                                  color: theme.textTheme.bodySmall?.color,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  student.schoolId,
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      if (student.shouldShowAbsentBadge(isDriver) || student.status != BusStudentStatus.absent)
+                        _StatusBadge(status: student.status),
+                      if (isSelectionMode)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Checkbox(
+                            value: isSelected,
+                            onChanged: (val) => onTap?.call(),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          ),
+                        ),
+                    ],
                   ),
-                  _StatusBadge(status: student.status),
-                  if (isSelectionMode)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Checkbox(
-                        value: isSelected,
-                        onChanged: (val) => onTap?.call(),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.02)
-                  : Colors.grey.withValues(alpha: 0.05),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.02)
+                      : Colors.grey.withValues(alpha: 0.05),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildIconButton(
-                        context,
-                        PhosphorIconsFill.phone,
-                        Colors.green,
-                        onCall ?? () {},
+                      Row(
+                        children: [
+                          _buildIconButton(
+                            context,
+                            PhosphorIconsFill.phone,
+                            Colors.green,
+                            onCall ?? () {},
+                          ),
+                          const SizedBox(width: 8),
+                          _buildIconButton(
+                            context,
+                            PhosphorIconsFill.chatCircleText,
+                            student.parentUserId != null ? Colors.blue : Colors.grey,
+                            () {
+                              final receiverId = student.parentUserId;
+                              if (receiverId != null && receiverId.isNotEmpty) {
+                                context.push(
+                                  AppRoutes.messages,
+                                  extra: {
+                                    'id': null,
+                                    'name': 'ولي أمر ${student.name}',
+                                    'receiverId': receiverId,
+                                  },
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('بيانات التواصل مع ولي الأمر غير متوفرة حالياً'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      _buildIconButton(
-                        context,
-                        PhosphorIconsFill.chatCircleText,
-                        student.parentUserId != null ? Colors.blue : Colors.grey,
-                        () {
-                          final receiverId = student.parentUserId;
-                          if (receiverId != null && receiverId.isNotEmpty) {
-                            context.push(
-                              AppRoutes.messages,
-                              extra: {
-                                'id': null,
-                                'name': 'ولي أمر ${student.name}',
-                                'receiverId': receiverId,
-                              },
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('بيانات التواصل مع ولي الأمر غير متوفرة حالياً'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          }
-                        },
+                      Row(
+                        children: [
+                          _buildActionButton(context),
+                          const SizedBox(width: 4),
+                          _buildMoreButton(context),
+                        ],
                       ),
                     ],
                   ),
-                  Row(
-                    children: [
-                      _buildActionButton(context),
-                      const SizedBox(width: 4),
-                      _buildMoreButton(context),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
           ),
         ),
       ),

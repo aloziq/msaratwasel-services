@@ -25,6 +25,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Map<String, dynamic> _report = {};
   bool _isLoading = true;
 
+  void handleModelNavigation(BuildContext context, int index) {
+    handleSupervisorNavigation(context, index, 8);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -80,6 +84,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               color: const Color(0xFF16A34A),
                               icon: Icons.check_circle,
                               isDark: isDark,
+                              onTap: () => handleModelNavigation(context, 7),
                             ),
                             const SizedBox(width: 12),
                             _SummaryCard(
@@ -88,6 +93,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               color: AppColors.error,
                               icon: Icons.warning,
                               isDark: isDark,
+                              onTap: () => handleModelNavigation(context, 4),
                             ),
                           ],
                         ),
@@ -100,10 +106,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           children: [
                             _SummaryCard(
                               value: '${_report['today_inspections'] ?? 0}',
-                              label: l10n.delays,
+                              label: l10n.fieldInspection,
                               color: const Color(0xFFEC4899),
                               icon: Icons.fact_check,
                               isDark: isDark,
+                              onTap: () => handleModelNavigation(context, 5),
                             ),
                             const SizedBox(width: 12),
                             _SummaryCard(
@@ -112,6 +119,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               color: const Color(0xFFF59E0B),
                               icon: Icons.pending_actions,
                               isDark: isDark,
+                              onTap: () => handleModelNavigation(context, 4),
                             ),
                           ],
                         ),
@@ -152,6 +160,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 value: '${_report['total_buses'] ?? 0}',
                                 subValue: '${_report['active_buses'] ?? 0} نشطة',
                                 isDark: isDark,
+                                onTap: () => handleModelNavigation(context, 1),
                               ),
                               const Divider(height: 24),
                               _OverviewRow(
@@ -159,6 +168,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 value: '${_report['total_drivers'] ?? 0}',
                                 subValue: '${_report['active_drivers'] ?? 0} نشط',
                                 isDark: isDark,
+                                onTap: () => handleModelNavigation(context, 2),
                               ),
                               const Divider(height: 24),
                               _OverviewRow(
@@ -166,6 +176,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 value: '${_report['today_trips'] ?? 0}',
                                 subValue: '',
                                 isDark: isDark,
+                                onTap: () => handleModelNavigation(context, 7),
                               ),
                               const Divider(height: 24),
                               _OverviewRow(
@@ -173,6 +184,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 value: '${_report['today_incidents'] ?? 0}',
                                 subValue: '${_report['pending_incidents'] ?? 0} معلقة',
                                 isDark: isDark,
+                                onTap: () => handleModelNavigation(context, 4),
                               ),
                               const Divider(height: 24),
                               _OverviewRow(
@@ -180,6 +192,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 value: '${_report['today_inspections'] ?? 0}',
                                 subValue: '',
                                 isDark: isDark,
+                                onTap: () => handleModelNavigation(context, 5),
                               ),
                             ],
                           ),
@@ -212,6 +225,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewAllTrips,
                             color: const Color(0xFF16A34A),
                             isDark: isDark,
+                            onTap: () => handleModelNavigation(context, 7),
                           ),
                           _ReportTile(
                             icon: Icons.report_problem,
@@ -219,6 +233,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewAllIssues,
                             color: AppColors.error,
                             isDark: isDark,
+                            onTap: () => handleModelNavigation(context, 4),
                           ),
                           _ReportTile(
                             icon: Icons.timer_off,
@@ -226,6 +241,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewAllDelays,
                             color: const Color(0xFFEC4899),
                             isDark: isDark,
+                            onTap: () => handleModelNavigation(context, 6),
                           ),
                           _ReportTile(
                             icon: Icons.gavel,
@@ -233,6 +249,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewAllViolations,
                             color: const Color(0xFFF59E0B),
                             isDark: isDark,
+                            onTap: () => handleModelNavigation(context, 4), // Violations are usually handled in Alerts/Incidents
                           ),
                           _ReportTile(
                             icon: Icons.explore,
@@ -240,6 +257,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewFieldTrips,
                             color: const Color(0xFF10B981),
                             isDark: isDark,
+                            onTap: () => handleModelNavigation(context, 7),
                           ),
                         ]),
                       ),
@@ -259,46 +277,55 @@ class _OverviewRow extends StatelessWidget {
     required this.value,
     required this.subValue,
     required this.isDark,
+    required this.onTap,
   });
 
   final String label;
   final String value;
   final String subValue;
   final bool isDark;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: isDark ? Colors.white70 : AppColors.textSecondary,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white70 : AppColors.textSecondary,
+                ),
+              ),
             ),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : AppColors.textPrimary,
-          ),
-        ),
-        if (subValue.isNotEmpty) ...[
-          const SizedBox(width: 8),
-          Text(
-            subValue,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.primary,
-              fontWeight: FontWeight.w500,
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+              ),
             ),
-          ),
-        ],
-      ],
+            if (subValue.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Text(
+                subValue,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -310,54 +337,60 @@ class _SummaryCard extends StatelessWidget {
     required this.color,
     required this.icon,
     required this.isDark,
+    required this.onTap,
   });
   final String value;
   final String label;
   final Color color;
   final IconData icon;
   final bool isDark;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: Colors.white, size: 20),
               ),
-              child: Icon(icon, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: color,
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
                   ),
-                ),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? Colors.white70 : AppColors.textSecondary,
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.white70 : AppColors.textSecondary,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -371,12 +404,14 @@ class _ReportTile extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.isDark,
+    required this.onTap,
   });
   final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
   final bool isDark;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -392,6 +427,7 @@ class _ReportTile extends StatelessWidget {
         ),
       ),
       child: ListTile(
+        onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),

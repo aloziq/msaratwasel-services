@@ -527,5 +527,10 @@
     "resolved": "مكتمل",
     "photoAttached": "تم إرفاق الصورة",
     "pleaseDescribeIncident": "يرجى كتابة وصف الحادث",
-    "incidentReportedSuccessfully": "تم إرسال البلاغ بنجاح"
+    "incidentReportedSuccessfully": "تم إرسال البلاغ بنجاح",
+    "reassign": "إعادة تعيين",
+    "transferStaff": "نقل الكادر",
+    "selectNewBus": "اختر الحافلة الجديدة",
+    "reassignSuccess": "تمت عملية النقل بنجاح",
+    "reassignFailed": "فشلت عملية النقل"
 }

@@ -423,27 +423,132 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                   ).animate().slideY(begin: 1, end: 0, duration: 400.ms),
                   const SizedBox(height: 20),
 
+                  if (currentStop?.isAbsent == true)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.error.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withValues(alpha: 0.2),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.error.withValues(alpha: 0.05),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              right: -20,
+                              top: -20,
+                              child: Icon(
+                                PhosphorIconsFill.warningCircle,
+                                size: 100,
+                                color: theme.colorScheme.error.withValues(alpha: 0.05),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          theme.colorScheme.error,
+                                          theme.colorScheme.error.withValues(alpha: 0.8),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: theme.colorScheme.error.withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      PhosphorIconsFill.bellRinging,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+                                   .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 1.seconds),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          isArabic ? 'بلاغ غياب اليوم' : 'Absence Reported Today',
+                                          style: theme.textTheme.titleMedium?.copyWith(
+                                            color: theme.colorScheme.error,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          isArabic
+                                              ? 'تم تسجيل طلب غياب لهذا الطالب، يمكنك تخطيه بأمان.'
+                                              : 'An absence request was filed for this student. You can safely skip.',
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: theme.colorScheme.error.withValues(alpha: 0.7),
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ).animate().slideX(begin: -0.1, duration: 400.ms, curve: Curves.easeOutCubic).fadeIn(),
+
                   // Main Action Button (PremiumButton)
                   _isActionLoading
                       ? const Center(child: CircularProgressIndicator())
                       : PremiumButton(
-                          text: _isArrived
-                              ? (isArabic ? '✅ ركوب / الوجهة التالية' : 'Board / Next')
-                              : (isArabic
-                                  ? '📍 الوصول للطالب'
-                                  : '📍 Arrive at Student'),
+                          text: currentStop?.isAbsent == true
+                              ? (isArabic ? '⏭ تخطي (غائب)' : '⏭ Skip (Absent)')
+                              : _isArrived
+                                  ? (isArabic ? '✅ ركوب / الوجهة التالية' : 'Board / Next')
+                                  : (isArabic
+                                      ? '📍 الوصول للطالب'
+                                      : '📍 Arrive at Student'),
+                          color: currentStop?.isAbsent == true ? Colors.red : null,
                           onTap: () {
-                            if (_isArrived) {
+                            if (currentStop?.isAbsent == true) {
                               _advanceToNextStop();
                             } else {
-                              setState(() {
-                                _isArrived = true;
-                              });
+                              if (_isArrived) {
+                                _advanceToNextStop();
+                              } else {
+                                setState(() {
+                                  _isArrived = true;
+                                });
+                              }
                             }
                           },
-                          icon: _isArrived
-                              ? PhosphorIconsBold.arrowRight
-                              : PhosphorIconsBold.mapPin,
+                          icon: currentStop?.isAbsent == true
+                              ? PhosphorIconsBold.skipForward
+                              : _isArrived
+                                  ? PhosphorIconsBold.arrowRight
+                                  : PhosphorIconsBold.mapPin,
                         ).animate().slideY(begin: 1, end: 0, duration: 500.ms),
                 ],
               ),
