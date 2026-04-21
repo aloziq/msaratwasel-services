@@ -41,6 +41,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Set<Polyline> _polylines = {};
   bool _isArrived = false;
   bool _isActionLoading = false;
+  bool _hasDepartedSchool = false; // Only used for afternoon trip
+  bool _isFinished = false; // When the trip phase logic finishes
 
   Timer? _locationTimer;
   int _routePointIndex = 0;
@@ -82,11 +84,21 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       });
 
       final stops = await _routeRepository.getTripStops();
-      
+
       if (!mounted) return;
-      
+
+      final isMorning = _routeRepository.currentTripType == 'morning';
+      int initialIndex = 0;
+
+      if (isMorning) {
+        initialIndex = stops.indexWhere((s) => !s.isBoarded);
+      } else {
+        initialIndex = stops.indexWhere((s) => !s.isDroppedOff);
+      }
+
       setState(() {
         _stops = stops;
+        _currentStopIndex = initialIndex == -1 ? stops.length : initialIndex;
         _isLoading = false;
         _initMapData();
       });
@@ -205,6 +217,25 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       );
     }).toSet();
 
+    // Add School marker to the map if morning trip and headed to school OR afternoon trip and waiting at school
+    final isMorning = _routeRepository.currentTripType == 'morning';
+    final showSchool =
+        (isMorning && _currentStopIndex == _stops.length && !_isFinished) ||
+        (!isMorning && !_hasDepartedSchool);
+
+    if (showSchool) {
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('school_stop'),
+          position: const LatLng(23.6080, 58.4500),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueOrange,
+          ),
+          infoWindow: const InfoWindow(title: 'المدرسة', snippet: 'الوجهة'),
+        ),
+      );
+    }
+
     // Use our realistic points instead of just the stops
     _polylines = {
       Polyline(
@@ -220,81 +251,167 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   }
 
   Future<void> _advanceToNextStop() async {
-    if (_currentStopIndex < _stops.length - 1) {
-      setState(() {
-        _isActionLoading = true;
-      });
+    final isMorning = _routeRepository.currentTripType == 'morning';
 
-      try {
-        final currentStudentId = _stops[_currentStopIndex].id;
-        // Board logic (assuming morning trip to school)
-        await _routeRepository.boardStudent(
-          studentId: currentStudentId,
-          direction: 'to_school',
-        );
+    setState(() {
+      _isActionLoading = true;
+    });
 
-        if (!mounted) return;
-
-        setState(() {
-          _currentStopIndex++;
-          _isArrived = false;
-          _isActionLoading = false;
-          _initMapData(); // Refresh markers color
-        });
-
-        final controller = await _controller.future;
-        controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: _stops[_currentStopIndex].location, zoom: 15),
-          ),
-        );
-
-        // Auto-show info window for the new target
-        controller.showMarkerInfoWindow(MarkerId('stop_$_currentStopIndex'));
-      } catch (e) {
-        setState(() {
-          _isActionLoading = false;
-        });
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('فشل التسجيل: \$e'), backgroundColor: Colors.red),
-           );
-        }
-      }
-    } else {
-      // Last stop
-      setState(() {
-        _isActionLoading = true;
-      });
-
-      try {
-        final currentStudentId = _stops[_currentStopIndex].id;
-        await _routeRepository.boardStudent(
-          studentId: currentStudentId,
-          direction: 'to_school',
-        );
-
-        if (mounted) {
-          setState(() {
-            _isActionLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('انتهت الرحلة! جميع الطلاب وصلوا.'),
-              backgroundColor: Colors.green,
-            ),
+    try {
+      if (isMorning) {
+        // --- MORNING TRIP FLOW ---
+        if (_currentStopIndex < _stops.length) {
+          // Phase 1: Boarding Students
+          final currentStudentId = _stops[_currentStopIndex].id;
+          await _routeRepository.markStudentBoarded(
+            studentId: currentStudentId,
           );
+
+          if (!mounted) return;
+          setState(() {
+            _currentStopIndex++;
+            _isArrived = false;
+            _isActionLoading = false;
+            _initMapData();
+          });
+
+          final controller = await _controller.future;
+          if (_currentStopIndex < _stops.length) {
+            controller.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: _stops[_currentStopIndex].location,
+                  zoom: 15,
+                ),
+              ),
+            );
+            controller.showMarkerInfoWindow(
+              MarkerId('stop_$_currentStopIndex'),
+            );
+          } else {
+            // Reached last student, go to school
+            controller.animateCamera(
+              CameraUpdate.newCameraPosition(
+                const CameraPosition(
+                  target: LatLng(23.6080, 58.4500),
+                  zoom: 15,
+                ),
+              ),
+            );
+            controller.showMarkerInfoWindow(const MarkerId('school_stop'));
+          }
+        } else {
+          // Phase 2: Arrived at School -> Finished
+          await _routeRepository.arriveAtSchool();
+
+          if (mounted) {
+            setState(() {
+              _isFinished = true;
+              _isActionLoading = false;
+              _initMapData();
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('تم تسجيل الوصول بنجاح. الرحلة منتهية.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pop(context); // Go back to show end trip
+          }
         }
-      } catch (e) {
-        setState(() {
-          _isActionLoading = false;
-        });
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('فشل التسجيل: \$e'), backgroundColor: Colors.red),
-           );
+      } else {
+        // --- AFTERNOON TRIP FLOW ---
+        if (!_hasDepartedSchool) {
+          // Phase 1: At School -> Board Students first
+          if (!_isArrived) {
+            // Reusing _isArrived to mean "Boarded students" for afternoon
+            await _routeRepository.groupBoard(
+              studentIds: _stops.map((s) => s.id).toList(),
+            );
+            if (!mounted) return;
+            setState(() {
+              _isArrived = true; // All boarded
+              _isActionLoading = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('تم تسجيل ركوب جميع الطلاب بنجاح.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            return;
+          }
+
+          // Phase 2: Once boarded -> Depart School
+          if (!mounted) return;
+          setState(() {
+            _hasDepartedSchool = true;
+            _isArrived = false;
+            _isActionLoading = false;
+            _initMapData();
+          });
+
+          final controller = await _controller.future;
+          if (_stops.isNotEmpty) {
+            controller.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(target: _stops[0].location, zoom: 15),
+              ),
+            );
+            controller.showMarkerInfoWindow(const MarkerId('stop_0'));
+          }
+        } else if (_currentStopIndex < _stops.length) {
+          // Phase 2: Dropping off Students (Single Click)
+          final currentStudentId = _stops[_currentStopIndex].id;
+          await _routeRepository.markStudentDropped(
+            studentId: currentStudentId,
+          );
+
+          if (!mounted) return;
+          setState(() {
+            _currentStopIndex++;
+            _isArrived = false;
+            _isActionLoading = false;
+            _initMapData();
+          });
+
+          final controller = await _controller.future;
+          if (_currentStopIndex < _stops.length) {
+            controller.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: _stops[_currentStopIndex].location,
+                  zoom: 15,
+                ),
+              ),
+            );
+            controller.showMarkerInfoWindow(
+              MarkerId('stop_$_currentStopIndex'),
+            );
+          } else {
+            // Phase 3: Finished
+            setState(() {
+              _isFinished = true;
+              _initMapData();
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('الرحلة انتهت. يمكنك إنهاء الرحلة.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pop(context); // Go back to show end trip
+          }
         }
       }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isActionLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل الإجراء: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -302,172 +419,265 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final isMorning = _routeRepository.currentTripType == 'morning';
     final currentStop = _currentStopIndex < _stops.length
         ? _stops[_currentStopIndex]
         : null;
+
+    final isSchoolState =
+        (isMorning && _currentStopIndex == _stops.length && !_isFinished) ||
+        (!isMorning && !_hasDepartedSchool);
 
     return Scaffold(
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('خطأ: \$_error', style: const TextStyle(color: Colors.red)),
-                      ElevatedButton(
-                        onPressed: _fetchRouteData,
-                        child: const Text('إعادة المحاولة'),
-                      )
-                    ],
-                  ),
-                )
-              : _stops.isEmpty
-                  ? const Center(child: Text('لا يوجد طلاب في هذه الرحلة'))
-                  : Stack(
-                      children: [
-                        // 1. Google Map Background
-                        GoogleMap(
-                          mapType: MapType.normal,
-                          initialCameraPosition: _kInitialPosition,
-                          markers: _markers,
-                          polylines: _polylines,
-                          myLocationEnabled: true,
-                          zoomControlsEnabled: false,
-                          onMapCreated: (GoogleMapController controller) {
-                            _controller.complete(controller);
-                            // Show the first stop's name immediately
-                            Future.delayed(const Duration(milliseconds: 500), () {
-                              controller.showMarkerInfoWindow(const MarkerId('stop_0'));
-                            });
-                          },
-                        ),
-
-          // 2. Next Stop Card (Centered Adaptive Pill)
-          if (currentStop != null)
-            Positioned(
-              top: 60, // Moved back to top as requested
-              left: 20,
-              right: 20,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: IntrinsicWidth(
-                  // Adapts width to content
-                  child: _NextStopCard(isArabic: isArabic, stop: currentStop),
-                ),
-              ),
-            ),
-
-          // 3. Bottom Action Panel
-          Positioned(
-            bottom: 30,
-            left: 20,
-            right: 20,
-            child: SafeArea(
+          ? Center(
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Route Info Pill
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface.withValues(
-                            alpha: 0.8,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              PhosphorIconsFill.clock,
-                              size: 18,
-                              color: Colors.orange,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              LocationUtils.formatEtaEnglish(18.2),
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 24),
-                            const Icon(
-                              PhosphorIconsFill.path,
-                              size: 18,
-                              color: Colors.blue,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              "18.2 km",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
+                  Text(
+                    'خطأ: \$_error',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  ElevatedButton(
+                    onPressed: _fetchRouteData,
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            )
+          : _stops.isEmpty
+          ? const Center(child: Text('لا يوجد طلاب في هذه الرحلة'))
+          : Stack(
+              children: [
+                // 1. Google Map Background
+                GoogleMap(
+                  mapType: MapType.normal,
+                  initialCameraPosition: _kInitialPosition,
+                  markers: _markers,
+                  polylines: _polylines,
+                  myLocationEnabled: true,
+                  zoomControlsEnabled: false,
+                  onMapCreated: (GoogleMapController controller) {
+                    _controller.complete(controller);
+                    // Show the first stop's name immediately
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      controller.showMarkerInfoWindow(const MarkerId('stop_0'));
+                    });
+                  },
+                ),
+
+                // 2. Next Stop Card (Centered Adaptive Pill)
+                if (currentStop != null && !isSchoolState)
+                  Positioned(
+                    top: 60,
+                    left: 20,
+                    right: 20,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: IntrinsicWidth(
+                        child: _NextStopCard(
+                          isArabic: isArabic,
+                          stop: currentStop,
                         ),
                       ),
                     ),
-                  ).animate().slideY(begin: 1, end: 0, duration: 400.ms),
-                  const SizedBox(height: 20),
+                  ),
 
-                  // Main Action Button (PremiumButton)
-                  _isActionLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : PremiumButton(
-                          text: _isArrived
-                              ? (isArabic ? '✅ ركوب / الوجهة التالية' : 'Board / Next')
-                              : (isArabic
-                                  ? '📍 الوصول للطالب'
-                                  : '📍 Arrive at Student'),
-                          onTap: () {
-                            if (_isArrived) {
-                              _advanceToNextStop();
-                            } else {
-                              setState(() {
-                                _isArrived = true;
-                              });
-                            }
-                          },
-                          icon: _isArrived
-                              ? PhosphorIconsBold.arrowRight
-                              : PhosphorIconsBold.mapPin,
-                        ).animate().slideY(begin: 1, end: 0, duration: 500.ms),
-                ],
-              ),
-            ),
-          ),
+                if (isSchoolState)
+                  Positioned(
+                    top: 60,
+                    left: 20,
+                    right: 20,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: IntrinsicWidth(
+                        child: GlassCard(
+                          borderRadius: 24,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                PhosphorIconsFill.buildings,
+                                color: Colors.amber,
+                                size: 32,
+                              ),
+                              const SizedBox(width: 14),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isArabic
+                                        ? 'الوجهة الحالية'
+                                        : 'Current Stop',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.amber[900],
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    isArabic ? 'المدرسة' : 'School',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
-          // 4. Top Bar (Back Button & Title) - MOVED TO END of Stack to be ON TOP
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
+                // 3. Bottom Action Panel
+                Positioned(
+                  bottom: 30,
+                  left: 20,
+                  right: 20,
+                  child: SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Route Info Pill
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface.withValues(
+                                  alpha: 0.8,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 10,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    PhosphorIconsFill.clock,
+                                    size: 18,
+                                    color: Colors.orange,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    LocationUtils.formatEtaEnglish(18.2),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 24),
+                                  const Icon(
+                                    PhosphorIconsFill.path,
+                                    size: 18,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    "18.2 km",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ).animate().slideY(begin: 1, end: 0, duration: 400.ms),
+                        const SizedBox(height: 20),
+
+                        // Main Action Button (PremiumButton)
+                        _isActionLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : PremiumButton(
+                                text: _getActionButtonText(
+                                  isArabic,
+                                  isSchoolState,
+                                  isMorning,
+                                ),
+                                onTap: () {
+                                  if (_isFinished) return;
+                                  if (_isArrived || isSchoolState) {
+                                    _advanceToNextStop();
+                                  } else {
+                                    setState(() {
+                                      _isArrived = true;
+                                    });
+                                  }
+                                },
+                                icon: _isArrived || isSchoolState
+                                    ? PhosphorIconsBold.arrowRight
+                                    : PhosphorIconsBold.mapPin,
+                              ).animate().slideY(
+                                begin: 1,
+                                end: 0,
+                                duration: 500.ms,
+                              ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Row(children: [CustomMenuButton()]),
-              ),
+
+                // 4. Top Bar (Back Button & Title) - MOVED TO END of Stack to be ON TOP
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      child: Row(children: [CustomMenuButton()]),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
+  } // <--- Added closing brace for build()
+
+  String _getActionButtonText(
+    bool isArabic,
+    bool isSchoolState,
+    bool isMorning,
+  ) {
+    if (_isFinished) {
+      return isArabic ? 'الرحلة منتهية' : 'Trip Finished';
+    }
+    if (isSchoolState) {
+      if (isMorning) return isArabic ? '✅ وصلنا' : '✅ Arrived';
+      if (!_isArrived)
+        return isArabic ? '👪 تسجيل ركوب الجميع' : '👪 Board All';
+      return isArabic ? '🚀 مغادرة المدرسة' : '🚀 Depart School';
+    }
+    if (_isArrived) {
+      return isMorning
+          ? (isArabic ? '✅ تم الركوب' : '✅ Boarded')
+          : (isArabic ? '✅ تم النزول' : '✅ Dropped Off');
+    }
+    return isArabic ? '📍 أقتربت من الطالب' : '📍 Approaching Student';
   }
 }
 

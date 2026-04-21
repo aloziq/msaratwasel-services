@@ -2,9 +2,15 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../entities/student_stop.dart';
 
 abstract class RouteRepository {
+  String get currentTripType;
   Future<List<StudentStop>> getTripStops();
   Future<List<LatLng>> getRoutePoints();
-  Future<void> boardStudent({required String studentId, required String direction});
-  Future<void> alightStudent({required String studentId, required String direction});
-  Future<void> updateLocation({required double latitude, required double longitude});
+  Future<void> markStudentBoarded({required String studentId});
+  Future<void> groupBoard({required List<String> studentIds});
+  Future<void> markStudentDropped({required String studentId});
+  Future<void> updateLocation({
+    required double latitude,
+    required double longitude,
+  });
+  Future<void> arriveAtSchool();
 }

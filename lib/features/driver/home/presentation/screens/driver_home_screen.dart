@@ -6,7 +6,7 @@ import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
-import 'package:msaratwasel_services/features/driver/home/data/repositories/home_mock_repository.dart';
+
 import 'package:msaratwasel_services/features/driver/home/presentation/widgets/quick_action_button.dart';
 import 'package:msaratwasel_services/features/driver/home/presentation/widgets/trip_status_card.dart';
 import 'package:msaratwasel_services/features/driver/home/presentation/manager/driver_home_cubit.dart';
@@ -87,23 +87,24 @@ class _DriverHomeContent extends StatelessWidget {
                   // ── Welcome Header Card ──
                   BlocBuilder<AuthCubit, AuthState>(
                     builder: (context, authState) {
-                      final user = authState is AuthAuthenticated ? authState.user : null;
+                      final user = authState is AuthAuthenticated
+                          ? authState.user
+                          : null;
                       return Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF2563EB),
-                              Color(0xFF1E40AF),
-                            ],
+                            colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                              color: const Color(
+                                0xFF2563EB,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -132,7 +133,9 @@ class _DriverHomeContent extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.3),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       width: 2,
                                     ),
                                   ),
@@ -143,20 +146,24 @@ class _DriverHomeContent extends StatelessWidget {
                                       child: Image.network(
                                         ApiConfig.getImageUrl(user?.avatar),
                                         fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, progress) {
-                                          if (progress == null) return child;
-                                          return Container(
-                                            color: Colors.white24,
-                                            child: const Center(
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          );
-                                        },
+                                        loadingBuilder:
+                                            (context, child, progress) {
+                                              if (progress == null)
+                                                return child;
+                                              return Container(
+                                                color: Colors.white24,
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: Colors.white,
+                                                      ),
+                                                ),
+                                              );
+                                            },
                                         errorBuilder: (context, error, _) {
-                                          final initial = (user?.name.isNotEmpty == true)
+                                          final initial =
+                                              (user?.name.isNotEmpty == true)
                                               ? user!.name[0].toUpperCase()
                                               : 'D';
                                           return Container(
@@ -181,23 +188,28 @@ class _DriverHomeContent extends StatelessWidget {
                                 // Text info
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         '${l10n.welcome} 👋',
-                                        style: theme.textTheme.bodyMedium?.copyWith(
-                                          color: Colors.white.withValues(alpha: 0.8),
-                                          fontSize: 13,
-                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.8,
+                                              ),
+                                              fontSize: 13,
+                                            ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         user?.name ?? userName,
-                                        style: theme.textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                        ),
+                                        style: theme.textTheme.titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                            ),
                                       ),
                                       const SizedBox(height: 6),
                                       Container(
@@ -206,15 +218,22 @@ class _DriverHomeContent extends StatelessWidget {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(12),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         child: Text(
                                           date,
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: Colors.white.withValues(alpha: 0.9),
-                                            fontSize: 12,
-                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.9,
+                                                ),
+                                                fontSize: 12,
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -234,36 +253,60 @@ class _DriverHomeContent extends StatelessWidget {
                   BlocBuilder<DriverHomeCubit, DriverHomeState>(
                     builder: (context, state) {
                       if (state is DriverHomeLoaded) {
+                        if (state.tripStatus.isCompleted) {
+                          return _buildCompletedTripsCard(
+                                context,
+                                isArabic,
+                                isDark,
+                              )
+                              .animate()
+                              .fadeIn(delay: 200.ms)
+                              .slideY(begin: 0.1, end: 0);
+                        }
                         return TripStatusCard(
-                          isArabic: isArabic,
-                          isDark: isDark,
-                          departureTime: state.tripStatus.departureTime,
-                          studentCount:
-                              state.tripStatus.totalStudents.toString(),
-                          onStartTrip: () async {
-                            final cubit = context.read<DriverHomeCubit>();
-                            await cubit.startTrip(
-                              state.tripStatus.id.toString(),
-                            );
-                            
-                            if (context.mounted) {
-                              final updatedState = cubit.state;
-                              if (updatedState is DriverHomeLoaded && updatedState.tripStatus.isStarted) {
-                                context.push('/driver/route');
-                              } else if (updatedState is DriverHomeError) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(updatedState.message),
-                                    backgroundColor: Colors.red,
-                                  ),
+                              isArabic: isArabic,
+                              isDark: isDark,
+                              tripId: state.tripStatus.id.toString(),
+                              isStarted: state.tripStatus.isStarted,
+                              departureTime: state.tripStatus.departureTime,
+                              studentCount: state.tripStatus.totalStudents
+                                  .toString(),
+                              onStartTrip: () async {
+                                final cubit = context.read<DriverHomeCubit>();
+                                if (state.tripStatus.isStarted) {
+                                  await context.push('/driver/route');
+                                  if (context.mounted) {
+                                    cubit.loadDashboard();
+                                  }
+                                  return;
+                                }
+
+                                await cubit.startTrip(
+                                  state.tripStatus.id.toString(),
                                 );
-                              }
-                            }
-                          },
-                        ).animate().fadeIn(delay: 200.ms).slideY(
-                          begin: 0.1,
-                          end: 0,
-                        );
+
+                                if (context.mounted) {
+                                  final updatedState = cubit.state;
+                                  if (updatedState is DriverHomeLoaded &&
+                                      updatedState.tripStatus.isStarted) {
+                                    await context.push('/driver/route');
+                                    if (context.mounted) {
+                                      cubit.loadDashboard();
+                                    }
+                                  } else if (updatedState is DriverHomeError) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(updatedState.message),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            )
+                            .animate()
+                            .fadeIn(delay: 200.ms)
+                            .slideY(begin: 0.1, end: 0);
                       } else if (state is DriverHomeError) {
                         return Center(child: Text(l10n.errorOccurred));
                       }
@@ -294,7 +337,8 @@ class _DriverHomeContent extends StatelessWidget {
                               icon: PhosphorIconsRegular.users,
                               label: l10n.myStudents,
                               color: Colors.green,
-                              onTap: () => context.push(AppRoutes.driverStudents),
+                              onTap: () =>
+                                  context.push(AppRoutes.driverStudents),
                               isDark: isDark,
                             ),
                           ),
@@ -336,7 +380,9 @@ class _DriverHomeContent extends StatelessWidget {
                                         },
                                         child: Text(
                                           l10n.confirm,
-                                          style: const TextStyle(color: Colors.red),
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -366,6 +412,73 @@ class _DriverHomeContent extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedTripsCard(
+    BuildContext context,
+    bool isArabic,
+    bool isDark,
+  ) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: isDark
+            ? theme.colorScheme.surface.withValues(alpha: 0.8)
+            : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24.0),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : theme.colorScheme.primary.withValues(alpha: 0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              PhosphorIconsFill.checkCircle,
+              color: Colors.green,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            isArabic
+                ? 'لقد اكتملت جميع رحلاتك اليوم!'
+                : 'All trips completed today!',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            isArabic
+                ? 'شكراً لك على التزامك وجهودك الرائعة.'
+                : 'Thank you for your commitment and great effort.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

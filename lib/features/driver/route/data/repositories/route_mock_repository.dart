@@ -6,6 +6,9 @@ import '../models/student_stop_model.dart';
 
 // @LazySingleton(as: RouteRepository)
 class RouteMockRepository implements RouteRepository {
+  @override
+  String get currentTripType => 'morning';
+
   final List<StudentStop> _mockStops = [
     const StudentStopModel(
       id: '1',
@@ -83,18 +86,12 @@ class RouteMockRepository implements RouteRepository {
   }
 
   @override
-  Future<void> boardStudent({
-    required String studentId,
-    required String direction,
-  }) async {
+  Future<void> markStudentBoarded({required String studentId}) async {
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
   @override
-  Future<void> alightStudent({
-    required String studentId,
-    required String direction,
-  }) async {
+  Future<void> markStudentDropped({required String studentId}) async {
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
@@ -105,5 +102,15 @@ class RouteMockRepository implements RouteRepository {
   }) async {
     // Mock implementation for updating bus location
     await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  @override
+  Future<void> arriveAtSchool() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+
+  @override
+  Future<void> groupBoard({required List<String> studentIds}) async {
+    await Future.delayed(const Duration(milliseconds: 500));
   }
 }

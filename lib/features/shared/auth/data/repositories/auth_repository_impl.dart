@@ -46,13 +46,17 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       // جلب الـ token المحفوظ محلياً لإرساله للـ API
       final user = await localDataSource.getCachedUser();
-      await remoteDataSource.logout(token: user.token);
+
+      // إرسال طلب تسجيل الخروج للخلفية دون انتظار (Fire and Forget)
+      // لتجنب التأخير لمدة 30 ثانية في حال كان السيرفر غير متاح
+      remoteDataSource.logout(token: user.token).catchError((_) {});
+
       await localDataSource.clearCache();
       return const Right(null);
-    } on Exception catch (e) {
-      // حتى لو فشل الـ logout من السيرفر، نمسح البيانات المحلية
+    } catch (e) {
+      // في حال حدوث أي خطأ، نمسح الكاش المحلي ونسمح للمستخدم بالخروج
       await localDataSource.clearCache();
-      return Left(CacheFailure(e.toString()));
+      return const Right(null);
     }
   }
 

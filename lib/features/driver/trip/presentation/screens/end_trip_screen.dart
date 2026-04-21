@@ -58,9 +58,9 @@ class _EndTripContentState extends State<_EndTripContent> {
     try {
       await _cameraController!.initialize();
       if (!mounted) return;
-      
+
       setState(() => _isCameraInitialized = true);
-      
+
       // Start processing frames for QR detection
       _cameraController!.startImageStream(_processImageFrame);
     } catch (e) {
@@ -70,13 +70,14 @@ class _EndTripContentState extends State<_EndTripContent> {
 
   void _processImageFrame(CameraImage image) async {
     if (_isProcessingFrame) return;
-    
+
     // We only process every 30th frame to save battery/CPU, unless we are scanning
     _processCount++;
     if (_processCount % 10 != 0) return;
 
     final cubit = context.read<EndTripCubit>();
-    if (cubit.state is EndTripSuccess || cubit.state is EndTripUploading) return;
+    if (cubit.state is EndTripSuccess || cubit.state is EndTripUploading)
+      return;
 
     _isProcessingFrame = true;
 
@@ -126,7 +127,10 @@ class _EndTripContentState extends State<_EndTripContent> {
     }
   }
 
-  Future<void> _startCompressionAndUpload(String path, EndTripCubit cubit) async {
+  Future<void> _startCompressionAndUpload(
+    String path,
+    EndTripCubit cubit,
+  ) async {
     // 1. Compression
     final MediaInfo? info = await VideoCompress.compressVideo(
       path,
@@ -176,7 +180,7 @@ class _EndTripContentState extends State<_EndTripContent> {
 
               // Overlays
               _buildUIOverlay(context, state, l10n),
-              
+
               // Scanning Indicator
               if (state is EndTripInitial || state is EndTripRecording)
                 _buildScanningGuide(),
@@ -187,7 +191,11 @@ class _EndTripContentState extends State<_EndTripContent> {
     );
   }
 
-  Widget _buildUIOverlay(BuildContext context, EndTripState state, AppLocalizations l10n) {
+  Widget _buildUIOverlay(
+    BuildContext context,
+    EndTripState state,
+    AppLocalizations l10n,
+  ) {
     String title = "قم بمسح الكود الأمامي";
     String desc = "ابدأ بمسح كود QR الموجود في مقدمة الحافلة";
     Color overlayColor = Colors.black45;
@@ -215,16 +223,22 @@ class _EndTripContentState extends State<_EndTripContent> {
               children: [
                 const CustomMenuButton(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, py: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.security, color: Colors.emerald, size: 16),
+                      const Icon(Icons.security, color: Colors.green, size: 16),
                       const SizedBox(width: 6),
-                      Text("نظام التوثيق الآمن", style: TextStyle(color: Colors.white, fontSize: 12)),
+                      Text(
+                        "نظام التوثيق الآمن",
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
                     ],
                   ),
                 ),
@@ -248,34 +262,43 @@ class _EndTripContentState extends State<_EndTripContent> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (state is EndTripUploading)
-                 _buildProgressIndicator(state.progress)
+                _buildProgressIndicator(state.progress)
               else if (state is EndTripCompressing)
-                 const CircularProgressIndicator(color: Colors.blue)
+                const CircularProgressIndicator(color: Colors.blue)
               else
-                 Icon(
-                   state is EndTripRecording ? Icons.videocam : Icons.qr_code_scanner, 
-                   color: Colors.white, 
-                   size: 32
-                 ).animate(onPlay: (c) => c.repeat()).scale(duration: 1000.ms),
-              
+                Icon(
+                  state is EndTripRecording
+                      ? Icons.videocam
+                      : Icons.qr_code_scanner,
+                  color: Colors.white,
+                  size: 32,
+                ).animate(onPlay: (c) => c.repeat()).scale(duration: 1000.ms),
+
               const SizedBox(height: 20),
               Text(
-                title, 
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
               Text(
                 desc,
-                style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 14,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
-              
+
               if (state is EndTripError)
                 PremiumButton(
-                  text: "إعادة المحاولة", 
-                  onTap: () => context.read<EndTripCubit>().restart()
+                  text: "إعادة المحاولة",
+                  onTap: () => context.read<EndTripCubit>().restart(),
                 ),
             ],
           ),
@@ -290,14 +313,17 @@ class _EndTripContentState extends State<_EndTripContent> {
         LinearProgressIndicator(
           value: progress,
           backgroundColor: Colors.white12,
-          color: Colors.emerald,
+          color: Colors.green,
           minHeight: 10,
           borderRadius: BorderRadius.circular(10),
         ),
         const SizedBox(height: 10),
         Text(
           "${(progress * 100).toInt()}%",
-          style: const TextStyle(color: Colors.emerald, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.green,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
     );
@@ -315,11 +341,9 @@ class _EndTripContentState extends State<_EndTripContent> {
         child: Stack(
           children: [
             // Scanning line animation
-            Container(
-              width: double.infinity,
-              height: 2,
-              color: Colors.white,
-            ).animate(onPlay: (c) => c.repeat()).slideY(begin: 0, end: 125, duration: 2.seconds),
+            Container(width: double.infinity, height: 2, color: Colors.white)
+                .animate(onPlay: (c) => c.repeat())
+                .slideY(begin: 0, end: 125, duration: 2.seconds),
           ],
         ),
       ),
@@ -328,7 +352,10 @@ class _EndTripContentState extends State<_EndTripContent> {
 
   void _showSuccessAndExit(BuildContext context, AppLocalizations l10n) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("تم إنهاء الرحلة بنجاح"), backgroundColor: Colors.green),
+      const SnackBar(
+        content: Text("تم إنهاء الرحلة بنجاح"),
+        backgroundColor: Colors.green,
+      ),
     );
     context.go(AppRoutes.driverHome);
   }

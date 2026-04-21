@@ -57,7 +57,6 @@ class TripRepositoryImpl implements TripRepository {
     // This is used by the driver to update specific student status if needed
     // In our unified flow, we have board/alight endpoints
     String endpoint = '/bus/$busId/board';
-    String direction = 'to_school'; // Default, should be dynamic if needed
 
     if (isDroppedOff == true) {
       endpoint = '/bus/$busId/alight';
@@ -65,14 +64,13 @@ class TripRepositoryImpl implements TripRepository {
 
     final response = await ApiClient.instance.post(
       endpoint,
-      data: {
-        'student_id': studentId,
-        'direction': direction,
-      },
+      data: {'student_id': studentId},
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(response.data['message'] ?? 'Failed to update student status');
+      throw Exception(
+        response.data['message'] ?? 'Failed to update student status',
+      );
     }
   }
 }

@@ -14,6 +14,11 @@ class RouteRepositoryImpl implements RouteRepository {
 
   RouteRepositoryImpl() : _dio = ApiClient.instance;
 
+  String _currentTripType = 'morning';
+
+  @override
+  String get currentTripType => _currentTripType;
+
   // We need to keep a mock route for the map lines, but fetch stops from API
   @override
   Future<List<LatLng>> getRoutePoints() async {
@@ -42,6 +47,9 @@ class RouteRepositoryImpl implements RouteRepository {
 
       // 2. Fetch passengers
       final response = await _dio.get('bus/$busId/passengers');
+
+      final busInfo = response.data['bus'] ?? {};
+      _currentTripType = busInfo['trip_type'] ?? 'morning';
 
       final List<dynamic> passengersJson = response.data['passengers'] ?? [];
 
@@ -79,10 +87,7 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> boardStudent({
-    required String studentId,
-    required String direction,
-  }) async {
+  Future<void> markStudentBoarded({required String studentId}) async {
     try {
       if (_cachedBusId == null) {
         final userResponse = await _dio.get('auth/user');
@@ -91,8 +96,8 @@ class RouteRepositoryImpl implements RouteRepository {
       }
 
       await _dio.post(
-        'bus/$_cachedBusId/board',
-        data: {'student_id': studentId, 'direction': direction},
+        'bus/$_cachedBusId/mark-boarded',
+        data: {'student_id': studentId},
       );
     } on DioException catch (e) {
       final message =
@@ -104,10 +109,7 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
-  Future<void> alightStudent({
-    required String studentId,
-    required String direction,
-  }) async {
+  Future<void> groupBoard({required List<String> studentIds}) async {
     try {
       if (_cachedBusId == null) {
         final userResponse = await _dio.get('auth/user');
@@ -116,8 +118,30 @@ class RouteRepositoryImpl implements RouteRepository {
       }
 
       await _dio.post(
-        'bus/$_cachedBusId/alight',
-        data: {'student_id': studentId, 'direction': direction},
+        'bus/$_cachedBusId/group-board',
+        data: {'student_ids': studentIds},
+      );
+    } on DioException catch (e) {
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
+      throw Exception('فشل تسجيل ركوب الطلاب: $message');
+    } catch (e) {
+      throw Exception('فشل تسجيل ركوب الطلاب');
+    }
+  }
+
+  @override
+  Future<void> markStudentDropped({required String studentId}) async {
+    try {
+      if (_cachedBusId == null) {
+        final userResponse = await _dio.get('auth/user');
+        final data = userResponse.data['data'] ?? userResponse.data['user'];
+        _cachedBusId = data['bus_id'] ?? data['has_bus'];
+      }
+
+      await _dio.post(
+        'bus/$_cachedBusId/mark-dropped',
+        data: {'student_id': studentId},
       );
     } on DioException catch (e) {
       final message =
@@ -125,6 +149,25 @@ class RouteRepositoryImpl implements RouteRepository {
       throw Exception('فشل تسجيل نزول الطالب: $message');
     } catch (e) {
       throw Exception('فشل تسجيل نزول الطالب');
+    }
+  }
+
+  @override
+  Future<void> arriveAtSchool() async {
+    try {
+      if (_cachedBusId == null) {
+        final userResponse = await _dio.get('auth/user');
+        final data = userResponse.data['data'] ?? userResponse.data['user'];
+        _cachedBusId = data['bus_id'] ?? data['has_bus'];
+      }
+
+      await _dio.post('bus/$_cachedBusId/arrive');
+    } on DioException catch (e) {
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
+      throw Exception('فشل تحديث الوصول: $message');
+    } catch (e) {
+      throw Exception('فشل تحديث الوصول');
     }
   }
 

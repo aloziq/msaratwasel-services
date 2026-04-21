@@ -7,6 +7,8 @@ class TripStatusCard extends StatelessWidget {
   final bool isDark;
   final String departureTime;
   final String studentCount;
+  final bool isStarted;
+  final String tripId;
   final VoidCallback onStartTrip;
 
   const TripStatusCard({
@@ -15,6 +17,8 @@ class TripStatusCard extends StatelessWidget {
     required this.isDark,
     required this.departureTime,
     required this.studentCount,
+    required this.tripId,
+    required this.isStarted,
     required this.onStartTrip,
   });
 
@@ -65,7 +69,9 @@ class TripStatusCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  isArabic ? 'جاهز للانطلاق' : 'Ready to Start',
+                  isStarted
+                      ? (isArabic ? 'الرحلة قيد التشغيل' : 'Trip in Progress')
+                      : (isArabic ? 'جاهز للانطلاق' : 'Ready to Start'),
                   style: TextStyle(
                     color: isDark ? Colors.white : theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -73,10 +79,35 @@ class TripStatusCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(
-                PhosphorIconsFill.steeringWheel,
-                color: isDark ? Colors.white : theme.colorScheme.primary,
-                size: 28,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.grey.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '#$tripId',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black54,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    PhosphorIconsFill.steeringWheel,
+                    color: isDark ? Colors.white : theme.colorScheme.primary,
+                    size: 28,
+                  ),
+                ],
               ),
             ],
           ),
@@ -118,7 +149,9 @@ class TripStatusCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    isArabic ? 'بدء الرحلة' : 'Start Trip',
+                    isStarted
+                        ? (isArabic ? 'مواصلة الرحلة' : 'Resume Trip')
+                        : (isArabic ? 'بدء الرحلة' : 'Start Trip'),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 8),

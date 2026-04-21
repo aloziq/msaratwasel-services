@@ -14,7 +14,7 @@ class HomeRepositoryImpl implements HomeRepository {
 
   Future<int?> _getBusId() async {
     if (_cachedBusId != null) return _cachedBusId;
-    
+
     try {
       final prefs = GetIt.instance<SharedPreferences>();
       final busIdStr = prefs.getString('USER_BUS_ID');
@@ -27,14 +27,15 @@ class HomeRepositoryImpl implements HomeRepository {
     // Fallback to API check if preferences fail
     try {
       final response = await ApiClient.instance.get('auth/user');
-      final data = response.data['data'] ?? response.data['user'] ?? response.data;
+      final data =
+          response.data['data'] ?? response.data['user'] ?? response.data;
       final busId = data['bus_id'] ?? data['has_bus'] ?? data['id'];
       if (busId != null) {
         _cachedBusId = int.tryParse(busId.toString());
         return _cachedBusId;
       }
     } catch (_) {}
-    
+
     return null;
   }
 
@@ -48,20 +49,24 @@ class HomeRepositoryImpl implements HomeRepository {
       if (response.statusCode == 200) {
         final data = response.data;
         final busData = data['bus'];
-        
+
         // Map based on trip_status from backend
         final tripStatus = busData['trip_status'] ?? 'idle';
-        
+        final hasActiveTrip = busData['has_active_trip'] == true;
+        final tripId = busData['trip_id']?.toString() ?? 'trip-$busId';
+
         return TripStatusModel(
-          id: 'trip-$busId',
+          id: tripId,
           departureTime: busData['departure_time'] ?? '06:30 AM',
           totalStudents: data['total_count'] ?? 0,
           isStarted: tripStatus != 'idle',
+          isCompleted: !hasActiveTrip,
         );
       }
       throw Exception('Failed to load trip status');
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? 'Network error';
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
       throw Exception('Failed to load status: $message');
     } catch (e) {
       throw Exception('Unexpected error: ${e.toString()}');
@@ -77,16 +82,21 @@ class HomeRepositoryImpl implements HomeRepository {
       if (busId == null) throw Exception('No bus assigned');
 
       final response = await ApiClient.instance.post('bus/$busId/start-trip');
-      debugPrint('HomeRepositoryImpl: start-trip response code: ${response.statusCode}');
-      
+      debugPrint(
+        'HomeRepositoryImpl: start-trip response code: ${response.statusCode}',
+      );
+
       if (response.statusCode != 200) {
         throw Exception(response.data['message'] ?? 'Failed to start trip');
       }
-      debugPrint('HomeRepositoryImpl: Trip started successfully for busId: $busId');
+      debugPrint(
+        'HomeRepositoryImpl: Trip started successfully for busId: $busId',
+      );
     } on DioException catch (e) {
       debugPrint('HomeRepositoryImpl: DioException in startTrip: ${e.message}');
       debugPrint('HomeRepositoryImpl: Response data: ${e.response?.data}');
-      final message = e.response?.data?['message'] ?? e.message ?? 'Network error';
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
       throw Exception('Failed to start trip: $message');
     } catch (e) {
       debugPrint('HomeRepositoryImpl: Unexpected error in startTrip: $e');

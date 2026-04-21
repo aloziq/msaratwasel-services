@@ -15,7 +15,12 @@ class TripMockRepository implements TripRepository {
   }
 
   @override
-  Future<void> endTrip(String tripId) async {
+  Future<void> endTrip({
+    required String videoPath,
+    required String startQrData,
+    required String endQrData,
+    void Function(int sent, int total)? onProgress,
+  }) async {
     await Future.delayed(const Duration(seconds: 1));
   }
 }
