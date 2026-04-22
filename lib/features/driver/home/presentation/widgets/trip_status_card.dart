@@ -114,20 +114,24 @@ class TripStatusCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
-              _TripInfoItem(
-                label: isArabic ? 'وقت المغادرة' : 'Departure',
-                value: departureTime,
-                icon: PhosphorIconsRegular.clock,
-                isDark: isDark,
-                isArabic: isArabic,
+              Expanded(
+                child: _TripInfoItem(
+                  label: isArabic ? 'وقت المغادرة' : 'Departure',
+                  value: departureTime,
+                  icon: PhosphorIconsRegular.clock,
+                  isDark: isDark,
+                  isArabic: isArabic,
+                ),
               ),
-              const SizedBox(width: AppSpacing.xl),
-              _TripInfoItem(
-                label: isArabic ? 'الطلاب' : 'Students',
-                value: studentCount,
-                icon: PhosphorIconsRegular.student,
-                isDark: isDark,
-                isArabic: isArabic,
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _TripInfoItem(
+                  label: isArabic ? 'الطلاب' : 'Students',
+                  value: studentCount,
+                  icon: PhosphorIconsRegular.student,
+                  isDark: isDark,
+                  isArabic: isArabic,
+                ),
               ),
             ],
           ),
@@ -201,27 +205,33 @@ class _TripInfoItem extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark
-                    ? Colors.white54
-                    : theme.colorScheme.onSurfaceVariant,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark
+                      ? Colors.white54
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : theme.colorScheme.onSurface,
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

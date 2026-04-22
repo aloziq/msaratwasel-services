@@ -74,6 +74,27 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
+  Future<List<TripStatus>> getMyTrips() async {
+    try {
+      final response = await ApiClient.instance.get('driver/my-trips');
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final trips = data['trips'] as List<dynamic>? ?? [];
+        return trips
+            .map((trip) => TripStatusModel.fromJson(trip as Map<String, dynamic>))
+            .toList();
+      }
+      throw Exception('Failed to load trips');
+    } on DioException catch (e) {
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
+      throw Exception('Failed to load trips: $message');
+    } catch (e) {
+      throw Exception('Unexpected error: ${e.toString()}');
+    }
+  }
+
+  @override
   Future<void> startTrip(String tripId) async {
     debugPrint('HomeRepositoryImpl: startTrip called with tripId: $tripId');
     try {

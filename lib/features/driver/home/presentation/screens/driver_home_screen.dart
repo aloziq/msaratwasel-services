@@ -8,7 +8,7 @@ import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 import 'package:msaratwasel_services/features/driver/home/presentation/widgets/quick_action_button.dart';
-import 'package:msaratwasel_services/features/driver/home/presentation/widgets/trip_status_card.dart';
+import 'package:msaratwasel_services/features/driver/home/presentation/widgets/daily_trips_list.dart';
 import 'package:msaratwasel_services/features/driver/home/presentation/manager/driver_home_cubit.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
@@ -17,6 +17,7 @@ import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/aut
 import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:intl/intl.dart';
 
+import 'package:msaratwasel_services/features/driver/home/domain/entities/trip_status.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
 
 class DriverHomeScreen extends StatelessWidget {
@@ -31,9 +32,14 @@ class DriverHomeScreen extends StatelessWidget {
   }
 }
 
-class _DriverHomeContent extends StatelessWidget {
+class _DriverHomeContent extends StatefulWidget {
   const _DriverHomeContent();
 
+  @override
+  State<_DriverHomeContent> createState() => _DriverHomeContentState();
+}
+
+class _DriverHomeContentState extends State<_DriverHomeContent> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -48,7 +54,21 @@ class _DriverHomeContent extends StatelessWidget {
       isArabic ? 'ar' : 'en',
     ).format(DateTime.now());
 
-    return Scaffold(
+    return BlocListener<DriverHomeCubit, DriverHomeState>(
+      listener: (context, state) {
+        if (state is DriverHomeTripConfirmed) {
+          // Auto-navigate to map/route screen when supervisor confirms
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isArabic ? 'تم تأكيد الرحلة! جاري الانتقال...' : 'Trip confirmed! Navigating...'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          context.push('/driver/route');
+        }
+      },
+      child: Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
@@ -252,8 +272,18 @@ class _DriverHomeContent extends StatelessWidget {
                   // Trip Status Card with BlocBuilder
                   BlocBuilder<DriverHomeCubit, DriverHomeState>(
                     builder: (context, state) {
+                      // Extract trips from either Loaded or TripConfirmed states
+                      List<TripStatus>? trips;
                       if (state is DriverHomeLoaded) {
-                        if (state.tripStatus.isCompleted) {
+                        trips = state.trips;
+                      } else if (state is DriverHomeTripConfirmed) {
+                        trips = state.trips;
+                      }
+                      
+                      if (trips != null) {
+                        final allCompleted = trips.isNotEmpty && trips.every((t) => t.isCompleted);
+                        
+                        if (allCompleted) {
                           return _buildCompletedTripsCard(
                                 context,
                                 isArabic,
@@ -263,17 +293,14 @@ class _DriverHomeContent extends StatelessWidget {
                               .fadeIn(delay: 200.ms)
                               .slideY(begin: 0.1, end: 0);
                         }
-                        return TripStatusCard(
+                        
+                        return DailyTripsList(
+                              trips: trips,
                               isArabic: isArabic,
                               isDark: isDark,
-                              tripId: state.tripStatus.id.toString(),
-                              isStarted: state.tripStatus.isStarted,
-                              departureTime: state.tripStatus.departureTime,
-                              studentCount: state.tripStatus.totalStudents
-                                  .toString(),
-                              onStartTrip: () async {
+                              onTripAction: (trip) async {
                                 final cubit = context.read<DriverHomeCubit>();
-                                if (state.tripStatus.isStarted) {
+                                if (trip.status == 'in_progress') {
                                   await context.push('/driver/route');
                                   if (context.mounted) {
                                     cubit.loadDashboard();
@@ -281,18 +308,14 @@ class _DriverHomeContent extends StatelessWidget {
                                   return;
                                 }
 
-                                await cubit.startTrip(
-                                  state.tripStatus.id.toString(),
-                                );
+                                await cubit.startTrip(trip.id.toString());
 
                                 if (context.mounted) {
                                   final updatedState = cubit.state;
-                                  if (updatedState is DriverHomeLoaded &&
-                                      updatedState.tripStatus.isStarted) {
-                                    await context.push('/driver/route');
-                                    if (context.mounted) {
+                                  if (updatedState is DriverHomeLoaded) {
+                                      // Optional: could check if the trip changed status
+                                      // and navigate if in_progress. For now we stay on home or let the driver click resume
                                       cubit.loadDashboard();
-                                    }
                                   } else if (updatedState is DriverHomeError) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -415,6 +438,7 @@ class _DriverHomeContent extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

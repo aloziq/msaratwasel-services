@@ -1,16 +1,22 @@
-import 'package:camera/camera.dart';
+import 'dart:io';
+
+import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:video_compress/video_compress.dart';
+import 'package:path_provider/path_provider.dart';
+
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:msaratwasel_services/features/driver/trip/presentation/manager/end_trip_cubit.dart';
+import 'package:flutter/foundation.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 class EndTripScreen extends StatelessWidget {
@@ -33,96 +39,134 @@ class _EndTripContent extends StatefulWidget {
 }
 
 class _EndTripContentState extends State<_EndTripContent> {
-  CameraController? _cameraController;
   final BarcodeScanner _barcodeScanner = BarcodeScanner();
-  bool _isCameraInitialized = false;
   bool _isProcessingFrame = false;
-  int _processCount = 0;
+  bool _isStopping = false;
+  CameraState? _cameraState;
+  String? _currentVideoPath;
 
   @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
+  void dispose() {
+    _barcodeScanner.close();
+    super.dispose();
   }
 
-  Future<void> _initializeCamera() async {
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
+  DateTime? _lastFlashTime;
 
-    _cameraController = CameraController(
-      cameras.first,
-      ResolutionPreset.medium,
-      enableAudio: true,
-    );
-
-    try {
-      await _cameraController!.initialize();
-      if (!mounted) return;
-
-      setState(() => _isCameraInitialized = true);
-
-      // Start processing frames for QR detection
-      _cameraController!.startImageStream(_processImageFrame);
-    } catch (e) {
-      debugPrint('Camera error: $e');
-    }
-  }
-
-  void _processImageFrame(CameraImage image) async {
-    if (_isProcessingFrame) return;
-
-    // We only process every 30th frame to save battery/CPU, unless we are scanning
-    _processCount++;
-    if (_processCount % 10 != 0) return;
-
-    final cubit = context.read<EndTripCubit>();
-    if (cubit.state is EndTripSuccess || cubit.state is EndTripUploading)
-      return;
-
-    _isProcessingFrame = true;
-
-    try {
-      final inputImage = _convertImage(image);
-      final barcodes = await _barcodeScanner.processImage(inputImage);
-
-      if (barcodes.isNotEmpty && mounted) {
-        final String? code = barcodes.first.rawValue;
-        if (code != null) {
-          _handleBarcodeDetection(code, cubit);
-        }
+  void _showFlashMessage(String message) {
+    final now = DateTime.now();
+    if (_lastFlashTime == null || now.difference(_lastFlashTime!) > const Duration(seconds: 2)) {
+      _lastFlashTime = now;
+      HapticFeedback.vibrate();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
-    } catch (e) {
-      debugPrint('ML Kit Frame error: $e');
-    } finally {
-      _isProcessingFrame = false;
     }
   }
 
-  InputImage _convertImage(CameraImage image) {
-    // Basic conversion for ML Kit
-    // In real app, we use complex coordinate conversion, but ML Kit handles standard cases
-    return InputImage.fromBytes(
-      bytes: image.planes[0].bytes,
-      metadata: InputImageMetadata(
-        size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: InputImageRotation.rotation90deg, // Adjust based on platform
-        format: InputImageFormat.nv21,
-        bytesPerRow: image.planes[0].bytesPerRow,
-      ),
-    );
+  InputImage? _convertImage(AnalysisImage image) {
+    try {
+      return image.when(
+        nv21: (nv21Image) {
+          return InputImage.fromBytes(
+            bytes: nv21Image.bytes,
+            metadata: InputImageMetadata(
+              size: nv21Image.size,
+              rotation: InputImageRotation.rotation90deg,
+              format: InputImageFormat.nv21,
+              bytesPerRow: nv21Image.planes.first.bytesPerRow,
+            ),
+          );
+        },
+        bgra8888: (bgra8888Image) {
+          return InputImage.fromBytes(
+            bytes: bgra8888Image.bytes,
+            metadata: InputImageMetadata(
+              size: bgra8888Image.size,
+              rotation: InputImageRotation.rotation90deg,
+              format: InputImageFormat.bgra8888,
+              bytesPerRow: bgra8888Image.planes.first.bytesPerRow,
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint("Conversion error: $e");
+      return null;
+    }
   }
 
-  void _handleBarcodeDetection(String code, EndTripCubit cubit) async {
+  Future<void> _handleBarcodeDetection(String code, EndTripCubit cubit) async {
+    final upperCode = code.toUpperCase();
+    debugPrint('QR Detected: $code');
+
     if (cubit.state is EndTripInitial) {
-      if (code.startsWith('FRONT-')) {
+      if (upperCode.contains('FRONT')) {
+        debugPrint('Valid Front QR found!');
+        HapticFeedback.heavyImpact();
         cubit.scanFrontQr(code);
-        await _cameraController!.startVideoRecording();
+        try {
+          if (_cameraState != null && _cameraState is VideoCameraState) {
+            await (_cameraState as VideoCameraState).startRecording();
+          }
+        } catch (e) {
+          debugPrint('Start Video Error: $e');
+        }
+      } else {
+        debugPrint('Invalid QR for start: $code');
+        _showFlashMessage("هذا ليس الكود الأمامي! يرجى مسح كود مقدمة الحافلة.");
       }
     } else if (cubit.state is EndTripRecording) {
-      if (code.startsWith('BACK-')) {
-        final video = await _cameraController!.stopVideoRecording();
-        cubit.scanBackQr(code, video.path);
-        _startCompressionAndUpload(video.path, cubit);
+      if (upperCode.contains('BACK')) {
+        if (_isStopping) return;
+        _isStopping = true;
+        
+        debugPrint('Valid Back QR found! Stopping stream and recording...');
+        HapticFeedback.heavyImpact();
+        
+        try {
+          if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
+             await (_cameraState as VideoRecordingCameraState).stopRecording();
+             
+             // ✅ FIX: Wait for the OS to finish writing the file to disk
+             // MPEG4Writer needs time to flush and close properly
+             await Future.delayed(const Duration(milliseconds: 800));
+             
+             final String videoPath = _currentVideoPath ?? '';
+             
+             // ✅ FIX: Validate the file exists and has actual content
+             if (videoPath.isEmpty) {
+               debugPrint('Error: video path is empty');
+               _isStopping = false;
+               _showFlashMessage('خطأ: لم يتم حفظ الفيديو بشكل صحيح.');
+               return;
+             }
+             
+             final file = File(videoPath);
+             if (!await file.exists() || await file.length() < 1024) {
+               debugPrint('Error: video file is missing or too small (${await file.length()} bytes)');
+               _isStopping = false;
+               _showFlashMessage('خطأ في الفيديو. يرجى المحاولة مجدداً.');
+               return;
+             }
+             
+             debugPrint('Video file ready: $videoPath (${await file.length()} bytes)');
+             cubit.scanBackQr(code, videoPath);
+             _startCompressionAndUpload(videoPath, cubit);
+          }
+        } catch (e) {
+          debugPrint('Error stopping recording: $e');
+          _isStopping = false;
+        }
+      } else {
+        debugPrint('Invalid QR for end: $code');
+        _showFlashMessage("هذا ليس الكود الخلفي! يرجى مسح كود مؤخرة الحافلة.");
       }
     }
   }
@@ -131,31 +175,39 @@ class _EndTripContentState extends State<_EndTripContent> {
     String path,
     EndTripCubit cubit,
   ) async {
-    // 1. Compression
-    final MediaInfo? info = await VideoCompress.compressVideo(
-      path,
-      quality: VideoQuality.MediumQuality,
-      deleteOrigin: true,
-    );
+    if (path.isEmpty) return;
+    
+    try {
+      // Notify UI that compression is starting
+      cubit.startCompressing();
+      
+      final MediaInfo? info = await VideoCompress.compressVideo(
+        path,
+        quality: VideoQuality.MediumQuality,
+        deleteOrigin: false, // Keep origin as fallback
+      );
 
-    if (info?.path != null) {
-      await cubit.finalizeUpload(info!.path!);
-    } else {
-      // Fallback to original if compression failed
+      final String finalPath;
+      if (info?.path != null && info!.filesize != null && info.filesize! > 0) {
+        finalPath = info.path!;
+        // Now safe to delete origin
+        try { await File(path).delete(); } catch (_) {}
+      } else {
+        // Fallback to original if compression failed
+        debugPrint('Compression failed or empty result, using original file');
+        finalPath = path;
+      }
+      
+      await cubit.finalizeUpload(finalPath);
+    } catch (e) {
+      debugPrint('Compression error: $e');
+      // Fallback: upload original without compression
       await cubit.finalizeUpload(path);
     }
   }
 
   @override
-  void dispose() {
-    _cameraController?.dispose();
-    _barcodeScanner.close();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -172,18 +224,65 @@ class _EndTripContentState extends State<_EndTripContent> {
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Camera Preview
-              if (_isCameraInitialized)
-                CameraPreview(_cameraController!)
-              else
-                const Center(child: CircularProgressIndicator()),
+              // Camera Preview via CameraAwesome
+              CameraAwesomeBuilder.custom(
+                saveConfig: SaveConfig.video(
+                  pathBuilder: (sensors) async {
+                    final Directory extDir = await getTemporaryDirectory();
+                    final dirPath = '${extDir.path}/camerawesome';
+                    await Directory(dirPath).create(recursive: true);
+                    final String filePath = '$dirPath/${DateTime.now().millisecondsSinceEpoch}.mp4';
+                    _currentVideoPath = filePath;
+                    return SingleCaptureRequest(filePath, sensors.first);
+                  },
+                ),
+                imageAnalysisConfig: AnalysisConfig(
+                  androidOptions: const AndroidAnalysisOptions.nv21(
+                    width: 1024,
+                  ),
+                  maxFramesPerSecond: 3, 
+                  autoStart: true,
+                ),
+                onImageForAnalysis: (image) async {
+                  if (_isProcessingFrame || _isStopping || !mounted) return;
+                  
+                  final cubit = context.read<EndTripCubit>();
+                  if (cubit.state is EndTripSuccess || cubit.state is EndTripUploading || cubit.state is EndTripCompressing) {
+                    return;
+                  }
 
-              // Overlays
-              _buildUIOverlay(context, state, l10n),
+                  _isProcessingFrame = true;
+                  try {
+                    final inputImage = _convertImage(image);
+                    if (inputImage != null) {
+                      final barcodes = await _barcodeScanner.processImage(inputImage);
+                      if (barcodes.isNotEmpty && mounted) {
+                        final String? code = barcodes.first.rawValue;
+                        if (code != null) {
+                          await _handleBarcodeDetection(code, cubit);
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    debugPrint('ML Kit Frame error: $e');
+                  } finally {
+                    _isProcessingFrame = false;
+                  }
+                },
+                builder: (cameraState, preview) {
+                  // Keep a reference to cameraState to start/stop video recording programmatically
+                  _cameraState = cameraState;
 
-              // Scanning Indicator
-              if (state is EndTripInitial || state is EndTripRecording)
-                _buildScanningGuide(),
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _buildUIOverlay(context, state, l10n),
+                      if (state is EndTripInitial || state is EndTripRecording)
+                        _buildScanningGuide(),
+                    ],
+                  );
+                },
+              ),
             ],
           );
         },
@@ -198,12 +297,10 @@ class _EndTripContentState extends State<_EndTripContent> {
   ) {
     String title = "قم بمسح الكود الأمامي";
     String desc = "ابدأ بمسح كود QR الموجود في مقدمة الحافلة";
-    Color overlayColor = Colors.black45;
-
+    
     if (state is EndTripRecording) {
       title = "جاري تسجيل التحقق...";
       desc = "توجه إلى خلف الحافلة لضمان خلو المقاعد وامسح الكود الخلفي";
-      overlayColor = Colors.red.withOpacity(0.2);
     } else if (state is EndTripCompressing) {
       title = "جاري معالجة الفديو...";
       desc = "يرجى الانتظار، نقوم بضغط الفديو لتقليل الحجم";
@@ -231,10 +328,10 @@ class _EndTripContentState extends State<_EndTripContent> {
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.security, color: Colors.green, size: 16),
-                      const SizedBox(width: 6),
+                      Icon(Icons.security, color: Colors.green, size: 16),
+                      SizedBox(width: 6),
                       Text(
                         "نظام التوثيق الآمن",
                         style: TextStyle(color: Colors.white, fontSize: 12),
@@ -300,6 +397,43 @@ class _EndTripContentState extends State<_EndTripContent> {
                   text: "إعادة المحاولة",
                   onTap: () => context.read<EndTripCubit>().restart(),
                 ),
+                
+              if (state is EndTripRecording) ...[
+                const SizedBox(height: 10),
+                PremiumButton(
+                  text: "إيقاف التسجيل (يدوي)",
+                  onTap: () async {
+                    HapticFeedback.heavyImpact();
+                    try {
+                      if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
+                        await (_cameraState as VideoRecordingCameraState).stopRecording();
+                        
+                        // ✅ FIX: Wait for file to be written
+                        await Future.delayed(const Duration(milliseconds: 800));
+                        
+                        final String videoPath = _currentVideoPath ?? '';
+                        
+                        // ✅ FIX: Validate file before upload
+                        if (videoPath.isEmpty) {
+                          _showFlashMessage('خطأ: لم يتم حفظ الفيديو.');
+                          return;
+                        }
+                        final file = File(videoPath);
+                        if (!await file.exists() || await file.length() < 1024) {
+                          _showFlashMessage('الفيديو غير صالح. يرجى المحاولة مجدداً.');
+                          return;
+                        }
+
+                        final cubit = context.read<EndTripCubit>();
+                        cubit.scanBackQr('MANUAL-BACK', videoPath);
+                        _startCompressionAndUpload(videoPath, cubit);
+                      }
+                    } catch (e) {
+                      debugPrint('Manual stop error: $e');
+                    }
+                  },
+                ),
+              ],
             ],
           ),
         ).animate().slideY(begin: 1, end: 0, duration: 500.ms),

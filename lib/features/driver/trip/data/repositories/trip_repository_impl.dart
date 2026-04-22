@@ -27,8 +27,8 @@ class TripRepositoryImpl implements TripRepository {
 
     final formData = FormData.fromMap({
       'video': await MultipartFile.fromFile(videoPath, filename: 'verify.mp4'),
-      'start_qr_scanned': true,
-      'end_qr_scanned': true,
+      'start_qr_scanned': 1,
+      'end_qr_scanned': 1,
       'start_qr_data': startQrData,
       'end_qr_data': endQrData,
     });
@@ -56,10 +56,10 @@ class TripRepositoryImpl implements TripRepository {
 
     // This is used by the driver to update specific student status if needed
     // In our unified flow, we have board/alight endpoints
-    String endpoint = '/bus/$busId/board';
+    String endpoint = '/bus/$busId/mark-boarded';
 
     if (isDroppedOff == true) {
-      endpoint = '/bus/$busId/alight';
+      endpoint = '/bus/$busId/mark-dropped';
     }
 
     final response = await ApiClient.instance.post(

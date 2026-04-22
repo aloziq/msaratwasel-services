@@ -61,7 +61,11 @@ class EndTripCubit extends Cubit<EndTripState> {
     emit(EndTripCompressing());
     
     // Compression logic will be triggered from UI or a service
-    // For now, assume it's done and we move to uploading
+    // For now, we move to compressing state
+  }
+
+  void startCompressing() {
+    emit(EndTripCompressing());
   }
 
   void updateUploadProgress(double progress) {
