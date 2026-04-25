@@ -44,6 +44,7 @@ abstract class AppRoutes {
   static const driverMaintenanceLogs = '/driver/maintenance/logs';
   static const driverEndTrip = '/driver/end-trip';
   static const driverStudents = '/driver/students';
+  static const driverTrips = '/driver/trips';
 
   /// Helper to generate class details path with classId
   static String classDetailsPath(String classId) => '/class/$classId';

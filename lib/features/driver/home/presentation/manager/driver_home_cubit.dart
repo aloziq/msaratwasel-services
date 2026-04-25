@@ -54,10 +54,13 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
     emit(DriverHomeLoading());
     try {
       final trips = await _repository.getMyTrips();
+      if (isClosed) return;
       debugPrint('DriverHomeCubit: trips loaded: ${trips.length}');
       emit(DriverHomeLoaded(trips));
+
       _checkAndStartPolling(trips);
     } catch (e) {
+      if (isClosed) return;
       debugPrint('DriverHomeCubit: loadDashboard error: $e');
       emit(DriverHomeError(e.toString()));
     }
@@ -69,36 +72,47 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
       try {
         debugPrint('DriverHomeCubit: calling repository.startTrip');
         await _repository.startTrip(tripId);
-        debugPrint('DriverHomeCubit: repository.startTrip success, reloading dashboard');
-        
+        debugPrint(
+          'DriverHomeCubit: repository.startTrip success, reloading dashboard',
+        );
+
         // After starting, the trip is now awaiting_confirmation
         // Start polling to detect when supervisor confirms
         _wasAwaitingConfirmation = true;
-        await loadDashboard(); 
+        await loadDashboard();
         debugPrint('DriverHomeCubit: after reload dashboard, state is: $state');
       } catch (e) {
+        if (isClosed) return;
         debugPrint('DriverHomeCubit: startTrip catch block error: $e');
         emit(DriverHomeError(e.toString()));
       }
     } else {
-      debugPrint('DriverHomeCubit: startTrip ignored because state is ${state.runtimeType}');
+      debugPrint(
+        'DriverHomeCubit: startTrip ignored because state is ${state.runtimeType}',
+      );
     }
   }
 
   /// Check if we have a trip awaiting confirmation and start polling
   void _checkAndStartPolling(List<TripStatus> trips) {
-    final hasAwaitingTrip = trips.any((t) => t.status == 'awaiting_confirmation');
-    
+    final hasAwaitingTrip = trips.any(
+      (t) => t.status == 'awaiting_confirmation',
+    );
+
     if (hasAwaitingTrip) {
       _startPolling();
     } else {
       _stopPolling();
-      
+
       // If we WERE waiting and now a trip is in_progress, supervisor confirmed!
       if (_wasAwaitingConfirmation) {
-        final inProgressTrip = trips.where((t) => t.status == 'in_progress').firstOrNull;
+        final inProgressTrip = trips
+            .where((t) => t.status == 'in_progress')
+            .firstOrNull;
         if (inProgressTrip != null) {
-          debugPrint('DriverHomeCubit: 🎉 Trip confirmed by supervisor! Navigating to map...');
+          debugPrint(
+            'DriverHomeCubit: 🎉 Trip confirmed by supervisor! Navigating to map...',
+          );
           _wasAwaitingConfirmation = false;
           emit(DriverHomeTripConfirmed(trips, inProgressTrip.id.toString()));
           return;
@@ -115,26 +129,32 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
       try {
         final trips = await _repository.getMyTrips();
         if (isClosed) return;
-        
-        final stillAwaiting = trips.any((t) => t.status == 'awaiting_confirmation');
-        
+
+        final stillAwaiting = trips.any(
+          (t) => t.status == 'awaiting_confirmation',
+        );
+
         if (!stillAwaiting && _wasAwaitingConfirmation) {
           // Status changed! Check if it became in_progress
-          final inProgressTrip = trips.where((t) => t.status == 'in_progress').firstOrNull;
+          final inProgressTrip = trips
+              .where((t) => t.status == 'in_progress')
+              .firstOrNull;
           if (inProgressTrip != null) {
-            debugPrint('DriverHomeCubit: 🎉 Poll detected confirmation! Trip ${inProgressTrip.id}');
+            debugPrint(
+              'DriverHomeCubit: 🎉 Poll detected confirmation! Trip ${inProgressTrip.id}',
+            );
             _stopPolling();
             _wasAwaitingConfirmation = false;
             emit(DriverHomeTripConfirmed(trips, inProgressTrip.id.toString()));
             return;
           }
         }
-        
+
         if (!stillAwaiting) {
           _stopPolling();
           _wasAwaitingConfirmation = false;
         }
-        
+
         emit(DriverHomeLoaded(trips));
       } catch (e) {
         debugPrint('DriverHomeCubit: polling error (silent): $e');

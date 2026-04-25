@@ -249,7 +249,7 @@ class _AppDrawerState extends State<AppDrawer> {
           onTap: () {
             Navigator.pop(context);
             if (currentLocation != AppRoutes.busStudents) {
-               context.push(AppRoutes.busStudents);
+              context.push(AppRoutes.busStudents);
             }
           },
         ),
@@ -342,7 +342,21 @@ class _AppDrawerState extends State<AppDrawer> {
 
       items.add(
         _DrawerItem(
+          title: l10n.trips,
+          icon: PhosphorIconsRegular.path,
+          isSelected: currentLocation == AppRoutes.driverTrips,
+          isDark: isDark,
+          onTap: () {
+            Navigator.pop(context);
+            context.go(AppRoutes.driverTrips);
+          },
+        ),
+      );
+
+      items.add(
+        _DrawerItem(
           title: l10n.myStudents,
+
           icon: PhosphorIconsRegular.users,
           isSelected: currentLocation == AppRoutes.driverStudents,
           isDark: isDark,
@@ -577,14 +591,17 @@ class _AppDrawerState extends State<AppDrawer> {
                           final router = GoRouter.of(context);
                           Navigator.pop(context);
                           await router.push(
-                            AppRoutes.classDetails.replaceFirst(':classId', classroom.id),
+                            AppRoutes.classDetails.replaceFirst(
+                              ':classId',
+                              classroom.id,
+                            ),
                             extra: classroom,
                           );
                           // We might not have the right build context to read Cubits here.
                           // But we can try utilizing a widely available context if possible.
                         },
                       );
-                    }
+                    },
                   ),
                 );
               }).toList(),
@@ -654,10 +671,13 @@ class _AppDrawerState extends State<AppDrawer> {
                             child: Center(
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: isDark ? Colors.white54 : AppColors.primary,
-                                value: loadingProgress.expectedTotalBytes != null
+                                color: isDark
+                                    ? Colors.white54
+                                    : AppColors.primary,
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
                                     ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
+                                          loadingProgress.expectedTotalBytes!
                                     : null,
                               ),
                             ),
@@ -677,7 +697,9 @@ class _AppDrawerState extends State<AppDrawer> {
                                 style: TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white70 : AppColors.primary,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : AppColors.primary,
                                 ),
                               ),
                             ),

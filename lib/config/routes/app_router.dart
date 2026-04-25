@@ -48,7 +48,9 @@ import '../../features/driver/maintenance/presentation/screens/fuel_refill_scree
 import '../../features/driver/maintenance/presentation/screens/maintenance_request_screen.dart';
 import '../../features/driver/maintenance/presentation/screens/maintenance_logs_screen.dart';
 import '../../features/driver/trip/presentation/screens/end_trip_screen.dart';
+import 'package:msaratwasel_services/features/driver/trip/presentation/screens/trip_history_page.dart';
 import 'app_routes.dart';
+
 import '../../features/field_supervisor/buses/presentation/screens/buses_list_screen.dart';
 import '../../features/field_supervisor/staff/presentation/screens/drivers_list_screen.dart';
 import '../../features/field_supervisor/incidents/presentation/screens/sos_alerts_screen.dart';
@@ -152,7 +154,8 @@ class AppRouter {
             name: 'attendanceHistory',
             builder: (context, state) => BlocProvider(
               create: (context) => AttendanceHistoryCubit(
-                getAttendanceHistoryUseCase: getIt<GetAttendanceHistoryUseCase>(),
+                getAttendanceHistoryUseCase:
+                    getIt<GetAttendanceHistoryUseCase>(),
               )..loadHistory(),
               child: const AttendanceHistoryScreen(),
             ),
@@ -170,9 +173,8 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.qrScan,
             name: 'qrScan',
-            builder: (context, state) => QRScanScreen(
-              classId: state.extra as String?,
-            ),
+            builder: (context, state) =>
+                QRScanScreen(classId: state.extra as String?),
           ),
           GoRoute(
             path: AppRoutes.reports,
@@ -289,6 +291,11 @@ class AppRouter {
                     ..loadTrip(),
               child: const BusStudentsScreen(),
             ),
+          ),
+          GoRoute(
+            path: AppRoutes.driverTrips,
+            name: 'driverTrips',
+            builder: (context, state) => const TripHistoryPage(),
           ),
         ],
       ),

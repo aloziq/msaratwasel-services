@@ -60,7 +60,11 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
           // Auto-navigate to map/route screen when supervisor confirms
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(isArabic ? 'تم تأكيد الرحلة! جاري الانتقال...' : 'Trip confirmed! Navigating...'),
+              content: Text(
+                isArabic
+                    ? 'تم تأكيد الرحلة! جاري الانتقال...'
+                    : 'Trip confirmed! Navigating...',
+              ),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 2),
             ),
@@ -69,376 +73,381 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
         }
       },
       child: Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          AdaptiveSliverAppBar(
-            title: l10n.home,
-            leading: Material(
-              color: Colors.transparent,
-              child: IconButton(
-                icon: Icon(
-                  Icons.menu_rounded,
-                  color: theme.colorScheme.onSurface,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: CustomScrollView(
+          slivers: [
+            AdaptiveSliverAppBar(
+              title: l10n.home,
+              leading: Material(
+                color: Colors.transparent,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.menu_rounded,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  onPressed: () => MainShell.of(context)?.openDrawer(),
                 ),
-                onPressed: () => MainShell.of(context)?.openDrawer(),
+              ),
+              trailing: Material(
+                color: Colors.transparent,
+                child: IconButton(
+                  icon: Icon(
+                    PhosphorIconsRegular.bell,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  onPressed: () {},
+                ),
+              ),
+              backgroundColor: theme.scaffoldBackgroundColor.withValues(
+                alpha: 0.9,
               ),
             ),
-            trailing: Material(
-              color: Colors.transparent,
-              child: IconButton(
-                icon: Icon(
-                  PhosphorIconsRegular.bell,
-                  color: theme.colorScheme.onSurface,
-                ),
-                onPressed: () {},
-              ),
-            ),
-            backgroundColor: theme.scaffoldBackgroundColor.withValues(
-              alpha: 0.9,
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Welcome Header Card ──
-                  BlocBuilder<AuthCubit, AuthState>(
-                    builder: (context, authState) {
-                      final user = authState is AuthAuthenticated
-                          ? authState.user
-                          : null;
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(32),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF2563EB,
-                              ).withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Welcome Header Card ──
+                    BlocBuilder<AuthCubit, AuthState>(
+                      builder: (context, authState) {
+                        final user = authState is AuthAuthenticated
+                            ? authState.user
+                            : null;
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
-                            // Decorative circle
-                            Positioned(
-                              right: -20,
-                              top: -20,
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(32),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF2563EB,
+                                ).withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              // Decorative circle
+                              Positioned(
+                                right: -20,
+                                top: -20,
+                                child: Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Row(
-                              children: [
-                                // Avatar
-                                Container(
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: ClipOval(
-                                    child: SizedBox(
-                                      width: 56,
-                                      height: 56,
-                                      child: Image.network(
-                                        ApiConfig.getImageUrl(user?.avatar),
-                                        fit: BoxFit.cover,
-                                        loadingBuilder:
-                                            (context, child, progress) {
-                                              if (progress == null)
-                                                return child;
-                                              return Container(
-                                                color: Colors.white24,
-                                                child: const Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                        color: Colors.white,
-                                                      ),
-                                                ),
-                                              );
-                                            },
-                                        errorBuilder: (context, error, _) {
-                                          final initial =
-                                              (user?.name.isNotEmpty == true)
-                                              ? user!.name[0].toUpperCase()
-                                              : 'D';
-                                          return Container(
-                                            color: Colors.white24,
-                                            child: Center(
-                                              child: Text(
-                                                initial,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
+                              Row(
+                                children: [
+                                  // Avatar
+                                  Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.3,
+                                        ),
+                                        width: 2,
                                       ),
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                // Text info
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${l10n.welcome} 👋',
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.8,
+                                    child: ClipOval(
+                                      child: SizedBox(
+                                        width: 56,
+                                        height: 56,
+                                        child: Image.network(
+                                          ApiConfig.getImageUrl(user?.avatar),
+                                          fit: BoxFit.cover,
+                                          loadingBuilder:
+                                              (context, child, progress) {
+                                                if (progress == null)
+                                                  return child;
+                                                return Container(
+                                                  color: Colors.white24,
+                                                  child: const Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          color: Colors.white,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                          errorBuilder: (context, error, _) {
+                                            final initial =
+                                                (user?.name.isNotEmpty == true)
+                                                ? user!.name[0].toUpperCase()
+                                                : 'D';
+                                            return Container(
+                                              color: Colors.white24,
+                                              child: Center(
+                                                child: Text(
+                                                  initial,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 22,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                               ),
-                                              fontSize: 13,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        user?.name ?? userName,
-                                        style: theme.textTheme.titleLarge
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                              fontSize: 20,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
+                                            );
+                                          },
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.15,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          date,
-                                          style: theme.textTheme.bodySmall
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // Text info
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${l10n.welcome} 👋',
+                                          style: theme.textTheme.bodyMedium
                                               ?.copyWith(
                                                 color: Colors.white.withValues(
-                                                  alpha: 0.9,
+                                                  alpha: 0.8,
                                                 ),
-                                                fontSize: 12,
+                                                fontSize: 13,
                                               ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ).animate().fadeIn().slideY(begin: -0.2, duration: 500.ms),
-
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Trip Status Card with BlocBuilder
-                  BlocBuilder<DriverHomeCubit, DriverHomeState>(
-                    builder: (context, state) {
-                      // Extract trips from either Loaded or TripConfirmed states
-                      List<TripStatus>? trips;
-                      if (state is DriverHomeLoaded) {
-                        trips = state.trips;
-                      } else if (state is DriverHomeTripConfirmed) {
-                        trips = state.trips;
-                      }
-                      
-                      if (trips != null) {
-                        final allCompleted = trips.isNotEmpty && trips.every((t) => t.isCompleted);
-                        
-                        if (allCompleted) {
-                          return _buildCompletedTripsCard(
-                                context,
-                                isArabic,
-                                isDark,
-                              )
-                              .animate()
-                              .fadeIn(delay: 200.ms)
-                              .slideY(begin: 0.1, end: 0);
-                        }
-                        
-                        return DailyTripsList(
-                              trips: trips,
-                              isArabic: isArabic,
-                              isDark: isDark,
-                              onTripAction: (trip) async {
-                                final cubit = context.read<DriverHomeCubit>();
-                                if (trip.status == 'in_progress') {
-                                  await context.push('/driver/route');
-                                  if (context.mounted) {
-                                    cubit.loadDashboard();
-                                  }
-                                  return;
-                                }
-
-                                await cubit.startTrip(trip.id.toString());
-
-                                if (context.mounted) {
-                                  final updatedState = cubit.state;
-                                  if (updatedState is DriverHomeLoaded) {
-                                      // Optional: could check if the trip changed status
-                                      // and navigate if in_progress. For now we stay on home or let the driver click resume
-                                      cubit.loadDashboard();
-                                  } else if (updatedState is DriverHomeError) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(updatedState.message),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                            )
-                            .animate()
-                            .fadeIn(delay: 200.ms)
-                            .slideY(begin: 0.1, end: 0);
-                      } else if (state is DriverHomeError) {
-                        return Center(child: Text(l10n.errorOccurred));
-                      }
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                  ),
-
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Quick Actions Title
-                  Text(
-                    l10n.quickActions,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ).animate().fadeIn(delay: 300.ms),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Quick Actions Grid
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DriverQuickAction(
-                              icon: PhosphorIconsRegular.users,
-                              label: l10n.myStudents,
-                              color: Colors.green,
-                              onTap: () =>
-                                  context.push(AppRoutes.driverStudents),
-                              isDark: isDark,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: DriverQuickAction(
-                              icon: PhosphorIconsRegular.chatCircle,
-                              label: l10n.chats,
-                              color: Colors.blue,
-                              onTap: () => context.push('/chats'),
-                              isDark: isDark,
-                            ),
-                          ),
-                        ],
-                      ).animate().fadeIn(delay: 400.ms),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DriverQuickAction(
-                              icon: PhosphorIconsRegular.flag,
-                              label: l10n.endTripTitle,
-                              color: Colors.orange,
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text(l10n.endTripTitle),
-                                    content: Text(l10n.confirmEndTrip),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: Text(l10n.cancel),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          context.push(AppRoutes.driverEndTrip);
-                                        },
-                                        child: Text(
-                                          l10n.confirm,
-                                          style: const TextStyle(
-                                            color: Colors.red,
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          user?.name ?? userName,
+                                          style: theme.textTheme.titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            date,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.9),
+                                                  fontSize: 12,
+                                                ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                );
-                              },
-                              isDark: isDark,
-                            ),
+                                ],
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: DriverQuickAction(
-                              icon: PhosphorIconsRegular.warningOctagon,
-                              label: l10n.sos,
-                              color: Colors.red,
-                              isDanger: true,
-                              onTap: () => context.push('/incident-report'),
-                              isDark: isDark,
-                            ),
-                          ),
-                        ],
-                      ).animate().fadeIn(delay: 500.ms),
-                    ],
-                  ),
+                        );
+                      },
+                    ).animate().fadeIn().slideY(begin: -0.2, duration: 500.ms),
 
-                  const SizedBox(height: AppSpacing.xxl),
-                ],
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // Trip Status Card with BlocBuilder
+                    BlocBuilder<DriverHomeCubit, DriverHomeState>(
+                      builder: (context, state) {
+                        // Extract trips from either Loaded or TripConfirmed states
+                        List<TripStatus>? trips;
+                        if (state is DriverHomeLoaded) {
+                          trips = state.trips;
+                        } else if (state is DriverHomeTripConfirmed) {
+                          trips = state.trips;
+                        }
+
+                        if (trips != null) {
+                          if (trips.isEmpty) {
+                            return _buildNoTripsCard(context, l10n);
+                          }
+
+                          final allCompleted = trips.every(
+                            (t) => t.isCompleted,
+                          );
+
+                          if (allCompleted) {
+                            return _buildCompletedTripsCard(
+                                  context,
+                                  isArabic,
+                                  isDark,
+                                )
+                                .animate()
+                                .fadeIn(delay: 200.ms)
+                                .slideY(begin: 0.1, end: 0);
+                          }
+
+                          return DailyTripsList(
+                            trips: trips,
+                            isArabic: isArabic,
+                            isDark: isDark,
+                            onTripAction: (trip) async {
+                              final cubit = context.read<DriverHomeCubit>();
+                              if (trip.status == 'in_progress') {
+                                await context.push('/driver/route');
+                                if (context.mounted) {
+                                  cubit.loadDashboard();
+                                }
+                                return;
+                              }
+
+                              await cubit.startTrip(trip.id.toString());
+
+                              if (context.mounted) {
+                                final updatedState = cubit.state;
+                                if (updatedState is DriverHomeLoaded) {
+                                  // Optional: could check if the trip changed status
+                                  // and navigate if in_progress. For now we stay on home or let the driver click resume
+                                  cubit.loadDashboard();
+                                } else if (updatedState is DriverHomeError) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(updatedState.message),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0);
+                        } else if (state is DriverHomeError) {
+                          return Center(child: Text(l10n.errorOccurred));
+                        }
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                    ),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // Quick Actions Title
+                    Text(
+                      l10n.quickActions,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ).animate().fadeIn(delay: 300.ms),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Quick Actions Grid
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DriverQuickAction(
+                                icon: PhosphorIconsRegular.users,
+                                label: l10n.myStudents,
+                                color: Colors.green,
+                                onTap: () =>
+                                    context.push(AppRoutes.driverStudents),
+                                isDark: isDark,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: DriverQuickAction(
+                                icon: PhosphorIconsRegular.chatCircle,
+                                label: l10n.chats,
+                                color: Colors.blue,
+                                onTap: () => context.push('/chats'),
+                                isDark: isDark,
+                              ),
+                            ),
+                          ],
+                        ).animate().fadeIn(delay: 400.ms),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DriverQuickAction(
+                                icon: PhosphorIconsRegular.flag,
+                                label: l10n.endTripTitle,
+                                color: Colors.orange,
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(l10n.endTripTitle),
+                                      content: Text(l10n.confirmEndTrip),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: Text(l10n.cancel),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            context.push(
+                                              AppRoutes.driverEndTrip,
+                                            );
+                                          },
+                                          child: Text(
+                                            l10n.confirm,
+                                            style: const TextStyle(
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                isDark: isDark,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: DriverQuickAction(
+                                icon: PhosphorIconsRegular.warningOctagon,
+                                label: l10n.sos,
+                                color: Colors.red,
+                                isDanger: true,
+                                onTap: () => context.push('/incident-report'),
+                                isDark: isDark,
+                              ),
+                            ),
+                          ],
+                        ).animate().fadeIn(delay: 500.ms),
+                      ],
+                    ),
+
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -499,6 +508,59 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
             isArabic
                 ? 'شكراً لك على التزامك وجهودك الرائعة.'
                 : 'Thank you for your commitment and great effort.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoTripsCard(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: isDark
+            ? theme.colorScheme.surface.withValues(alpha: 0.8)
+            : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24.0),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : theme.colorScheme.primary.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              PhosphorIconsFill.calendarBlank,
+              color: theme.colorScheme.primary,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            "لا توجد رحلات مجدولة اليوم",
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            "سيتم عرض رحلاتك هنا بمجرد تخصيصها لك.",
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
