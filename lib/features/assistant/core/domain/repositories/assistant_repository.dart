@@ -5,6 +5,8 @@ import '../entities/bus_trip_entity.dart';
 abstract class AssistantRepository {
   Future<Either<String, BusTripEntity>> getActiveTrip();
 
+  Future<Either<String, void>> confirmTrip(String tripId);
+
   Future<Either<String, List<BusStudentEntity>>> getStudents();
 
   Future<Either<String, void>> updateStudentStatus(
@@ -14,6 +16,11 @@ abstract class AssistantRepository {
   );
 
   Future<Either<String, void>> groupAlight({
+    required List<String> studentIds,
+    required String direction,
+  });
+
+  Future<Either<String, void>> groupBoard({
     required List<String> studentIds,
     required String direction,
   });

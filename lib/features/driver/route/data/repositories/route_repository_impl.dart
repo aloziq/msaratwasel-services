@@ -74,7 +74,7 @@ class RouteRepositoryImpl implements RouteRepository {
               'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['name'] ?? 'User')}&background=random',
           isBoarded: isOnBus,
           isDroppedOff: isDroppedOff,
-          isAbsent: false,
+          isAbsent: json['isAbsent'] == true || json['status'] == 'absent',
         );
       }).toList();
     } on DioException catch (e) {

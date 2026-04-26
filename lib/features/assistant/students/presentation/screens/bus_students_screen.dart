@@ -200,28 +200,59 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                   if (_isSelectionMode)
                    SliverToBoxAdapter(
                      child: Padding(
-                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                       child: ElevatedButton.icon(
-                         onPressed: () {
-                           if (_selectedStudentIds.isNotEmpty) {
-                             context.read<BusTripCubit>().groupAlight(
-                               _selectedStudentIds.toList(),
-                               state.trip.suggestedDirection ?? 'to_school',
-                             );
-                             setState(() {
-                               _isSelectionMode = false;
-                               _selectedStudentIds.clear();
-                             });
-                           }
-                         },
-                         icon: const Icon(PhosphorIconsFill.checkCircle),
-                         label: const Text('تسجيل وصول الكل للمنشأة'),
-                         style: ElevatedButton.styleFrom(
-                           backgroundColor: Colors.green,
-                           foregroundColor: Colors.white,
-                           minimumSize: const Size(double.infinity, 50),
-                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                         ),
+                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                       child: Row(
+                         children: [
+                           Expanded(
+                             child: ElevatedButton.icon(
+                               onPressed: () {
+                                 if (_selectedStudentIds.isNotEmpty) {
+                                   context.read<BusTripCubit>().groupBoard(
+                                     _selectedStudentIds.toList(),
+                                     state.trip.suggestedDirection ?? 'to_school',
+                                   );
+                                   setState(() {
+                                     _isSelectionMode = false;
+                                     _selectedStudentIds.clear();
+                                   });
+                                 }
+                               },
+                               icon: const Icon(Icons.arrow_circle_up_rounded, size: 20),
+                               label: const Text('ركوب للكل', style: TextStyle(fontSize: 13)),
+                               style: ElevatedButton.styleFrom(
+                                 backgroundColor: Colors.blue,
+                                 foregroundColor: Colors.white,
+                                 minimumSize: const Size(double.infinity, 45),
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                               ),
+                             ),
+                           ),
+                           const SizedBox(width: AppSpacing.sm),
+                           Expanded(
+                             child: ElevatedButton.icon(
+                               onPressed: () {
+                                 if (_selectedStudentIds.isNotEmpty) {
+                                   context.read<BusTripCubit>().groupAlight(
+                                     _selectedStudentIds.toList(),
+                                     state.trip.suggestedDirection ?? 'to_school',
+                                   );
+                                   setState(() {
+                                     _isSelectionMode = false;
+                                     _selectedStudentIds.clear();
+                                   });
+                                 }
+                               },
+                               icon: const Icon(PhosphorIconsFill.checkCircle, size: 20),
+                               label: const Text('نزول للكل', style: TextStyle(fontSize: 13)),
+                               style: ElevatedButton.styleFrom(
+                                 backgroundColor: Colors.green,
+                                 foregroundColor: Colors.white,
+                                 minimumSize: const Size(double.infinity, 45),
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                               ),
+                             ),
+                           ),
+                         ],
                        ),
                      ).animate().fadeIn().slideY(begin: -0.2),
                    ),

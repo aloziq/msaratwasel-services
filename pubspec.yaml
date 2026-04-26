@@ -28,6 +28,10 @@ dependencies:
   # Local Storage
   shared_preferences: ^2.3.3
 
+  # DI
+  get_it: ^9.2.0
+  injectable: ^2.7.1+4
+
   # Navigation
   go_router: ^14.6.0
 
@@ -35,24 +39,26 @@ dependencies:
   google_fonts: ^6.2.1
   flutter_animate: ^4.5.0
   phosphor_flutter: ^2.1.0
-  mobile_scanner: ^7.1.4
+  flutter_svg: ^2.0.10
+  font_awesome_flutter: ^10.12.0
+  cupertino_icons: ^1.0.8
   fl_chart: ^0.70.2
   url_launcher: ^6.3.2
   image_picker: ^1.1.2
-  video_compress: ^3.1.2
-  google_mlkit_barcode_scanning: ^0.10.0
-  google_maps_flutter: ^2.14.0
-  widget_to_marker: ^1.0.6
-  permission_handler: ^11.3.1
-  flutter_svg: ^2.0.10
-  get_it: ^9.2.0
-  injectable: ^2.7.1+4
-  font_awesome_flutter: ^10.12.0
-  cupertino_icons: ^1.0.8
-  firebase_core: ^4.5.0
-  firebase_messaging: ^16.1.2
   table_calendar: ^3.2.0
+  permission_handler: ^11.3.1
+
+  # Camera & Maps
+  mobile_scanner: ^7.2.0
+  video_compress: ^3.1.4
+  google_mlkit_barcode_scanning: ^0.14.2
+  google_maps_flutter: ^2.17.0
+  widget_to_marker: ^1.0.6
   camerawesome: ^2.5.0
+
+  # Firebase
+  firebase_core: ^4.7.0
+  firebase_messaging: ^16.2.0
 
 dev_dependencies:
   flutter_test:

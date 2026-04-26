@@ -269,91 +269,121 @@ class _TripHistoryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    trip.typeLabel,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Text(
-                  trip.tripDate,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-              ],
+    return InkWell(
+      onTap: () {
+        // TODO: Implement trip details navigation
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isArabic ? 'سيتم إضافة التفاصيل قريباً' : 'Details coming soon',
             ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              trip.route?.name ?? 'بدون مسار',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Icon(
-                  PhosphorIconsRegular.users,
-                  size: 16,
-                  color: theme.colorScheme.outline,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  "${trip.totalStudents} ${AppLocalizations.of(context)!.totalStudents}",
-                  style: theme.textTheme.bodySmall,
-                ),
-                const Spacer(),
-                _StatusBadge(status: trip.status),
-              ],
-            ),
-            if (trip.departureTime != null || trip.arrivalTime != null) ...[
-              const Divider(height: AppSpacing.lg),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (trip.departureTime != null)
-                    _TimeInfo(
-                      label: isArabic ? 'وقت الانطلاق' : 'Departure',
-                      time: trip.departureTime!,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 4,
                     ),
-                  if (trip.arrivalTime != null)
-                    _TimeInfo(
-                      label: isArabic ? 'وقت الوصول' : 'Arrival',
-                      time: trip.arrivalTime!,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: Text(
+                      trip.typeLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    trip.tripDate,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                trip.route?.name ?? 'بدون مسار',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Icon(
+                    PhosphorIconsRegular.users,
+                    size: 16,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "${trip.totalStudents} ${AppLocalizations.of(context)!.totalStudents}",
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const Spacer(),
+                  _StatusBadge(status: trip.status),
+                ],
+              ),
+              if (trip.departureTime != null || trip.arrivalTime != null) ...[
+                const Divider(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    if (trip.departureTime != null)
+                      Expanded(
+                        child: _TimeInfo(
+                          label: isArabic ? 'وقت الانطلاق' : 'Departure',
+                          time: _formatTime(trip.departureTime!),
+                        ),
+                      ),
+                    if (trip.departureTime != null && trip.arrivalTime != null)
+                      const SizedBox(width: AppSpacing.md),
+                    if (trip.arrivalTime != null)
+                      Expanded(
+                        child: _TimeInfo(
+                          label: isArabic ? 'وقت الوصول' : 'Arrival',
+                          time: _formatTime(trip.arrivalTime!),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  String _formatTime(String timeStr) {
+    try {
+      if (timeStr.contains('T')) {
+        final dateTime = DateTime.parse(timeStr).toLocal();
+        return DateFormat('hh:mm a').format(dateTime);
+      }
+      return timeStr;
+    } catch (e) {
+      return timeStr;
+    }
   }
 }
 
@@ -365,7 +395,8 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = status == 'completed' ? Colors.green : Colors.orange;
+    final isCompleted = status == 'completed' || status == 'finished';
+    final color = isCompleted ? Colors.green : Colors.orange;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -374,7 +405,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        status == 'completed' ? 'مكتملة' : 'قيد المعالجة',
+        isCompleted ? 'مكتملة' : 'قيد المعالجة',
         style: theme.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.bold,

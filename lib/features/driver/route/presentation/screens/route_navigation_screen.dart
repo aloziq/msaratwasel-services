@@ -11,6 +11,8 @@ import 'package:msaratwasel_services/core/presentation/widgets/premium_button.da
 import '../../domain/repositories/route_repository.dart';
 import 'package:get_it/get_it.dart';
 
+import 'package:go_router/go_router.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/utils/location_utils.dart';
 import '../../domain/entities/student_stop.dart';
 
@@ -91,9 +93,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       int initialIndex = 0;
 
       if (isMorning) {
-        initialIndex = stops.indexWhere((s) => !s.isBoarded);
+        // Skip students who are already boarded OR have an absence request
+        initialIndex = stops.indexWhere((s) => !s.isBoarded && !s.isAbsent);
       } else {
-        initialIndex = stops.indexWhere((s) => !s.isDroppedOff);
+        // Skip students who are already dropped off OR have an absence request
+        initialIndex = stops.indexWhere((s) => !s.isDroppedOff && !s.isAbsent);
       }
 
       setState(() {
@@ -193,22 +197,17 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   }
 
   void _initMapData() {
-    _markers = _stops.asMap().entries.map((entry) {
+    _markers = _stops.asMap().entries.where((entry) => entry.key >= _currentStopIndex).map((entry) {
       final index = entry.key;
       final stop = entry.value;
       final isNext = index == _currentStopIndex;
-      final isCompleted = index < _currentStopIndex;
 
       // Ensure the marker always shows the name in the info window
       return Marker(
         markerId: MarkerId('stop_$index'),
         position: stop.location,
         icon: BitmapDescriptor.defaultMarkerWithHue(
-          isCompleted
-              ? BitmapDescriptor.hueGreen
-              : isNext
-              ? BitmapDescriptor.hueRed
-              : BitmapDescriptor.hueAzure,
+          isNext ? BitmapDescriptor.hueRed : BitmapDescriptor.hueAzure,
         ),
         infoWindow: InfoWindow(
           title: stop.nameAr,
@@ -252,6 +251,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
   Future<void> _advanceToNextStop() async {
     final isMorning = _routeRepository.currentTripType == 'morning';
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     setState(() {
       _isActionLoading = true;
@@ -301,22 +301,43 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
             controller.showMarkerInfoWindow(const MarkerId('school_stop'));
           }
         } else {
-          // Phase 2: Arrived at School -> Finished
-          await _routeRepository.arriveAtSchool();
+          // Phase 2: Reached School -> Show Confirmation -> Navigate to Safety Check
+          setState(() {
+            _isActionLoading = false;
+          });
 
-          if (mounted) {
-            setState(() {
-              _isFinished = true;
-              _isActionLoading = false;
-              _initMapData();
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('تم تسجيل الوصول بنجاح. الرحلة منتهية.'),
-                backgroundColor: Colors.green,
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text(isArabic ? 'تأكيد الوصول' : 'Confirm Arrival'),
+              content: Text(
+                isArabic
+                    ? 'هل وصلت بالفعل إلى المدرسة؟'
+                    : 'Have you actually arrived at the school?',
+                style: const TextStyle(fontSize: 16),
               ),
-            );
-            Navigator.pop(context); // Go back to show end trip
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(isArabic ? 'نعم، وصلت' : 'Yes, I Arrived'),
+                ),
+              ],
+            ),
+          );
+
+          if (confirmed == true && mounted) {
+            // Navigate to EndTripScreen for QR/Video verification
+            context.push(AppRoutes.driverEndTrip);
           }
         }
       } else {
@@ -389,18 +410,43 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               MarkerId('stop_$_currentStopIndex'),
             );
           } else {
-            // Phase 3: Finished
+            // Phase 3: Dropped last student -> Show Confirmation -> Safety Check
             setState(() {
-              _isFinished = true;
-              _initMapData();
+              _isActionLoading = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('الرحلة انتهت. يمكنك إنهاء الرحلة.'),
-                backgroundColor: Colors.green,
+
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                title: Text(isArabic ? 'تأكيد إنهاء النزول' : 'Confirm Completion'),
+                content: Text(
+                  isArabic
+                      ? 'هل انتهيت من إنزال كل الطلاب الموجودين في الحافلة؟'
+                      : 'Have you finished dropping off all students from the bus?',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(isArabic ? 'نعم، انتهيت' : 'Yes, Finished'),
+                  ),
+                ],
               ),
             );
-            Navigator.pop(context); // Go back to show end trip
+
+            if (confirmed == true && mounted) {
+              context.push(AppRoutes.driverEndTrip);
+            }
           }
         }
       }
@@ -604,6 +650,61 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                             ),
                           ),
                         ).animate().slideY(begin: 1, end: 0, duration: 400.ms),
+                        
+                        // Absence Warning Card (Show if student is absent)
+                        if (currentStop != null && currentStop.isAbsent && !isSchoolState)
+                          Container(
+                            margin: const EdgeInsets.only(top: 15, bottom: 0),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isArabic ? 'بلاغ غياب اليوم' : 'Absence Reported Today',
+                                        style: TextStyle(
+                                          color: Colors.red[300],
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        isArabic
+                                            ? 'تم تسجيل طلب غياب للطالب ${currentStop.nameAr}، يمكنك تخطيه بأمان.'
+                                            : 'An absence request was filed for ${currentStop.nameEn}. You can safely skip.',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.8),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.8),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    PhosphorIconsFill.bell,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn().slideY(begin: 0.2, end: 0, duration: 400.ms),
+
                         const SizedBox(height: 20),
 
                         // Main Action Button (PremiumButton)
@@ -614,9 +715,18 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                   isArabic,
                                   isSchoolState,
                                   isMorning,
+                                  currentStop,
                                 ),
+                                color: (currentStop?.isAbsent == true && !isSchoolState)
+                                    ? Colors.red[600]
+                                    : null,
                                 onTap: () {
                                   if (_isFinished) return;
+                                  // If absent, skip directly
+                                  if (currentStop?.isAbsent == true && !isSchoolState) {
+                                    _advanceToNextStop();
+                                    return;
+                                  }
                                   if (_isArrived || isSchoolState) {
                                     _advanceToNextStop();
                                   } else {
@@ -625,9 +735,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                     });
                                   }
                                 },
-                                icon: _isArrived || isSchoolState
-                                    ? PhosphorIconsBold.arrowRight
-                                    : PhosphorIconsBold.mapPin,
+                                icon: (currentStop?.isAbsent == true && !isSchoolState)
+                                    ? PhosphorIconsBold.skipForward
+                                    : (_isArrived || isSchoolState
+                                        ? PhosphorIconsBold.arrowRight
+                                        : PhosphorIconsBold.mapPin),
                               ).animate().slideY(
                                 begin: 1,
                                 end: 0,
@@ -662,17 +774,24 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     bool isArabic,
     bool isSchoolState,
     bool isMorning,
+    StudentStop? currentStop,
   ) {
     if (_isFinished) {
       return isArabic ? 'الرحلة منتهية' : 'Trip Finished';
     }
+    if (currentStop?.isAbsent == true && !isSchoolState) {
+      return isArabic ? '⏭️ تخطي (غائب)' : '⏭️ Skip (Absent)';
+    }
     if (isSchoolState) {
-      if (isMorning) return isArabic ? '✅ وصلنا' : '✅ Arrived';
+      if (isMorning) return isArabic ? '🏢 الوصول إلى المدرسة' : '🏢 Arrive at School';
       if (!_isArrived)
         return isArabic ? '👪 تسجيل ركوب الجميع' : '👪 Board All';
       return isArabic ? '🚀 مغادرة المدرسة' : '🚀 Depart School';
     }
     if (_isArrived) {
+      if (!isMorning && _currentStopIndex == _stops.length - 1) {
+        return isArabic ? '🏁 إنزال آخر طالب وإنهاء' : '🏁 Drop Last Student & End';
+      }
       return isMorning
           ? (isArabic ? '✅ تم الركوب' : '✅ Boarded')
           : (isArabic ? '✅ تم النزول' : '✅ Dropped Off');

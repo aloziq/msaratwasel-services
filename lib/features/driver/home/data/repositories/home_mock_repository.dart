@@ -24,20 +24,6 @@ class HomeMockRepository implements HomeRepository {
 
   @override
   Future<List<TripStatus>> getMyTrips() async {
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network
-    return [
-      const TripStatusModel(
-        id: 'trip_123',
-        departureTime: '06:30 AM',
-        totalStudents: 22,
-        isStarted: false,
-      ),
-      const TripStatusModel(
-        id: 'trip_456',
-        departureTime: '01:30 PM',
-        totalStudents: 18,
-        isStarted: false,
-      ),
-    ];
+    return [];
   }
 }

@@ -39,6 +39,7 @@ class BusTripEntity extends Equatable {
     bool? isCompleted,
     String? suggestedDirection,
     String? suggestedTripType,
+    String? tripStatus,
   }) {
     return BusTripEntity(
       id: id ?? this.id,
@@ -51,6 +52,7 @@ class BusTripEntity extends Equatable {
       isCompleted: isCompleted ?? this.isCompleted,
       suggestedDirection: suggestedDirection ?? this.suggestedDirection,
       suggestedTripType: suggestedTripType ?? this.suggestedTripType,
+      tripStatus: tripStatus ?? this.tripStatus,
     );
   }
 
@@ -66,5 +68,6 @@ class BusTripEntity extends Equatable {
     isCompleted,
     suggestedDirection,
     suggestedTripType,
+    tripStatus,
   ];
 }

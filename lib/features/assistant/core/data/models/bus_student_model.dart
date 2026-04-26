@@ -17,13 +17,13 @@ class BusStudentModel extends BusStudentEntity {
 
   factory BusStudentModel.fromJson(Map<String, dynamic> json) {
     return BusStudentModel(
-      id: json['id'] as String,
-      studentCode: json['student_code'] as String? ?? json['id'] as String,
-      name: json['name'] as String,
-      grade: json['grade'] as String,
-      schoolId: json['schoolId'] as String,
-      parentName: json['parentName'] as String,
-      parentPhone: json['parentPhone'] as String,
+      id: json['id']?.toString() ?? '',
+      studentCode: json['studentCode']?.toString() ?? json['student_code']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      grade: json['grade']?.toString() ?? 'غير محدد',
+      schoolId: json['classroom']?['school_id']?.toString() ?? json['schoolId']?.toString() ?? '',
+      parentName: json['parentName']?.toString() ?? 'غير محدد',
+      parentPhone: json['parentPhone']?.toString() ?? 'غير محدد',
       parentUserId: json['parentUserId']?.toString(),
       photoUrl: json['photoUrl'] as String?,
       status: BusStudentStatus.values.firstWhere(

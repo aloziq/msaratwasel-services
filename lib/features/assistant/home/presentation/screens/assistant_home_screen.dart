@@ -125,6 +125,8 @@ class AssistantHomeScreen extends StatelessWidget {
         .where((s) => s.status == BusStudentStatus.onBus)
         .length;
 
+    final isAwaiting = trip.tripStatus == 'awaiting_confirmation';
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -200,39 +202,66 @@ class AssistantHomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _StatusBadge(label: 'قيد التنفيذ', color: Colors.green),
+              _StatusBadge(
+                label: isAwaiting ? 'بانتظار التأكيد' : 'قيد التنفيذ', 
+                color: isAwaiting ? Colors.orange : Colors.green
+              ),
             ],
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.2)
-                  : theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.3,
-                    ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(context, '$total', 'إجمالي الطلاب'),
-                Container(
-                  width: 1,
-                  height: 24,
-                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          if (isAwaiting)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  context.read<BusTripCubit>().confirmTrip(trip.id);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
                 ),
-                _buildStatItem(context, '$onBus', 'صعدوا'),
-                Container(
-                  width: 1,
-                  height: 24,
-                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                icon: const Icon(PhosphorIconsRegular.checkCircle),
+                label: const Text(
+                  'قبول الرحلة وبدء التنفيذ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                _buildStatItem(context, '${total - onBus}', 'متبقي'),
-              ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : theme.colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.3,
+                      ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(context, '$total', 'إجمالي الطلاب'),
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                  _buildStatItem(context, '$onBus', 'صعدوا'),
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                  ),
+                  _buildStatItem(context, '${total - onBus}', 'متبقي'),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     ).animate().fadeIn().scale(

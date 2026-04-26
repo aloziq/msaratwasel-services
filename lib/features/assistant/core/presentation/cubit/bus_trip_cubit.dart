@@ -20,6 +20,25 @@ class BusTripCubit extends Cubit<BusTripState> {
     );
   }
 
+  Future<void> confirmTrip(String tripId) async {
+    if (state is BusTripLoaded) {
+      final currentTrip = (state as BusTripLoaded).trip;
+      emit(BusTripLoading()); // Indicate work in progress
+      
+      final result = await repository.confirmTrip(tripId);
+      result.fold(
+        (failure) {
+          emit(BusTripUpdateError(failure));
+          emit(BusTripLoaded(currentTrip));
+        },
+        (_) {
+          emit(const BusTripUpdateSuccess('تم قبول الرحلة بنجاح'));
+          loadTrip(); // Reload full list after confirmation
+        },
+      );
+    }
+  }
+
   Future<void> updateStudentStatus(
     String studentId,
     BusStudentStatus status, {
@@ -69,6 +88,30 @@ class BusTripCubit extends Cubit<BusTripState> {
         (_) {
           emit(const BusTripUpdateSuccess('تم تحديث الكل بنجاح'));
           loadTrip(); // Reload full list after batch action to be safe
+        },
+      );
+    }
+  }
+
+  Future<void> groupBoard(List<String> studentIds, String direction) async {
+    if (state is BusTripLoaded) {
+      final currentTrip = (state as BusTripLoaded).trip;
+      
+      emit(BusTripLoading());
+      
+      final result = await repository.groupBoard(
+        studentIds: studentIds,
+        direction: direction,
+      );
+
+      result.fold(
+        (failure) {
+          emit(BusTripUpdateError(failure));
+          emit(BusTripLoaded(currentTrip));
+        },
+        (_) {
+          emit(const BusTripUpdateSuccess('تم تسجيل ركوب الكل بنجاح'));
+          loadTrip(); 
         },
       );
     }

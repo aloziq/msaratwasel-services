@@ -3,11 +3,12 @@ class ApiConfig {
   static const bool isLocal = true;
 
   // رابط السيرفر المحلي (تأكد من IP جهازك إذا كنت تختبر على هاتف حقيقي بدلاً من 10.0.2.2)
-  static const String _localDomain = "http://192.168.8.67:8000";
+  static const String _localDomain = "http://192.168.8.188:8001";
   static const String _localUrl = "$_localDomain/api/"; 
   
   // رابط الاستضافة الحية
-  static const String _productionDomain = "https://srv1428362.hstgr.cloud";
+  static const String _productionDomain = "https://masaratwasal.com/";
+
   static const String _productionUrl = "$_productionDomain/api/";
 
   // هذا المتغير هو ما سيستخدمه التطبيق في كل الـ Requests

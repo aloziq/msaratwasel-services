@@ -10,12 +10,14 @@ class PremiumButton extends StatelessWidget {
     required this.onTap,
     this.isLoading = false,
     this.icon,
+    this.color,
   });
 
   final String text;
   final VoidCallback onTap;
   final bool isLoading;
   final IconData? icon;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -28,13 +30,13 @@ class PremiumButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: isLoading ? null : onTap,
           style: ElevatedButton.styleFrom(
-            backgroundColor: theme.colorScheme.primary,
+            backgroundColor: color ?? theme.colorScheme.primary,
             foregroundColor: Colors.white, // Ensure white text on primary color
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(48),
             ),
             elevation: 8,
-            shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
+            shadowColor: (color ?? theme.colorScheme.primary).withValues(alpha: 0.4),
           ),
           child: isLoading
               ? SizedBox(

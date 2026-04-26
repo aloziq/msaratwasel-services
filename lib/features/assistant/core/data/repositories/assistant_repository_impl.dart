@@ -37,19 +37,41 @@ class AssistantRepositoryImpl implements AssistantRepository {
         
         return Right(
           BusTripModel(
-            id: 'trip-$busId',
-            busNumber: busData['bus_number'] ?? '-',
+            id: busData['trip_id']?.toString() ?? 'trip-$busId',
+            busNumber: busData['bus_number']?.toString() ?? '-',
             driverName: '-', // Needs to come from user profile if needed
             assistantName: '-', // Needs to come from user profile
             students: passengers,
             startTime: DateTime.now(), 
-            suggestedDirection: busData['suggested_direction'] as String?,
-            suggestedTripType: busData['suggested_trip_type'] as String?,
-            tripStatus: busData['trip_status'] as String?,
+            suggestedDirection: busData['suggested_direction']?.toString(),
+            suggestedTripType: busData['suggested_trip_type']?.toString(),
+            tripStatus: busData['trip_status']?.toString(),
           ),
         );
       }
       return const Left('فشل في جلب بيانات الرحلة');
+    } catch (e) {
+      return Left('خطأ في الاتصال: $e');
+    }
+  }
+
+  @override
+  Future<Either<String, void>> confirmTrip(String tripId) async {
+    try {
+      final busId = _busId;
+      if (busId == null) {
+        return const Left('لم يتم العثور على حافلة معينة لحسابك.');
+      }
+
+      final response = await ApiClient.instance.post(
+        '/bus/$busId/confirm-trip',
+        data: {'trip_id': tripId},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return const Right(null);
+      }
+      return Left(response.data['message'] ?? 'فشل تأكيد الرحلة');
     } catch (e) {
       return Left('خطأ في الاتصال: $e');
     }
@@ -80,11 +102,11 @@ class AssistantRepositoryImpl implements AssistantRepository {
       String finalDirection;
 
       if (status == BusStudentStatus.onBus) {
-        endpoint = '/bus/$busId/board';
+        endpoint = '/bus/$busId/mark-boarded';
         // Use provided direction or ask backend? Defaulting to morning if null.
         finalDirection = direction ?? 'to_school'; 
       } else if (status == BusStudentStatus.atSchool || status == BusStudentStatus.atHome) {
-        endpoint = '/bus/$busId/alight';
+        endpoint = '/bus/$busId/mark-dropped';
         finalDirection = direction ?? (status == BusStudentStatus.atSchool ? 'to_school' : 'to_home');
       } else {
         return const Right(null); 
@@ -138,21 +160,79 @@ class AssistantRepositoryImpl implements AssistantRepository {
   }
 
   @override
+  Future<Either<String, void>> groupBoard({
+    required List<String> studentIds,
+    required String direction,
+  }) async {
+    try {
+      final busId = _busId;
+      if (busId == null) return const Left('خطأ: لا توجد حافلة');
+
+      final response = await ApiClient.instance.post(
+        '/bus/$busId/group-board',
+        data: {
+          'student_ids': studentIds,
+          'direction': direction,
+          'latitude': null,
+          'longitude': null,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return const Right(null);
+      }
+      return Left(response.data['message'] ?? 'فشل التحديث الجماعي');
+    } catch (e) {
+      return Left('خطأ في التحديث الجماعي: $e');
+    }
+  }
+
+  @override
   Future<Either<String, void>> submitIncidentReport({
     required String studentId,
     required String type,
     required String description,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    return const Right(null);
+    try {
+      final response = await ApiClient.instance.post(
+        '/field/incidents',
+        data: {
+          'student_id': studentId,
+          'type': type,
+          'description': description,
+        },
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return const Right(null);
+      }
+      return Left(response.data['message'] ?? 'فشل تقديم البلاغ');
+    } catch (e) {
+      return Left('خطأ في الاتصال: $e');
+    }
   }
 
   @override
   Future<Either<String, void>> submitDailyChecklist(
     Map<String, bool> items,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return const Right(null);
+    try {
+      final busId = _busId;
+      if (busId == null) return const Left('خطأ: لا توجد حافلة');
+
+      final response = await ApiClient.instance.post(
+        '/field/inspections',
+        data: {
+          'bus_id': busId,
+          'checklist': items,
+        },
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return const Right(null);
+      }
+      return Left(response.data['message'] ?? 'فشل تقديم الفحص');
+    } catch (e) {
+      return Left('خطأ في الاتصال: $e');
+    }
   }
 
   @override

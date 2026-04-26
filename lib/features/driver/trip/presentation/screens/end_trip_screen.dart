@@ -295,12 +295,12 @@ class _EndTripContentState extends State<_EndTripContent> {
     EndTripState state,
     AppLocalizations l10n,
   ) {
-    String title = "قم بمسح الكود الأمامي";
-    String desc = "ابدأ بمسح كود QR الموجود في مقدمة الحافلة";
+    String title = "مسح رمز (QR Code) الأمامي";
+    String desc = "ابدأ بمسح رمز الـ QR الموجود في بداية الحافلة";
     
     if (state is EndTripRecording) {
-      title = "جاري تسجيل التحقق...";
-      desc = "توجه إلى خلف الحافلة لضمان خلو المقاعد وامسح الكود الخلفي";
+      title = "تصوير فيديو التحقق";
+      desc = "قم بتصوير الحافلة بالكامل للتأكد من خلوها من الطلاب، ثم امسح رمز الـ QR الأخير في نهاية الحافلة";
     } else if (state is EndTripCompressing) {
       title = "جاري معالجة الفديو...";
       desc = "يرجى الانتظار، نقوم بضغط الفديو لتقليل الحجم";
@@ -330,10 +330,10 @@ class _EndTripContentState extends State<_EndTripContent> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.security, color: Colors.green, size: 16),
+                      Icon(Icons.verified_user, color: Colors.green, size: 16),
                       SizedBox(width: 6),
                       Text(
-                        "نظام التوثيق الآمن",
+                        "نظام التحقق والأمان",
                         style: TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ],
@@ -362,11 +362,27 @@ class _EndTripContentState extends State<_EndTripContent> {
                 _buildProgressIndicator(state.progress)
               else if (state is EndTripCompressing)
                 const CircularProgressIndicator(color: Colors.blue)
+              else if (state is EndTripRecording)
+                Column(
+                  children: [
+                    const Icon(Icons.circle, color: Colors.red, size: 24)
+                        .animate(onPlay: (c) => c.repeat())
+                        .fadeOut(duration: 500.ms)
+                        .fadeIn(duration: 500.ms),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "REC",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                )
               else
                 Icon(
-                  state is EndTripRecording
-                      ? Icons.videocam
-                      : Icons.qr_code_scanner,
+                  Icons.qr_code_scanner,
                   color: Colors.white,
                   size: 32,
                 ).animate(onPlay: (c) => c.repeat()).scale(duration: 1000.ms),
@@ -485,10 +501,14 @@ class _EndTripContentState extends State<_EndTripContent> {
   }
 
   void _showSuccessAndExit(BuildContext context, AppLocalizations l10n) {
+    final cubit = context.read<EndTripCubit>();
+    // Note: We can assume trip type based on context or state if stored
+    // For now, a generic but professional message covers both as requested
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("تم إنهاء الرحلة بنجاح"),
+        content: Text("✅ تمت الرحلة بنجاح. تم حفظ وتوثيق حالة الحافلة خالية."),
         backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
       ),
     );
     context.go(AppRoutes.driverHome);
