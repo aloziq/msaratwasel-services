@@ -70,7 +70,17 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
       },
       child: Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        color: const Color(0xFF2563EB),
+        backgroundColor: theme.colorScheme.surface,
+        edgeOffset: 100,
+        displacement: 40,
+        strokeWidth: 3,
+        onRefresh: () async {
+          await context.read<DriverHomeCubit>().loadDashboard(showLoading: false);
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           AdaptiveSliverAppBar(
             title: l10n.home,
@@ -421,6 +431,7 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
             ),
           ),
         ],
+      ),
       ),
     ),
     );

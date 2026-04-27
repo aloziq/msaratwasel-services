@@ -49,9 +49,11 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
 
   DriverHomeCubit(this._repository) : super(DriverHomeInitial());
 
-  Future<void> loadDashboard() async {
-    debugPrint('DriverHomeCubit: loadDashboard called');
-    emit(DriverHomeLoading());
+  Future<void> loadDashboard({bool showLoading = true}) async {
+    debugPrint('DriverHomeCubit: loadDashboard called (showLoading: $showLoading)');
+    if (showLoading) {
+      emit(DriverHomeLoading());
+    }
     try {
       final trips = await _repository.getMyTrips();
       if (isClosed) return;
@@ -99,43 +101,41 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
       (t) => t.status == 'awaiting_confirmation',
     );
 
-    if (hasAwaitingTrip) {
-      _startPolling();
-    } else {
-      _stopPolling();
+    // We always start polling to detect new trips or status changes
+    // If waiting for confirmation, poll faster (3s), otherwise poll every 10s
+    _startPolling(interval: hasAwaitingTrip ? 3 : 10);
 
-      // If we WERE waiting and now a trip is in_progress, supervisor confirmed!
-      if (_wasAwaitingConfirmation) {
-        final inProgressTrip = trips
-            .where((t) => t.status == 'in_progress')
-            .firstOrNull;
-        if (inProgressTrip != null) {
-          debugPrint(
-            'DriverHomeCubit: 🎉 Trip confirmed by supervisor! Navigating to map...',
-          );
-          _wasAwaitingConfirmation = false;
-          emit(DriverHomeTripConfirmed(trips, inProgressTrip.id.toString()));
-          return;
-        }
+    // If we WERE waiting and now a trip is in_progress, supervisor confirmed!
+    if (_wasAwaitingConfirmation && !hasAwaitingTrip) {
+      final inProgressTrip = trips
+          .where((t) => t.status == 'in_progress')
+          .firstOrNull;
+      if (inProgressTrip != null) {
+        debugPrint(
+          'DriverHomeCubit: 🎉 Trip confirmed by supervisor! Navigating to map...',
+        );
+        _wasAwaitingConfirmation = false;
+        emit(DriverHomeTripConfirmed(trips, inProgressTrip.id.toString()));
+      } else {
         _wasAwaitingConfirmation = false;
       }
     }
   }
 
-  void _startPolling() {
+  void _startPolling({int interval = 3}) {
     _stopPolling(); // Prevent multiple timers
-    debugPrint('DriverHomeCubit: 🔄 Starting status polling (every 3s)');
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+    debugPrint('DriverHomeCubit: 🔄 Starting status polling (every ${interval}s)');
+    _pollingTimer = Timer.periodic(Duration(seconds: interval), (_) async {
       try {
         final trips = await _repository.getMyTrips();
         if (isClosed) return;
 
-        final stillAwaiting = trips.any(
+        final hasAwaitingTrip = trips.any(
           (t) => t.status == 'awaiting_confirmation',
         );
 
-        if (!stillAwaiting && _wasAwaitingConfirmation) {
-          // Status changed! Check if it became in_progress
+        // Check for confirmation transition
+        if (!hasAwaitingTrip && _wasAwaitingConfirmation) {
           final inProgressTrip = trips
               .where((t) => t.status == 'in_progress')
               .firstOrNull;
@@ -143,22 +143,27 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
             debugPrint(
               'DriverHomeCubit: 🎉 Poll detected confirmation! Trip ${inProgressTrip.id}',
             );
-            _stopPolling();
             _wasAwaitingConfirmation = false;
+            // Stop current polling and emit confirmed state
+            _stopPolling();
             emit(DriverHomeTripConfirmed(trips, inProgressTrip.id.toString()));
             return;
           }
         }
 
-        if (!stillAwaiting) {
-          _stopPolling();
-          _wasAwaitingConfirmation = false;
+        // If the status changed to needing a different interval, restart polling
+        if (hasAwaitingTrip && interval != 3) {
+          _startPolling(interval: 3);
+          return;
+        } else if (!hasAwaitingTrip && interval == 3) {
+           // We might want to slow down if no longer awaiting
+           _startPolling(interval: 10);
+           return;
         }
 
         emit(DriverHomeLoaded(trips));
       } catch (e) {
         debugPrint('DriverHomeCubit: polling error (silent): $e');
-        // Don't emit error for polling failures - just keep trying
       }
     });
   }
