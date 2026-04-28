@@ -14,6 +14,7 @@ import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../../core/network/api_config.dart';
+import 'dart:async';
 
 class BusStudentsScreen extends StatefulWidget {
   const BusStudentsScreen({super.key});
@@ -27,6 +28,33 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
   BusStudentStatus? _selectedStatus;
   final Set<String> _selectedStudentIds = {};
   bool _isSelectionMode = false;
+  Timer? _pollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (mounted) {
+        final cubit = context.read<BusTripCubit>();
+        if (cubit.state is BusTripLoaded) {
+          final trip = (cubit.state as BusTripLoaded).trip;
+          if (trip.tripStatus == 'in_progress') {
+            cubit.loadTrip();
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
@@ -625,6 +653,11 @@ class _StudentCard extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (student.status == BusStudentStatus.waiting)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _WaitingTimer(since: student.waitingSince),
+                          ),
                       ],
                     ),
                   ),
@@ -846,6 +879,8 @@ class _StudentCard extends StatelessWidget {
         return Colors.green;
       case BusStudentStatus.absent:
         return Colors.red;
+      case BusStudentStatus.waiting:
+        return Colors.purple;
       default:
         return Colors.grey;
     }
@@ -872,6 +907,9 @@ class _StatusBadge extends StatelessWidget {
         break;
       case BusStudentStatus.absent:
         color = Colors.red;
+        break;
+      case BusStudentStatus.waiting:
+        color = Colors.purple;
         break;
       default:
         color = Colors.grey;
@@ -927,9 +965,85 @@ class _StatusBadge extends StatelessWidget {
         return l10n.atSchool;
       case BusStudentStatus.absent:
         return l10n.absent;
+      case BusStudentStatus.waiting:
+        return 'انتظار';
       default:
         return '';
     }
+  }
+}
+
+class _WaitingTimer extends StatefulWidget {
+  final DateTime? since;
+  const _WaitingTimer({required this.since});
+
+  @override
+  State<_WaitingTimer> createState() => _WaitingTimerState();
+}
+
+class _WaitingTimerState extends State<_WaitingTimer> {
+  Timer? _timer;
+  int _secondsRemaining = 120;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateRemaining();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _calculateRemaining();
+        });
+      }
+    });
+  }
+
+  void _calculateRemaining() {
+    if (widget.since == null) {
+      _secondsRemaining = 0;
+      return;
+    }
+    final diff = DateTime.now().difference(widget.since!);
+    _secondsRemaining = 120 - diff.inSeconds;
+    if (_secondsRemaining < 0) _secondsRemaining = 0;
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_secondsRemaining <= 0) return const SizedBox.shrink();
+    
+    final minutes = _secondsRemaining ~/ 60;
+    final seconds = _secondsRemaining % 60;
+    final timeStr = '$minutes:${seconds.toString().padLeft(2, '0')}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(PhosphorIconsFill.timer, size: 12, color: Colors.purple),
+          const SizedBox(width: 4),
+          Text(
+            'متبقي $timeStr',
+            style: const TextStyle(
+              color: Colors.purple,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

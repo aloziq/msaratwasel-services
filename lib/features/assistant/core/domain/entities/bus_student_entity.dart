@@ -5,6 +5,7 @@ enum BusStudentStatus {
   onBus,
   atSchool,
   absent,
+  waiting,
   unknown;
 
   String get labelAr {
@@ -17,6 +18,8 @@ enum BusStudentStatus {
         return 'في المدرسة';
       case BusStudentStatus.absent:
         return 'غائب';
+      case BusStudentStatus.waiting:
+        return 'انتظار';
       case BusStudentStatus.unknown:
         return 'غير محدد';
     }
@@ -35,6 +38,7 @@ class BusStudentEntity extends Equatable {
   final String? photoUrl;
   final BusStudentStatus status;
   final String? behavioralNote;
+  final DateTime? waitingSince;
 
   const BusStudentEntity({
     required this.id,
@@ -48,6 +52,7 @@ class BusStudentEntity extends Equatable {
     this.photoUrl,
     this.status = BusStudentStatus.unknown,
     this.behavioralNote,
+    this.waitingSince,
   });
 
   BusStudentEntity copyWith({
@@ -62,6 +67,7 @@ class BusStudentEntity extends Equatable {
     String? photoUrl,
     BusStudentStatus? status,
     String? behavioralNote,
+    DateTime? waitingSince,
   }) {
     return BusStudentEntity(
       id: id ?? this.id,
@@ -75,6 +81,7 @@ class BusStudentEntity extends Equatable {
       photoUrl: photoUrl ?? this.photoUrl,
       status: status ?? this.status,
       behavioralNote: behavioralNote ?? this.behavioralNote,
+      waitingSince: waitingSince ?? this.waitingSince,
     );
   }
 
@@ -91,5 +98,6 @@ class BusStudentEntity extends Equatable {
     photoUrl,
     status,
     behavioralNote,
+    waitingSince,
   ];
 }

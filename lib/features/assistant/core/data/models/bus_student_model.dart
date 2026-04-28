@@ -13,6 +13,7 @@ class BusStudentModel extends BusStudentEntity {
     super.photoUrl,
     super.status = BusStudentStatus.unknown,
     super.behavioralNote,
+    super.waitingSince,
   });
 
   factory BusStudentModel.fromJson(Map<String, dynamic> json) {
@@ -31,6 +32,9 @@ class BusStudentModel extends BusStudentEntity {
         orElse: () => BusStudentStatus.unknown,
       ),
       behavioralNote: json['behavioralNote'] as String?,
+      waitingSince: json['waitingSince'] != null 
+          ? DateTime.tryParse(json['waitingSince'].toString()) 
+          : null,
     );
   }
 

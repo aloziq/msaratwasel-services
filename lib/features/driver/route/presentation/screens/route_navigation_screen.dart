@@ -46,6 +46,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   bool _hasDepartedSchool = false; // Only used for afternoon trip
   bool _isFinished = false; // When the trip phase logic finishes
 
+  // Waiting Timer Logic
+  Timer? _waitingTimer;
+  int _secondsRemaining = 120;
+  StudentStop? _waitingStudent;
+
   Timer? _locationTimer;
   int _routePointIndex = 0;
   final List<LatLng> _routePoints = [];
@@ -75,6 +80,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   @override
   void dispose() {
     _locationTimer?.cancel();
+    _waitingTimer?.cancel();
     super.dispose();
   }
 
@@ -249,6 +255,88 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     };
   }
 
+  Future<void> _handleNearHouse() async {
+    if (_currentStopIndex >= _stops.length) return;
+
+    final currentStudent = _stops[_currentStopIndex];
+
+    setState(() {
+      _isActionLoading = true;
+    });
+
+    try {
+      // 1. Notify Parent
+      await _routeRepository.notifyParentNearHouse(studentId: currentStudent.id);
+
+      // 2. Start Timer
+      _startWaitingTimer(currentStudent);
+
+      // 3. IMMEDIATE Advance to next student route
+      setState(() {
+        _currentStopIndex++;
+        _isActionLoading = false;
+        _initMapData();
+      });
+
+      // Update map view
+      final controller = await _controller.future;
+      if (_currentStopIndex < _stops.length) {
+        controller.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: _stops[_currentStopIndex].location,
+              zoom: 15,
+            ),
+          ),
+        );
+        controller.showMarkerInfoWindow(
+          MarkerId('stop_$_currentStopIndex'),
+        );
+      } else {
+        // Reached last student, go to school (if morning)
+        final isMorning = _routeRepository.currentTripType == 'morning';
+        if (isMorning) {
+          controller.animateCamera(
+            CameraUpdate.newCameraPosition(
+              const CameraPosition(
+                target: LatLng(23.6080, 58.4500),
+                zoom: 15,
+              ),
+            ),
+          );
+          controller.showMarkerInfoWindow(const MarkerId('school_stop'));
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isActionLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل التنبيه: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _startWaitingTimer(StudentStop student) {
+    _waitingTimer?.cancel();
+    setState(() {
+      _waitingStudent = student;
+      _secondsRemaining = 120;
+    });
+
+    _waitingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() {
+          _secondsRemaining--;
+        });
+      } else {
+        timer.cancel();
+        // Timer finished - UI will show "Time's up"
+      }
+    });
+  }
+
   Future<void> _advanceToNextStop() async {
     final isMorning = _routeRepository.currentTripType == 'morning';
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
@@ -415,6 +503,31 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               _isActionLoading = false;
             });
 
+            final onBoardCount = _routeRepository.getOnBoardCount(_stops);
+            
+            if (onBoardCount > 0) {
+              await showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  title: Text(isArabic ? 'تنبيه: طلاب في الحافلة' : 'Warning: Students on Bus'),
+                  content: Text(
+                    isArabic
+                        ? 'لا يمكنك إنهاء الرحلة وهناك $onBoardCount طلاب لم يتم تسجيل نزولهم.'
+                        : 'You cannot end the trip while there are $onBoardCount students still on board.',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(isArabic ? 'حسناً' : 'OK'),
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
+
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
@@ -513,6 +626,19 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                     });
                   },
                 ),
+
+                // 2.5 Waiting Student Floating Card
+                if (_waitingStudent != null)
+                  Positioned(
+                    top: 150,
+                    right: 20,
+                    child: _WaitingStudentCard(
+                      isArabic: isArabic,
+                      student: _waitingStudent!,
+                      secondsRemaining: _secondsRemaining,
+                      onDismiss: () => setState(() => _waitingStudent = null),
+                    ),
+                  ),
 
                 // 2. Next Stop Card (Centered Adaptive Pill)
                 if (currentStop != null && !isSchoolState)
@@ -652,54 +778,85 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                         ).animate().slideY(begin: 1, end: 0, duration: 400.ms),
                         
                         // Absence Warning Card (Show if student is absent)
+                        // Absence Warning Card (Show if student is absent)
                         if (currentStop != null && currentStop.isAbsent && !isSchoolState)
-                          Container(
-                            margin: const EdgeInsets.only(top: 15, bottom: 0),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
+                          GlassCard(
+                            margin: const EdgeInsets.only(top: 15),
+                            padding: const EdgeInsets.all(16),
+                            borderRadius: 24,
+                            child: Stack(
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        isArabic ? 'بلاغ غياب اليوم' : 'Absence Reported Today',
-                                        style: TextStyle(
-                                          color: Colors.red[300],
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withValues(alpha: 0.15),
+                                        shape: BoxShape.circle,
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        isArabic
-                                            ? 'تم تسجيل طلب غياب للطالب ${currentStop.nameAr}، يمكنك تخطيه بأمان.'
-                                            : 'An absence request was filed for ${currentStop.nameEn}. You can safely skip.',
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.8),
-                                          fontSize: 11,
-                                        ),
+                                      child: Icon(
+                                        PhosphorIconsFill.warningCircle,
+                                        color: Colors.red[400],
+                                        size: 28,
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.8),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    PhosphorIconsFill.bell,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
+                                    ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+                                     .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 1000.ms),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                isArabic ? 'بلاغ غياب' : 'Absence Reported',
+                                                style: TextStyle(
+                                                  color: Colors.red[400],
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 14,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.withValues(alpha: 0.2),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  isArabic ? 'هام' : 'IMPORTANT',
+                                                  style: TextStyle(
+                                                    color: Colors.red[300],
+                                                    fontSize: 8,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            isArabic
+                                                ? 'الطالب ${currentStop.nameAr} مسجل كغائب اليوم.'
+                                                : '${currentStop.nameEn} is marked absent today.',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(alpha: 0.9),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            isArabic ? 'يمكنك تخطي هذه النقطة.' : 'You can safely skip this stop.',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(alpha: 0.6),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -711,15 +868,32 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                         _isActionLoading
                             ? const Center(child: CircularProgressIndicator())
                             : PremiumButton(
+                                height: 60,
+                                borderRadius: 20,
                                 text: _getActionButtonText(
                                   isArabic,
                                   isSchoolState,
                                   isMorning,
                                   currentStop,
                                 ),
-                                color: (currentStop?.isAbsent == true && !isSchoolState)
-                                    ? Colors.red[600]
-                                    : null,
+                                color: (!isMorning && _currentStopIndex == _stops.length - 1 && _routeRepository.getOnBoardCount(_stops) > 0)
+                                    ? Colors.grey[700]
+                                    : ((currentStop?.isAbsent == true && !isSchoolState)
+                                        ? Colors.red[600]
+                                        : null),
+                                gradient: (!isMorning && _currentStopIndex == _stops.length - 1 && _routeRepository.getOnBoardCount(_stops) > 0)
+                                    ? null
+                                    : ((currentStop?.isAbsent == true && !isSchoolState)
+                                        ? LinearGradient(
+                                            colors: [Colors.red[600]!, Colors.orange[800]!],
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                          )
+                                        : const LinearGradient(
+                                            colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          )),
                                 onTap: () {
                                   if (_isFinished) return;
                                   // If absent, skip directly
@@ -727,12 +901,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                     _advanceToNextStop();
                                     return;
                                   }
-                                  if (_isArrived || isSchoolState) {
+                                  if (isSchoolState) {
                                     _advanceToNextStop();
                                   } else {
-                                    setState(() {
-                                      _isArrived = true;
-                                    });
+                                    _handleNearHouse();
                                   }
                                 },
                                 icon: (currentStop?.isAbsent == true && !isSchoolState)
@@ -740,10 +912,19 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                     : (_isArrived || isSchoolState
                                         ? PhosphorIconsBold.arrowRight
                                         : PhosphorIconsBold.mapPin),
-                              ).animate().slideY(
+                              ).animate(
+                                onPlay: (controller) {
+                                  if (currentStop?.isAbsent == true && !isSchoolState) {
+                                    controller.repeat(reverse: true);
+                                  }
+                                },
+                              ).slideY(
                                 begin: 1,
                                 end: 0,
                                 duration: 500.ms,
+                              ).then().shimmer(
+                                duration: 2000.ms,
+                                color: Colors.white.withValues(alpha: 0.2),
                               ),
                       ],
                     ),
@@ -761,7 +942,13 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                         horizontal: 20,
                         vertical: 10,
                       ),
-                      child: Row(children: [CustomMenuButton()]),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const CustomMenuButton(),
+                          _TripTypeBadge(isArabic: isArabic, isMorning: isMorning),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -780,7 +967,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       return isArabic ? 'الرحلة منتهية' : 'Trip Finished';
     }
     if (currentStop?.isAbsent == true && !isSchoolState) {
-      return isArabic ? '⏭️ تخطي (غائب)' : '⏭️ Skip (Absent)';
+      return isArabic ? 'تخطي الطالب (غائب)' : 'Skip Student (Absent)';
     }
     if (isSchoolState) {
       if (isMorning) return isArabic ? '🏢 الوصول إلى المدرسة' : '🏢 Arrive at School';
@@ -796,7 +983,131 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           ? (isArabic ? '✅ تم الركوب' : '✅ Boarded')
           : (isArabic ? '✅ تم النزول' : '✅ Dropped Off');
     }
-    return isArabic ? '📍 أقتربت من الطالب' : '📍 Approaching Student';
+    return isArabic ? '📍 بجوار المنزل' : '📍 Near House';
+  }
+}
+
+class _TripTypeBadge extends StatelessWidget {
+  final bool isArabic;
+  final bool isMorning;
+
+  const _TripTypeBadge({required this.isArabic, required this.isMorning});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isMorning ? PhosphorIconsFill.sun : PhosphorIconsFill.moon,
+            color: isMorning ? Colors.orange : Colors.indigo[300],
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            isMorning
+                ? (isArabic ? 'رحلة ذهاب' : 'Go Trip')
+                : (isArabic ? 'رحلة عودة' : 'Return Trip'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WaitingStudentCard extends StatelessWidget {
+  final bool isArabic;
+  final StudentStop student;
+  final int secondsRemaining;
+  final VoidCallback onDismiss;
+
+  const _WaitingStudentCard({
+    required this.isArabic,
+    required this.student,
+    required this.secondsRemaining,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = secondsRemaining ~/ 60;
+    final seconds = secondsRemaining % 60;
+    final timeStr = "$minutes:${seconds.toString().padLeft(2, '0')}";
+    final isTimeUp = secondsRemaining == 0;
+
+    return GlassCard(
+      width: 140,
+      padding: const EdgeInsets.all(12),
+      borderRadius: 20,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundImage: NetworkImage(student.photoUrl),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isArabic ? student.nameAr : student.nameEn,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isTimeUp ? Colors.red.withOpacity(0.2) : Colors.green.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  PhosphorIconsFill.clock,
+                  size: 14,
+                  color: isTimeUp ? Colors.red : Colors.green,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  timeStr,
+                  style: TextStyle(
+                    color: isTimeUp ? Colors.red : Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isTimeUp)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                isArabic ? 'انتهى الوقت' : "Time's up",
+                style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ),
+        ],
+      ),
+    ).animate().slideX(begin: 1, end: 0, duration: 400.ms);
   }
 }
 
@@ -811,100 +1122,100 @@ class _NextStopCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return GlassCard(
-          borderRadius: 24,
-          padding: const EdgeInsets.all(12), // Reduced padding
-          child: Row(
-            children: [
-              // Student Photo Avatar
-              Container(
-                padding: const EdgeInsets.all(2), // Reduced padding
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.amber, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withValues(alpha: 0.2),
-                      blurRadius: 10, // Reduced blur
-                      spreadRadius: 1,
+      borderRadius: 24,
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          // Student Photo Avatar
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.amber, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: CircleAvatar(
+              radius: 26,
+              backgroundImage: NetworkImage(stop.photoUrl),
+              onBackgroundImageError: (exception, stackTrace) =>
+                  const Icon(Icons.person),
+            ),
+          ),
+          const SizedBox(width: 14),
+          // Info List
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isArabic ? 'الوجهة التالية' : 'Next Stop',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.amber[900],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 26, // Reduced radius
-                  backgroundImage: NetworkImage(stop.photoUrl),
-                  onBackgroundImageError: (exception, stackTrace) =>
-                      const Icon(Icons.person),
-                ),
-              ),
-              const SizedBox(width: 14), // Reduced spacing
-              // Info List
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
+                    const SizedBox(width: 12),
+                    if (stop.isAbsent)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8, // Reduced horizontal padding
-                          vertical: 3, // Reduced vertical padding
+                          horizontal: 6,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.15),
+                          color: Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: Text(
-                          isArabic ? 'الوجهة التالية' : 'Next Stop',
-                          style: TextStyle(
-                            fontSize: 11, // Reduced font size
-                            color: Colors.amber[900],
+                          isArabic ? 'غياب محتمل' : 'Probable Absence',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.red,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      const SizedBox(
-                        width: 12,
-                      ), // Replaced Spacer with fixed spacing
-                      if (stop.isAbsent)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: Colors.red.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: Text(
-                            isArabic ? 'غياب محتمل' : 'Probable Absence',
-                            style: const TextStyle(
-                              fontSize: 9, // Reduced font size
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isArabic ? stop.nameAr : stop.nameEn,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 4), // Reduced spacing
-                  Text(
-                    isArabic ? stop.nameAr : stop.nameEn,
-                    style: TextStyle(
-                      fontSize: 18, // Reduced font size
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  // Guardian info removed
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        )
-        .animate(key: ValueKey(stop.nameEn))
-        .fadeIn()
-        .slideX(begin: 0.1, end: 0, duration: 400.ms, curve: Curves.easeOut);
+        ],
+      ),
+    )
+    .animate(key: ValueKey(stop.nameEn))
+    .fadeIn()
+    .slideX(begin: 0.1, end: 0, duration: 400.ms, curve: Curves.easeOut);
   }
 }

@@ -108,6 +108,9 @@ class AssistantRepositoryImpl implements AssistantRepository {
       } else if (status == BusStudentStatus.atSchool || status == BusStudentStatus.atHome) {
         endpoint = '/bus/$busId/mark-dropped';
         finalDirection = direction ?? (status == BusStudentStatus.atSchool ? 'to_school' : 'to_home');
+      } else if (status == BusStudentStatus.absent) {
+        endpoint = '/bus/$busId/mark-absent';
+        finalDirection = direction ?? 'to_school';
       } else {
         return const Right(null); 
       }

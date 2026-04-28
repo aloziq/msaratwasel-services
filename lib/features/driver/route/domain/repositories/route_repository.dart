@@ -8,9 +8,11 @@ abstract class RouteRepository {
   Future<void> markStudentBoarded({required String studentId});
   Future<void> groupBoard({required List<String> studentIds});
   Future<void> markStudentDropped({required String studentId});
+  Future<void> notifyParentNearHouse({required String studentId});
   Future<void> updateLocation({
     required double latitude,
     required double longitude,
   });
   Future<void> arriveAtSchool();
+  int getOnBoardCount(List<StudentStop> stops);
 }

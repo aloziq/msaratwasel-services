@@ -153,6 +153,28 @@ class RouteRepositoryImpl implements RouteRepository {
   }
 
   @override
+  Future<void> notifyParentNearHouse({required String studentId}) async {
+    try {
+      if (_cachedBusId == null) {
+        final userResponse = await _dio.get('auth/user');
+        final data = userResponse.data['data'] ?? userResponse.data['user'];
+        _cachedBusId = data['bus_id'] ?? data['has_bus'];
+      }
+
+      await _dio.post(
+        'bus/$_cachedBusId/notify-near-house',
+        data: {'student_id': studentId},
+      );
+    } on DioException catch (e) {
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
+      throw Exception('فشل إرسال الإشعار لولي الأمر: $message');
+    } catch (e) {
+      throw Exception('فشل إرسال الإشعار لولي الأمر');
+    }
+  }
+
+  @override
   Future<void> arriveAtSchool() async {
     try {
       if (_cachedBusId == null) {
@@ -169,6 +191,11 @@ class RouteRepositoryImpl implements RouteRepository {
     } catch (e) {
       throw Exception('فشل تحديث الوصول');
     }
+  }
+
+  @override
+  int getOnBoardCount(List<StudentStop> stops) {
+    return stops.where((s) => s.isBoarded && !s.isDroppedOff).length;
   }
 
   int? _cachedBusId;

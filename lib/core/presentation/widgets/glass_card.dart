@@ -35,6 +35,12 @@ class GlassCard extends StatelessWidget {
   /// Optional callback when the card is tapped.
   final VoidCallback? onTap;
 
+  /// Optional width of the card.
+  final double? width;
+
+  /// Optional height of the card.
+  final double? height;
+
   const GlassCard({
     super.key,
     required this.child,
@@ -43,6 +49,8 @@ class GlassCard extends StatelessWidget {
     this.margin,
     this.showShadow = true,
     this.onTap,
+    this.width,
+    this.height,
   });
 
   @override
@@ -51,6 +59,8 @@ class GlassCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final content = Container(
+      width: width,
+      height: height,
       margin: margin,
       padding: padding ?? const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -113,7 +123,7 @@ class GlassSectionHeader extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
-          ?trailing,
+          if (trailing != null) trailing!,
         ],
       ),
     );

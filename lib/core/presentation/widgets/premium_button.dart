@@ -11,6 +11,9 @@ class PremiumButton extends StatelessWidget {
     this.isLoading = false,
     this.icon,
     this.color,
+    this.gradient,
+    this.height = 56,
+    this.borderRadius = 48,
   });
 
   final String text;
@@ -18,25 +21,40 @@ class PremiumButton extends StatelessWidget {
   final bool isLoading;
   final IconData? icon;
   final Color? color;
+  final Gradient? gradient;
+  final double height;
+  final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return SizedBox(
-      height: 56,
+      height: height,
       child: Animate(
         effects: const [ScaleEffect(curve: Curves.elasticOut)],
+        child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          gradient: gradient,
+          boxShadow: [
+            BoxShadow(
+              color: (color ?? theme.colorScheme.primary).withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
         child: ElevatedButton(
           onPressed: isLoading ? null : onTap,
           style: ElevatedButton.styleFrom(
-            backgroundColor: color ?? theme.colorScheme.primary,
-            foregroundColor: Colors.white, // Ensure white text on primary color
+            backgroundColor: gradient != null ? Colors.transparent : (color ?? theme.colorScheme.primary),
+            foregroundColor: Colors.white,
+            shadowColor: Colors.transparent, // Shadow will be handled by container or elevation
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(48),
+              borderRadius: BorderRadius.circular(borderRadius),
             ),
-            elevation: 8,
-            shadowColor: (color ?? theme.colorScheme.primary).withValues(alpha: 0.4),
+            elevation: gradient != null ? 0 : 8,
           ),
           child: isLoading
               ? SizedBox(
@@ -64,6 +82,7 @@ class PremiumButton extends StatelessWidget {
                     ],
                   ],
                 ),
+          ),
         ),
       ),
     );
