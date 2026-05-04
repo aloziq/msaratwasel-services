@@ -12,9 +12,11 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
+  flutter_local_notifications: ^17.2.2
 
   # Networking
   dio: ^5.7.0
+  web_socket_channel: ^2.4.0
 
   # State Management
   flutter_bloc: ^8.1.6
@@ -53,12 +55,18 @@ dependencies:
   video_compress: ^3.1.4
   google_mlkit_barcode_scanning: ^0.14.2
   google_maps_flutter: ^2.17.0
+  google_directions_api: ^0.10.0
+  geolocator: ^14.0.2
+  flutter_polyline_points: ^3.1.0
   widget_to_marker: ^1.0.6
   camerawesome: ^2.5.0
 
   # Firebase
   firebase_core: ^4.7.0
   firebase_messaging: ^16.2.0
+  flutter_background_service: ^5.1.0
+  device_info_plus: ^12.4.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

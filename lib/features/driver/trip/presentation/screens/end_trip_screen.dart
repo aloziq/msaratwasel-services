@@ -18,6 +18,10 @@ import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:msaratwasel_services/features/driver/trip/presentation/manager/end_trip_cubit.dart';
 import 'package:flutter/foundation.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
+import 'package:msaratwasel_services/core/services/location_service.dart';
 
 class EndTripScreen extends StatelessWidget {
   const EndTripScreen({super.key});
@@ -501,6 +505,9 @@ class _EndTripContentState extends State<_EndTripContent> {
   }
 
   void _showSuccessAndExit(BuildContext context, AppLocalizations l10n) {
+    // Stop background location service as trip is finished
+    LocationService.stop();
+    
     final cubit = context.read<EndTripCubit>();
     // Note: We can assume trip type based on context or state if stored
     // For now, a generic but professional message covers both as requested
@@ -511,7 +518,16 @@ class _EndTripContentState extends State<_EndTripContent> {
         duration: Duration(seconds: 3),
       ),
     );
-    context.go(AppRoutes.driverHome);
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthAuthenticated) {
+      if (authState.user.role == UserRole.assistant) {
+        context.go(AppRoutes.assistantHome);
+      } else {
+        context.go(AppRoutes.driverHome);
+      }
+    } else {
+      context.go('/');
+    }
   }
 
   void _showError(BuildContext context, String message) {

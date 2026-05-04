@@ -7,7 +7,7 @@ class StudentStop {
   final String parentAr;
   final String parentEn;
   final LatLng location;
-  final String photoUrl;
+  final String? photoUrl;
   final String? parentUserId;
   final bool isAbsent;
   final bool isBoarded;
@@ -20,7 +20,7 @@ class StudentStop {
     required this.parentAr,
     required this.parentEn,
     required this.location,
-    required this.photoUrl,
+    this.photoUrl,
     this.parentUserId,
     this.isAbsent = false,
     this.isBoarded = false,

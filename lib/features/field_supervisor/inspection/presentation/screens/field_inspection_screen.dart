@@ -38,9 +38,9 @@ class _FieldInspectionScreenState extends State<FieldInspectionScreen> {
       FieldSupervisorRemoteDataSource.getInspectionItems(),
     ]);
 
-    final inspectionsData = results[0] as List<Map<String, dynamic>>;
-    final busesData = results[1] as List<Map<String, dynamic>>;
-    final itemsData = results[2] as List<Map<String, dynamic>>;
+    final inspectionsData = results[0];
+    final busesData = results[1];
+    final itemsData = results[2];
 
     if (mounted) {
       setState(() {

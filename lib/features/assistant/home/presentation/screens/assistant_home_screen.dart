@@ -2,22 +2,68 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
-import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
-
-import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
+import 'package:msaratwasel_services/core/network/api_client.dart';
+import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
+import 'package:msaratwasel_services/core/network/api_config.dart';
+import 'package:msaratwasel_services/core/services/reverb_service.dart';
 import '../../../core/domain/entities/bus_student_entity.dart';
 import '../../../core/presentation/cubit/bus_trip_cubit.dart';
-import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
-import '../../../../../core/network/api_config.dart';
-import '../../../../shared/auth/presentation/cubit/auth_cubit.dart';
-import '../../../../shared/auth/presentation/cubit/auth_state.dart';
 
-class AssistantHomeScreen extends StatelessWidget {
+class AssistantHomeScreen extends StatefulWidget {
   const AssistantHomeScreen({super.key});
+
+  @override
+  State<AssistantHomeScreen> createState() => _AssistantHomeScreenState();
+}
+
+class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
+  ReverbService? _reverbService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initReverb();
+  }
+
+  void _initReverb() async {
+    final authCubit = context.read<AuthCubit>();
+    final authState = authCubit.state;
+    
+    if (authState is AuthAuthenticated) {
+      final user = authState.user;
+      final busId = user.busId;
+      
+      if (busId != null) {
+        _reverbService = ReverbService(
+          dio: ApiClient.instance,
+          onTripStatusUpdated: (data) {
+            debugPrint('🔄 Trip status updated via Reverb: $data');
+            if (mounted) {
+              context.read<BusTripCubit>().loadTrip();
+            }
+          },
+        );
+        
+        await _reverbService!.connect();
+        // ✅ T-05: Subscribe to private channel to match Laravel's PrivateChannel
+        await _reverbService!.subscribe('private-bus.$busId');
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _reverbService?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,92 +72,99 @@ class AssistantHomeScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? [
-                    const Color(0xFF0F172A), // Midnight Blue
-                    const Color(0xFF1E293B), // Slate 800
-                  ]
-                : [
-                    const Color(0xFFF8FAFC), // Slate 50
-                    const Color(0xFFE2E8F0), // Slate 200
-                  ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: RefreshIndicator(
+        onRefresh: () => context.read<BusTripCubit>().loadTrip(),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      const Color(0xFF0F172A), // Midnight Blue
+                      const Color(0xFF1E293B), // Slate 800
+                    ]
+                  : [
+                      const Color(0xFFF8FAFC), // Slate 50
+                      const Color(0xFFE2E8F0), // Slate 200
+                    ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
-        ),
-        child: BlocBuilder<BusTripCubit, BusTripState>(
-          builder: (context, state) {
-            return CustomScrollView(
-              slivers: [
-                AdaptiveSliverAppBar(
-                  title: 'الرئيسية',
-                  backgroundColor: Colors.transparent,
-                  stretch: true,
-                  leading: Material(
-                    color: Colors.transparent,
-                    child: CustomMenuButton(),
-                  ),
-                  trailing: Material(
-                    color: Colors.transparent,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            PhosphorIconsRegular.chatCircle,
-                            color: theme.colorScheme.onSurface,
+          child: BlocBuilder<BusTripCubit, BusTripState>(
+            builder: (context, state) {
+              return CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  AdaptiveSliverAppBar(
+                    title: 'الرئيسية',
+                    backgroundColor: Colors.transparent,
+                    stretch: true,
+                    leading: Material(
+                      color: Colors.transparent,
+                      child: CustomMenuButton(),
+                    ),
+                    trailing: Material(
+                      color: Colors.transparent,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              PhosphorIconsRegular.chatCircle,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            onPressed: () => context.push(AppRoutes.chats),
                           ),
-                          onPressed: () => context.push(AppRoutes.chats),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            PhosphorIconsRegular.qrCode,
-                            color: theme.colorScheme.onSurface,
+                          IconButton(
+                            icon: Icon(
+                              PhosphorIconsRegular.qrCode,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            onPressed: () async {
+                              final result = await context.push<String>(
+                                AppRoutes.qrScan,
+                              );
+                              if (result != null && context.mounted) {
+                                context.read<BusTripCubit>().updateStudentStatus(
+                                  result,
+                                  BusStudentStatus.unknown,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('تم مسح حالة الطالب بنجاح'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            },
                           ),
-                          onPressed: () async {
-                            final result = await context.push<String>(
-                              AppRoutes.qrScan,
-                            );
-                            if (result != null && context.mounted) {
-                              context.read<BusTripCubit>().updateStudentStatus(
-                                result,
-                                BusStudentStatus.unknown,
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('تم مسح حالة الطالب بنجاح'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildWelcomeHeader(context),
-                      const SizedBox(height: AppSpacing.xl),
-                      if (state is BusTripLoaded) ...[
-                        _buildTripSummaryCard(context, state.trip),
+                  SliverPadding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        _buildWelcomeHeader(context),
                         const SizedBox(height: AppSpacing.xl),
-                      ],
-                      _buildQuickActions(context),
-                      // Add bottom padding for scrolling
-                      const SizedBox(height: 100),
-                    ]),
+                        if (state is BusTripLoaded) ...[
+                          _buildTripSummaryCard(context, state.trip),
+                          const SizedBox(height: AppSpacing.xl),
+                        ] else if (state is BusTripError) ...[
+                          _buildNoTripCard(context, 'لا توجد رحلة نشطة حالياً'),
+                          const SizedBox(height: AppSpacing.xl),
+                        ],
+                        _buildQuickActions(context),
+                        // Add bottom padding for scrolling
+                        const SizedBox(height: 100),
+                      ]),
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -124,6 +177,14 @@ class AssistantHomeScreen extends StatelessWidget {
     final onBus = trip.students
         .where((s) => s.status == BusStudentStatus.onBus)
         .length;
+
+    if (trip.tripStatus == 'idle' || trip.tripStatus == null) {
+      return _buildNoTripCard(context, 'لا توجد رحلة نشطة حالياً');
+    }
+
+    if (trip.tripStatus == 'finished') {
+      return _buildFinishedTripCard(context);
+    }
 
     final isAwaiting = trip.tripStatus == 'awaiting_confirmation';
 
@@ -233,34 +294,62 @@ class AssistantHomeScreen extends StatelessWidget {
               ),
             )
           else
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.black.withValues(alpha: 0.2)
-                    : theme.colorScheme.surfaceContainerHighest.withValues(
-                        alpha: 0.3,
+            Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.2)
+                        : theme.colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.3,
+                          ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem(context, '$total', 'إجمالي الطلاب'),
+                      Container(
+                        width: 1,
+                        height: 24,
+                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
                       ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatItem(context, '$total', 'إجمالي الطلاب'),
-                  Container(
-                    width: 1,
-                    height: 24,
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                      _buildStatItem(context, '$onBus', 'صعدوا'),
+                      Container(
+                        width: 1,
+                        height: 24,
+                        color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                      _buildStatItem(context, '${total - onBus}', 'متبقي'),
+                    ],
                   ),
-                  _buildStatItem(context, '$onBus', 'صعدوا'),
-                  Container(
-                    width: 1,
-                    height: 24,
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                ),
+                const SizedBox(height: 16),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  _buildStatItem(context, '${total - onBus}', 'متبقي'),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      const Icon(PhosphorIconsRegular.info, color: Colors.blue, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'تتم الملاحة وإنهاء الرحلة بواسطة السائق لضمان سلامة الطلاب.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
         ],
       ),
@@ -466,6 +555,110 @@ class AssistantHomeScreen extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildNoTripCard(BuildContext context, String message) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              PhosphorIconsFill.calendarBlank,
+              color: theme.colorScheme.primary,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'سيتم عرض تفاصيل الرحلة هنا عند بدئها',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinishedTripCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              PhosphorIconsFill.checkCircle,
+              color: Colors.green,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'تم إنهاء الرحلة بنجاح',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'شكراً لجهودكم في الحفاظ على سلامة الطلاب',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }

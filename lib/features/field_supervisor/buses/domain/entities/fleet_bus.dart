@@ -6,7 +6,10 @@ class FleetBus extends Equatable {
   final String id;
   final String name;
   final String driverName;
-  final String supervisorName;
+  final String supervisorName; // Assistant
+  final String? fieldSupervisorName;
+  final String? frontQrUrl;
+  final String? backQrUrl;
   final String schoolName;
   final String driverPhone;
   final String route;
@@ -22,6 +25,9 @@ class FleetBus extends Equatable {
     required this.name,
     required this.driverName,
     required this.supervisorName,
+    this.fieldSupervisorName,
+    this.frontQrUrl,
+    this.backQrUrl,
     required this.schoolName,
     required this.driverPhone,
     required this.route,
@@ -39,6 +45,9 @@ class FleetBus extends Equatable {
     name,
     driverName,
     supervisorName,
+    fieldSupervisorName,
+    frontQrUrl,
+    backQrUrl,
     schoolName,
     driverPhone,
     route,

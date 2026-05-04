@@ -1,0 +1,131 @@
+import 'dart:async';
+import 'dart:ui';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_background_service_android/flutter_background_service_android.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:msaratwasel_services/core/di/injection.dart';
+import 'package:msaratwasel_services/features/driver/route/domain/repositories/route_repository.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:msaratwasel_services/features/driver/route/data/repositories/route_repository_impl.dart';
+
+@pragma('vm:entry-point')
+class LocationService {
+  static Future<void> initialize() async {
+    final service = FlutterBackgroundService();
+
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'location_tracking', // id
+      'Location Tracking', // title
+      description:
+          'This channel is used for location tracking notifications.', // description
+      importance: Importance
+          .low, // importance must be at least low for foreground service
+    );
+
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+        FlutterLocalNotificationsPlugin();
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(channel);
+    }
+
+    await service.configure(
+      androidConfiguration: AndroidConfiguration(
+        onStart: onStart,
+        autoStart: false,
+        isForegroundMode: true,
+        notificationChannelId: 'location_tracking',
+        initialNotificationTitle: 'مسارات واصل - تتبع النشط',
+        initialNotificationContent: 'يتم بث موقعك الآن للأهالي والمدرسة',
+        foregroundServiceNotificationId: 888,
+        foregroundServiceTypes: [AndroidForegroundType.location],
+      ),
+      iosConfiguration: IosConfiguration(
+        autoStart: false,
+        onForeground: onStart,
+        onBackground: onIosBackground,
+      ),
+    );
+  }
+
+  static void start() {
+    FlutterBackgroundService().startService();
+  }
+
+  static void stop() {
+    FlutterBackgroundService().invoke('stopService');
+  }
+}
+
+@pragma('vm:entry-point')
+void onStart(ServiceInstance service) async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (service is AndroidServiceInstance) {
+    service.on('setAsForeground').listen((event) {
+      service.setAsForegroundService();
+    });
+
+    service.on('setAsBackground').listen((event) {
+      service.setAsBackgroundService();
+    });
+  }
+
+  service.on('stopService').listen((event) {
+    service.stopSelf();
+  });
+
+  try {
+    // Minimal dependency injection for background isolate
+    final prefs = await SharedPreferences.getInstance();
+    if (!GetIt.I.isRegistered<SharedPreferences>()) {
+      GetIt.I.registerSingleton<SharedPreferences>(prefs);
+    }
+
+    final repository = RouteRepositoryImpl();
+
+    Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+      ),
+    ).listen((Position position) async {
+      try {
+        await repository.updateLocation(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          heading: position.heading,
+          speed: position.speed,
+          accuracy: position.accuracy,
+        );
+
+        if (service is AndroidServiceInstance) {
+          if (await service.isForegroundService()) {
+            service.setForegroundNotificationInfo(
+              title: "تتبع الموقع نشط",
+              content:
+                  "تم تحديث الموقع: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}",
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('Background update error: $e');
+      }
+    });
+  } catch (e) {
+    debugPrint('Background initialization error: $e');
+  }
+}
+
+@pragma('vm:entry-point')
+Future<bool> onIosBackground(ServiceInstance service) async {
+  return true;
+}

@@ -25,6 +25,9 @@ class FleetRemoteDataSourceImpl implements FleetRemoteDataSource {
             name: json['bus_code'] ?? 'حافلة ${json['bus_number'] ?? ''}',
             driverName: json['driver'] ?? 'N/A',
             supervisorName: json['supervisor'] ?? 'N/A',
+            fieldSupervisorName: json['field_supervisor'],
+            frontQrUrl: json['front_qr'],
+            backQrUrl: json['back_qr'],
             schoolName: json['school'] ?? 'N/A',
             driverPhone: '', // Not returned from this endpoint
             route: '',       // Not returned from this endpoint

@@ -25,6 +25,30 @@ class BusPosition extends Equatable {
     required this.updatedAt,
   });
 
+  BusPosition copyWith({
+    String? busId,
+    double? lat,
+    double? lng,
+    double? speedKmh,
+    double? distanceKm,
+    int? etaMinutes,
+    int? studentsOnBoard,
+    BusState? state,
+    DateTime? updatedAt,
+  }) {
+    return BusPosition(
+      busId: busId ?? this.busId,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      speedKmh: speedKmh ?? this.speedKmh,
+      distanceKm: distanceKm ?? this.distanceKm,
+      etaMinutes: etaMinutes ?? this.etaMinutes,
+      studentsOnBoard: studentsOnBoard ?? this.studentsOnBoard,
+      state: state ?? this.state,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   @override
   List<Object?> get props => [
     busId,

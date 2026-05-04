@@ -9,7 +9,6 @@ import 'package:msaratwasel_services/core/network/api_client.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/main_shell.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
-import '../../../../shared/presentation/widgets/hold_to_confirm_button.dart';
 import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import '../../../../../core/presentation/widgets/premium_text_field.dart';
 import 'package:dio/dio.dart';

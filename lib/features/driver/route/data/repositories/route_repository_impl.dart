@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../../core/network/api_client.dart';
-import '../../../../shared/auth/domain/entities/user_entity.dart';
 import '../models/student_stop_model.dart';
 import '../../domain/entities/student_stop.dart';
 import '../../domain/repositories/route_repository.dart';
@@ -15,22 +14,18 @@ class RouteRepositoryImpl implements RouteRepository {
   RouteRepositoryImpl() : _dio = ApiClient.instance;
 
   String _currentTripType = 'morning';
+  LatLng? _schoolLocation;
 
   @override
   String get currentTripType => _currentTripType;
 
-  // We need to keep a mock route for the map lines, but fetch stops from API
+  @override
+  LatLng? get schoolLocation => _schoolLocation;
+
+  // ✅ T-02: Route points now built from real student locations
   @override
   Future<List<LatLng>> getRoutePoints() async {
-    return [
-      const LatLng(23.6264, 58.2618),
-      const LatLng(23.6245, 58.2625),
-      const LatLng(23.6190, 58.2690),
-      const LatLng(23.6000, 58.3500),
-      const LatLng(23.5900, 58.4000),
-      const LatLng(23.6000, 58.4300),
-      const LatLng(23.6080, 58.4500),
-    ];
+    return []; // Route line drawn from student stop locations in the screen
   }
 
   @override
@@ -51,6 +46,14 @@ class RouteRepositoryImpl implements RouteRepository {
       final busInfo = response.data['bus'] ?? {};
       _currentTripType = busInfo['trip_type'] ?? 'morning';
 
+      // Parse school coordinates
+      final sLat = double.tryParse(busInfo['school_lat']?.toString() ?? '0.0') ?? 0.0;
+      final sLng = double.tryParse(busInfo['school_lng']?.toString() ?? '0.0') ?? 0.0;
+      if (sLat != 0.0 || sLng != 0.0) {
+        _schoolLocation = LatLng(sLat, sLng);
+        debugPrint('🏫 [REPO] School Location: ($sLat, $sLng)');
+      }
+
       final List<dynamic> passengersJson = response.data['passengers'] ?? [];
 
       return passengersJson.map((json) {
@@ -66,9 +69,7 @@ class RouteRepositoryImpl implements RouteRepository {
           parentAr: json['parentName'] ?? 'ولي الأمر',
           parentEn: json['parentName'] ?? 'Parent',
           parentUserId: json['parentUserId']?.toString(),
-          location: _generateMockLocationForStudent(
-            int.tryParse(json['id'].toString()) ?? 0,
-          ),
+          location: _getStudentLocation(json),
           photoUrl:
               json['photoUrl'] ??
               'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['name'] ?? 'User')}&background=random',
@@ -198,12 +199,30 @@ class RouteRepositoryImpl implements RouteRepository {
     return stops.where((s) => s.isBoarded && !s.isDroppedOff).length;
   }
 
+  @override
+  int getUnprocessedCount(List<StudentStop> stops) {
+    final isMorning = _currentTripType == 'morning';
+    return stops.where((s) {
+      if (s.isAbsent) return false;
+      if (isMorning) {
+        // In morning, processed means Boarded (on bus) or Dropped Off (already at school)
+        return !s.isBoarded && !s.isDroppedOff;
+      } else {
+        // In afternoon, processed means Dropped Off (at home)
+        return !s.isDroppedOff;
+      }
+    }).length;
+  }
+
   int? _cachedBusId;
 
   @override
   Future<void> updateLocation({
     required double latitude,
     required double longitude,
+    double? heading,
+    double? speed,
+    double? accuracy,
   }) async {
     try {
       if (_cachedBusId == null) {
@@ -213,27 +232,63 @@ class RouteRepositoryImpl implements RouteRepository {
       }
 
       if (_cachedBusId != null) {
+        final timestamp = DateTime.now().toIso8601String();
+
+        debugPrint(
+          '📡 [DRIVER] Broadcasting: Bus: $_cachedBusId, Lat: $latitude, Lng: $longitude, Heading: $heading',
+        );
+
         await _dio.post(
           'bus/$_cachedBusId/location',
-          data: {'latitude': latitude, 'longitude': longitude},
+          data: {
+            'bus_id': _cachedBusId,
+            'latitude': latitude,
+            'longitude': longitude,
+            'heading': heading ?? 0.0,
+            'speed': speed ?? 0.0,
+            'accuracy': accuracy ?? 0.0,
+            'timestamp': timestamp,
+            'sequence_number': DateTime.now().millisecondsSinceEpoch,
+          },
         );
+        debugPrint('✅ [DRIVER] Broadcast Successful at $timestamp');
       }
     } on DioException catch (e) {
-      // Quietly log location update failures to avoid spamming the user
-      debugPrint('Location update failed (Dio): ${e.message}');
+      debugPrint(
+        '❌ [DRIVER] Broadcast Failed (Network): ${e.message} - ${e.response?.data}',
+      );
     } catch (e) {
-      debugPrint('Location update failed: ${e.toString()}');
+      debugPrint('❌ [DRIVER] Broadcast Failed (General): ${e.toString()}');
     }
   }
 
-  // Helper to give them map locations since the API doesn't return student geolocations
-  LatLng _generateMockLocationForStudent(int studentId) {
-    final mockLocations = [
-      const LatLng(23.6000, 58.3500),
-      const LatLng(23.5900, 58.4000),
-      const LatLng(23.6000, 58.4300),
-      const LatLng(23.6080, 58.4500),
-    ];
-    return mockLocations[studentId % mockLocations.length];
+  LatLng _getStudentLocation(Map<String, dynamic> json) {
+    final isMorning = _currentTripType == 'morning';
+    
+    // 1. Try trip-specific coordinates first
+    var lat = isMorning ? json['forth_latitude'] : json['back_latitude'];
+    var lng = isMorning ? json['forth_longitude'] : json['back_longitude'];
+
+    // 2. Fallback to general student coordinates if trip-specific are null/0
+    if (_isInvalid(lat) || _isInvalid(lng)) {
+      lat = json['latitude'];
+      lng = json['longitude'];
+    }
+
+    final parsedLat = double.tryParse(lat?.toString() ?? '0.0') ?? 0.0;
+    final parsedLng = double.tryParse(lng?.toString() ?? '0.0') ?? 0.0;
+
+    if (parsedLat != 0.0 || parsedLng != 0.0) {
+      return LatLng(parsedLat, parsedLng);
+    }
+    
+    // Final fallback to school location or Muscat if everything fails (to avoid Null Island)
+    return _schoolLocation ?? const LatLng(23.6080, 58.4500);
+  }
+
+  bool _isInvalid(dynamic value) {
+    if (value == null) return true;
+    final d = double.tryParse(value.toString());
+    return d == null || d == 0.0;
   }
 }

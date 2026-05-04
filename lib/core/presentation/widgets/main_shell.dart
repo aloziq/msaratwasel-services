@@ -1,11 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:msaratwasel_services/config/routes/app_routes.dart';
-import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
-import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
-import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
 import 'app_drawer.dart';
 import 'background_widget.dart';
 
@@ -23,7 +16,6 @@ class MainShell extends StatefulWidget {
 
 class MainShellState extends State<MainShell> {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
-  DateTime? _lastPressedAt;
 
   void openDrawer() {
     scaffoldKey.currentState?.openDrawer();

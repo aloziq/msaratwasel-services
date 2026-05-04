@@ -34,11 +34,11 @@ class _BusMapScreenState extends State<BusMapScreen> {
           return Scaffold(
             body: BlocBuilder<BusTrackingCubit, BusTrackingState>(
               builder: (context, state) {
-                if (state is! BusTrackingLoaded) {
+                if (state is! BusTrackingLoaded || state.position == null) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final tracking = state.position;
+                final tracking = state.position!;
                 final students = state.students;
 
                 return Stack(

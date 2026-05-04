@@ -1,7 +1,7 @@
 import '../../domain/entities/conversation_entity.dart';
 
 class ConversationModel extends ConversationEntity {
-  ConversationModel({
+  const ConversationModel({
     required super.id,
     required super.parentName,
     required super.studentName,

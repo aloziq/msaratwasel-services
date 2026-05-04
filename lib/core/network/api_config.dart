@@ -17,7 +17,7 @@ class ApiConfig {
   static String get domainUrl => isLocal ? _localDomain : _productionDomain;
 
   static String getImageUrl(String? path) {
-    if (path == null || path.isEmpty) return "https://ui-avatars.com/api/?name=User&background=random";
+    if (path == null || path.isEmpty) return "https://ui-avatars.com/api/?name=User&background=random&format=png";
     if (path.startsWith('http')) return path;
     if (path.startsWith('/')) {
       path = path.substring(1);

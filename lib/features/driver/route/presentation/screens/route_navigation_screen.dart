@@ -1,19 +1,28 @@
 import 'dart:async';
-import 'dart:ui'; // For ImageFilter
+import 'dart:ui';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_directions_api/google_directions_api.dart' as gmaps;
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/glass_card.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
 import '../../domain/repositories/route_repository.dart';
 import 'package:get_it/get_it.dart';
+import 'package:msaratwasel_services/core/network/api_client.dart';
+import 'package:msaratwasel_services/core/services/reverb_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
-import 'package:msaratwasel_services/core/utils/location_utils.dart';
+
 import '../../domain/entities/student_stop.dart';
 
 class RouteNavigationScreen extends StatefulWidget {
@@ -51,37 +60,192 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   int _secondsRemaining = 120;
   StudentStop? _waitingStudent;
 
+  ReverbService? _reverbService;
   Timer? _locationTimer;
-  int _routePointIndex = 0;
-  final List<LatLng> _routePoints = [];
+  LatLng? _currentPosition;
+  List<LatLng> _activeRoutePoints = []; // Road-following points
+  String _remainingTime = '--';
+  String _remainingDistance = '--';
 
   @override
   void initState() {
     super.initState();
-    _routePoints.addAll(_getMuscatRoutePoints());
+    gmaps.DirectionsService.init("AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs");
     _fetchRouteData();
-    _startLocationUpdates();
+    _startRealGPS();
+    _initReverb();
   }
 
-  void _startLocationUpdates() {
-    _locationTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      if (_routePoints.isNotEmpty) {
-        final currentPos = _routePoints[_routePointIndex];
-        _routeRepository.updateLocation(
-          latitude: currentPos.latitude,
-          longitude: currentPos.longitude,
+  Future<void> _initReverb() async {
+    final busId = GetIt.instance<SharedPreferences>().getString('USER_BUS_ID') ?? '';
+    if (busId.isNotEmpty) {
+      _reverbService = ReverbService(
+        dio: ApiClient.instance,
+        onStudentLocationUpdated: (data) {
+          debugPrint("REVERB: Student location updated, refreshing route data...");
+          _fetchRouteData();
+        }
+      );
+      _reverbService!.connect();
+      _reverbService!.subscribe('private-bus.$busId');
+    }
+  }
+
+  Future<void> _startRealGPS() async {
+    // 1. Check Service
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      debugPrint('GPS: Location services are disabled.');
+      return;
+    }
+
+    // 2. Request Permissions using permission_handler
+    var status = await Permission.location.status;
+    if (status.isDenied) {
+      status = await Permission.location.request();
+    }
+
+    if (status.isPermanentlyDenied) {
+      debugPrint('GPS: Location permissions are permanently denied');
+      openAppSettings();
+      return;
+    }
+
+    if (!status.isGranted) {
+      debugPrint('GPS: Location permission not granted');
+      return;
+    }
+
+    // Also check for background location if possible
+    await Permission.locationAlways.request();
+
+    debugPrint('GPS: Location permissions granted. Starting stream...');
+
+    // 3. Get initial position immediately
+    try {
+      final initialPosition = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      if (mounted) {
+        setState(() {
+          _currentPosition = LatLng(initialPosition.latitude, initialPosition.longitude);
+        });
+        _fetchRoadFollowingRoute();
+      }
+    } catch (e) {
+      debugPrint('GPS: Error getting initial position: $e');
+    }
+
+    Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      if (!mounted) return;
+      
+      final newPos = LatLng(position.latitude, position.longitude);
+      
+      // Only trigger updates if moved > 15m or current position was null
+      double distance = 0;
+      if (_currentPosition != null) {
+        distance = Geolocator.distanceBetween(
+          _currentPosition!.latitude, 
+          _currentPosition!.longitude, 
+          newPos.latitude, 
+          newPos.longitude
         );
-        // Simulate moving along the points
-        _routePointIndex = (_routePointIndex + 1) % _routePoints.length;
+      }
+
+      setState(() {
+        _currentPosition = newPos;
+      });
+
+      _routeRepository.updateLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        speed: position.speed,
+        accuracy: position.accuracy,
+        heading: position.heading,
+      );
+
+      if (distance > 15 || _activeRoutePoints.isEmpty) {
+        _fetchRoadFollowingRoute();
+      } else {
+        _updatePolylines();
       }
     });
   }
 
-  @override
-  void dispose() {
-    _locationTimer?.cancel();
-    _waitingTimer?.cancel();
-    super.dispose();
+  DateTime? _lastRouteFetchTime;
+  LatLng? _lastFetchTarget;
+
+  Future<void> _fetchRoadFollowingRoute() async {
+    final target = _currentTarget;
+    if (target == null || _currentPosition == null) {
+      debugPrint("DEBUG: Cannot fetch route - Target: $target, Position: $_currentPosition");
+      return;
+    }
+
+    // Check for invalid targets (like 0,0) early
+    if (target.latitude == 0 && target.longitude == 0) {
+      debugPrint("DEBUG: Target is 0,0 - skipping Directions API");
+      _updatePolylines();
+      return;
+    }
+
+    // Throttle: Don't fetch more than once every 10 seconds unless target changed
+    final now = DateTime.now();
+    if (_lastRouteFetchTime != null && 
+        now.difference(_lastRouteFetchTime!).inSeconds < 10 && 
+        _lastFetchTarget == target) {
+      _updatePolylines();
+      return;
+    }
+
+    final key = "AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs";
+    final origin = "${_currentPosition!.latitude},${_currentPosition!.longitude}";
+    final dest = "${target.latitude},${target.longitude}";
+
+    debugPrint("DEBUG: Requesting Road Route to Target: (${target.latitude}, ${target.longitude})");
+
+    try {
+      final url = Uri.parse(
+        "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$dest&key=$key",
+      );
+      debugPrint("DEBUG: Fetching Directions from $origin to $dest");
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        debugPrint("DEBUG: Directions API Status: ${data['status']}");
+        
+        if (data['status'] == 'OK') {
+          final route = data['routes'][0];
+          final leg = route['legs'][0];
+          final points = PolylinePoints.decodePolyline(route['overview_polyline']['points']);
+          
+          debugPrint("DEBUG: Decoded ${points.length} polyline points");
+
+          setState(() {
+            _activeRoutePoints = points.map((p) => LatLng(p.latitude, p.longitude)).toList();
+            _remainingDistance = leg['distance']['text'];
+            _remainingTime = leg['duration']['text'];
+            _lastRouteFetchTime = now;
+            _lastFetchTarget = target;
+          });
+          _updatePolylines();
+        } else {
+          debugPrint("DEBUG: Directions API Error: ${data['error_message'] ?? 'Unknown error'}");
+          _updatePolylines();
+        }
+      } else {
+        debugPrint("DEBUG: Directions HTTP Error: ${response.statusCode}");
+        _updatePolylines();
+      }
+    } catch (e) {
+      debugPrint("DEBUG: Directions Exception: $e");
+      _updatePolylines(); // Fallback to straight line
+    }
   }
 
   Future<void> _fetchRouteData() async {
@@ -110,8 +274,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         _stops = stops;
         _currentStopIndex = initialIndex == -1 ? stops.length : initialIndex;
         _isLoading = false;
+        _activeRoutePoints = []; // Clear old route as targets might have changed
         _initMapData();
       });
+      _fetchRoadFollowingRoute(); // Trigger fresh route fetch
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -121,85 +287,27 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     }
   }
 
-  // Manually defined points to strictly follow 18th Nov St & Sultan Qaboos St (Asphalt)
-  // UPDATED: High-density points with specific Al Ghubra fix (Way 4293)
-  List<LatLng> _getMuscatRoutePoints() {
-    return [
-      // 1. Start: Al Mouj Street (Asphalt)
-      const LatLng(23.6264, 58.2618),
-      const LatLng(23.6245, 58.2625),
-      const LatLng(23.6230, 58.2630), // Roundabout
-      // 2. 18th November Street (Main Highway - Eastbound)
-      const LatLng(23.6190, 58.2690),
-      const LatLng(23.6170, 58.2750),
-      const LatLng(23.6150, 58.2850),
-      const LatLng(23.6130, 58.2950),
-      const LatLng(23.6110, 58.3050),
-      const LatLng(23.6090, 58.3150),
-      const LatLng(23.6070, 58.3250),
-      const LatLng(23.6050, 58.3350),
+  @override
+  void dispose() {
+    _reverbService?.dispose();
+    _locationTimer?.cancel();
+    _waitingTimer?.cancel();
+    super.dispose();
+  }
 
-      // 3. Turn into Azaiba North (Smooth Curve)
-      const LatLng(23.6042, 58.3410),
-      const LatLng(23.6035, 58.3430),
-      const LatLng(23.6030, 58.3450),
-      const LatLng(23.6015, 58.3470),
-      const LatLng(23.6000, 58.3500), // Stop 1: Azaiba North
-      // 4. Return to 18th Nov St (Retracing)
-      const LatLng(23.6015, 58.3470),
-      const LatLng(23.6030, 58.3450),
-      const LatLng(23.6025, 58.3510),
-      const LatLng(23.6000, 58.3550),
-      const LatLng(23.5980, 58.3650),
-      const LatLng(23.5960, 58.3750),
-      const LatLng(23.5940, 58.3850),
-
-      // 5. Turn into Ghubra (FIXED: Avoiding Haitham Jaffer Building)
-      const LatLng(23.5935, 58.3880), // Arriving at junction
-      const LatLng(23.5938, 58.3910), // Continue East slightly
-      const LatLng(23.5930, 58.3930), // Turn Right into Way 4293
-      const LatLng(23.5915, 58.3938), // South down the street
-      const LatLng(23.5900, 58.3945), // Stop 2: Al Ghubra
-      // 6. Navigate to Sultan Qaboos St (Complex Intersection)
-      const LatLng(23.5895, 58.3960),
-      const LatLng(23.5890, 58.3980),
-      const LatLng(23.5880, 58.3950),
-      const LatLng(23.5865, 58.3935), // Grand Mosque Roundabout
-      const LatLng(23.5850, 58.3920),
-
-      // 7. Sultan Qaboos St (Eastbound Highway - Smooth)
-      const LatLng(23.5855, 58.3980),
-      const LatLng(23.5860, 58.4050),
-      const LatLng(23.5865, 58.4100),
-      const LatLng(23.5872, 58.4125),
-      const LatLng(23.5880, 58.4150),
-      const LatLng(23.5888, 58.4180),
-      const LatLng(23.5895, 58.4200),
-
-      // 8. Exit to Al Khuwair (Dohat Al Adab St - Winding)
-      const LatLng(23.5905, 58.4215), // Ramp Start
-      const LatLng(23.5915, 58.4225),
-      const LatLng(23.5925, 58.4235),
-      const LatLng(23.5935, 58.4245),
-      const LatLng(23.5945, 58.4255), // Thaqafah St
-      const LatLng(23.5960, 58.4265),
-      const LatLng(23.5975, 58.4275), // Passing Court Complex
-      const LatLng(23.5990, 58.4285),
-      const LatLng(23.6000, 58.4300), // Stop 3: Al Khuwair 33
-      // 9. Continue via Service Roads to MSQ
-      const LatLng(23.6005, 58.4310),
-      const LatLng(23.6012, 58.4325),
-      const LatLng(23.6020, 58.4350),
-      const LatLng(23.6028, 58.4370), // Curve
-      const LatLng(23.6035, 58.4385),
-      const LatLng(23.6040, 58.4400),
-      const LatLng(23.6048, 58.4415),
-      const LatLng(23.6055, 58.4430),
-      const LatLng(23.6062, 58.4445),
-      const LatLng(23.6070, 58.4460),
-      const LatLng(23.6078, 58.4480), // Turning into MSQ
-      const LatLng(23.6080, 58.4500), // Stop 4: MSQ
-    ];
+  LatLng? get _currentTarget {
+    if (_routeRepository.currentTripType == 'morning') {
+      if (_currentStopIndex < _stops.length) {
+        return _stops[_currentStopIndex].location;
+      }
+      return _routeRepository.schoolLocation;
+    } else {
+      if (!_hasDepartedSchool) return _routeRepository.schoolLocation;
+      if (_currentStopIndex < _stops.length) {
+        return _stops[_currentStopIndex].location;
+      }
+      return null;
+    }
   }
 
   void _initMapData() {
@@ -208,7 +316,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       final stop = entry.value;
       final isNext = index == _currentStopIndex;
 
-      // Ensure the marker always shows the name in the info window
       return Marker(
         markerId: MarkerId('stop_$index'),
         position: stop.location,
@@ -222,17 +329,14 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       );
     }).toSet();
 
-    // Add School marker to the map if morning trip and headed to school OR afternoon trip and waiting at school
     final isMorning = _routeRepository.currentTripType == 'morning';
-    final showSchool =
-        (isMorning && _currentStopIndex == _stops.length && !_isFinished) ||
-        (!isMorning && !_hasDepartedSchool);
+    final showSchool = isMorning || (!isMorning && !_hasDepartedSchool);
 
     if (showSchool) {
       _markers.add(
         Marker(
           markerId: const MarkerId('school_stop'),
-          position: const LatLng(23.6080, 58.4500),
+          position: _routeRepository.schoolLocation ?? const LatLng(23.6080, 58.4500),
           icon: BitmapDescriptor.defaultMarkerWithHue(
             BitmapDescriptor.hueOrange,
           ),
@@ -240,19 +344,51 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         ),
       );
     }
+    _updatePolylines();
+  }
 
-    // Use our realistic points instead of just the stops
-    _polylines = {
-      Polyline(
-        polylineId: const PolylineId('route_line'),
-        points: _getMuscatRoutePoints(),
-        color: Colors.blue,
-        width: 6,
-        jointType: JointType.round,
-        startCap: Cap.roundCap,
-        endCap: Cap.roundCap,
-      ),
-    };
+  void _updatePolylines() {
+    final target = _currentTarget;
+    if (_currentPosition == null) return;
+
+    Set<Polyline> newPolylines = {};
+
+    // Active road-following path
+    if (_activeRoutePoints.isNotEmpty) {
+      newPolylines.add(
+        Polyline(
+          polylineId: const PolylineId('route_line'),
+          points: _activeRoutePoints,
+          color: Colors.blue[700]!,
+          width: 7,
+          jointType: JointType.round,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+        ),
+      );
+    } else if (target != null) {
+      // Fallback to straight line if road points not yet fetched
+      newPolylines.add(
+        Polyline(
+          polylineId: const PolylineId('route_line'),
+          points: [LatLng(_currentPosition!.latitude, _currentPosition!.longitude), target],
+          color: Colors.blue.withOpacity(0.8),
+          width: 6,
+          jointType: JointType.round,
+          patterns: [PatternItem.dash(20), PatternItem.gap(10)], // Dotted line for fallback
+        ),
+      );
+    }
+
+    setState(() {
+      _polylines = newPolylines;
+    });
+
+    if (_polylines.isNotEmpty) {
+      debugPrint('DEBUG: Polyline points count: ${_polylines.first.points.length}');
+    } else {
+      debugPrint('DEBUG: Polyline set is EMPTY');
+    }
   }
 
   Future<void> _handleNearHouse() async {
@@ -274,8 +410,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       // 3. IMMEDIATE Advance to next student route
       setState(() {
         _currentStopIndex++;
+        _activeRoutePoints = []; // Clear old route
         _isActionLoading = false;
         _initMapData();
+        _fetchRoadFollowingRoute(); // Refresh road route for next student
       });
 
       // Update map view
@@ -298,8 +436,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         if (isMorning) {
           controller.animateCamera(
             CameraUpdate.newCameraPosition(
-              const CameraPosition(
-                target: LatLng(23.6080, 58.4500),
+              CameraPosition(
+                target: _routeRepository.schoolLocation ?? const LatLng(23.6080, 58.4500),
                 zoom: 15,
               ),
             ),
@@ -347,230 +485,58 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
     try {
       if (isMorning) {
-        // --- MORNING TRIP FLOW ---
         if (_currentStopIndex < _stops.length) {
-          // Phase 1: Boarding Students
-          final currentStudentId = _stops[_currentStopIndex].id;
-          await _routeRepository.markStudentBoarded(
-            studentId: currentStudentId,
-          );
-
-          if (!mounted) return;
           setState(() {
             _currentStopIndex++;
+            _activeRoutePoints = [];
             _isArrived = false;
             _isActionLoading = false;
             _initMapData();
+            _fetchRoadFollowingRoute();
           });
-
-          final controller = await _controller.future;
-          if (_currentStopIndex < _stops.length) {
-            controller.animateCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: _stops[_currentStopIndex].location,
-                  zoom: 15,
-                ),
-              ),
-            );
-            controller.showMarkerInfoWindow(
-              MarkerId('stop_$_currentStopIndex'),
-            );
-          } else {
-            // Reached last student, go to school
-            controller.animateCamera(
-              CameraUpdate.newCameraPosition(
-                const CameraPosition(
-                  target: LatLng(23.6080, 58.4500),
-                  zoom: 15,
-                ),
-              ),
-            );
-            controller.showMarkerInfoWindow(const MarkerId('school_stop'));
-          }
         } else {
-          // Phase 2: Reached School -> Show Confirmation -> Navigate to Safety Check
-          setState(() {
-            _isActionLoading = false;
-          });
-
+          setState(() { _isActionLoading = false; });
           final confirmed = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text(isArabic ? 'تأكيد الوصول' : 'Confirm Arrival'),
-              content: Text(
-                isArabic
-                    ? 'هل وصلت بالفعل إلى المدرسة؟'
-                    : 'Have you actually arrived at the school?',
-                style: const TextStyle(fontSize: 16),
-              ),
+              content: Text(isArabic ? 'هل وصلت بالفعل إلى المدرسة؟' : 'Have you actually arrived at the school?'),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(isArabic ? 'إلغاء' : 'Cancel'),
-                ),
+                TextButton(onPressed: () => Navigator.pop(context, false), child: Text(isArabic ? 'إلغاء' : 'Cancel')),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                   onPressed: () => Navigator.pop(context, true),
                   child: Text(isArabic ? 'نعم، وصلت' : 'Yes, I Arrived'),
                 ),
               ],
             ),
           );
-
-          if (confirmed == true && mounted) {
-            // Navigate to EndTripScreen for QR/Video verification
-            context.push(AppRoutes.driverEndTrip);
-          }
+          if (confirmed == true && mounted) context.push(AppRoutes.driverEndTrip);
         }
       } else {
-        // --- AFTERNOON TRIP FLOW ---
         if (!_hasDepartedSchool) {
-          // Phase 1: At School -> Board Students first
-          if (!_isArrived) {
-            // Reusing _isArrived to mean "Boarded students" for afternoon
-            await _routeRepository.groupBoard(
-              studentIds: _stops.map((s) => s.id).toList(),
-            );
-            if (!mounted) return;
-            setState(() {
-              _isArrived = true; // All boarded
-              _isActionLoading = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('تم تسجيل ركوب جميع الطلاب بنجاح.'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            return;
-          }
-
-          // Phase 2: Once boarded -> Depart School
-          if (!mounted) return;
           setState(() {
             _hasDepartedSchool = true;
-            _isArrived = false;
+            _activeRoutePoints = [];
             _isActionLoading = false;
             _initMapData();
+            _fetchRoadFollowingRoute();
           });
-
-          final controller = await _controller.future;
-          if (_stops.isNotEmpty) {
-            controller.animateCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(target: _stops[0].location, zoom: 15),
-              ),
-            );
-            controller.showMarkerInfoWindow(const MarkerId('stop_0'));
-          }
         } else if (_currentStopIndex < _stops.length) {
-          // Phase 2: Dropping off Students (Single Click)
-          final currentStudentId = _stops[_currentStopIndex].id;
-          await _routeRepository.markStudentDropped(
-            studentId: currentStudentId,
-          );
-
-          if (!mounted) return;
           setState(() {
             _currentStopIndex++;
-            _isArrived = false;
+            _activeRoutePoints = [];
             _isActionLoading = false;
             _initMapData();
+            _fetchRoadFollowingRoute();
           });
-
-          final controller = await _controller.future;
-          if (_currentStopIndex < _stops.length) {
-            controller.animateCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: _stops[_currentStopIndex].location,
-                  zoom: 15,
-                ),
-              ),
-            );
-            controller.showMarkerInfoWindow(
-              MarkerId('stop_$_currentStopIndex'),
-            );
-          } else {
-            // Phase 3: Dropped last student -> Show Confirmation -> Safety Check
-            setState(() {
-              _isActionLoading = false;
-            });
-
-            final onBoardCount = _routeRepository.getOnBoardCount(_stops);
-            
-            if (onBoardCount > 0) {
-              await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  title: Text(isArabic ? 'تنبيه: طلاب في الحافلة' : 'Warning: Students on Bus'),
-                  content: Text(
-                    isArabic
-                        ? 'لا يمكنك إنهاء الرحلة وهناك $onBoardCount طلاب لم يتم تسجيل نزولهم.'
-                        : 'You cannot end the trip while there are $onBoardCount students still on board.',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(isArabic ? 'حسناً' : 'OK'),
-                    ),
-                  ],
-                ),
-              );
-              return;
-            }
-
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                title: Text(isArabic ? 'تأكيد إنهاء النزول' : 'Confirm Completion'),
-                content: Text(
-                  isArabic
-                      ? 'هل انتهيت من إنزال كل الطلاب الموجودين في الحافلة؟'
-                      : 'Have you finished dropping off all students from the bus?',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(isArabic ? 'إلغاء' : 'Cancel'),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(isArabic ? 'نعم، انتهيت' : 'Yes, Finished'),
-                  ),
-                ],
-              ),
-            );
-
-            if (confirmed == true && mounted) {
-              context.push(AppRoutes.driverEndTrip);
-            }
-          }
+        } else {
+          context.push(AppRoutes.driverEndTrip);
         }
       }
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isActionLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('فشل الإجراء: $e'), backgroundColor: Colors.red),
-      );
+      setState(() { _isActionLoading = false; });
     }
   }
 
@@ -596,7 +562,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'خطأ: \$_error',
+                    'خطأ: $_error',
                     style: const TextStyle(color: Colors.red),
                   ),
                   ElevatedButton(
@@ -627,18 +593,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                   },
                 ),
 
-                // 2.5 Waiting Student Floating Card
-                if (_waitingStudent != null)
-                  Positioned(
-                    top: 150,
-                    right: 20,
-                    child: _WaitingStudentCard(
-                      isArabic: isArabic,
-                      student: _waitingStudent!,
-                      secondsRemaining: _secondsRemaining,
-                      onDismiss: () => setState(() => _waitingStudent = null),
-                    ),
-                  ),
 
                 // 2. Next Stop Card (Centered Adaptive Pill)
                 if (currentStop != null && !isSchoolState)
@@ -652,6 +606,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                         child: _NextStopCard(
                           isArabic: isArabic,
                           stop: currentStop,
+                          secondsRemaining: _waitingStudent != null ? _secondsRemaining : null,
                         ),
                       ),
                     ),
@@ -753,7 +708,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    LocationUtils.formatEtaEnglish(18.2),
+                                    _remainingTime,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -765,9 +720,9 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                     color: Colors.blue,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    "18.2 km",
-                                    style: TextStyle(
+                                  Text(
+                                    _remainingDistance,
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -777,7 +732,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                           ),
                         ).animate().slideY(begin: 1, end: 0, duration: 400.ms),
                         
-                        // Absence Warning Card (Show if student is absent)
                         // Absence Warning Card (Show if student is absent)
                         if (currentStop != null && currentStop.isAbsent && !isSchoolState)
                           GlassCard(
@@ -955,7 +909,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               ],
             ),
     );
-  } // <--- Added closing brace for build()
+  }
 
   String _getActionButtonText(
     bool isArabic,
@@ -963,25 +917,13 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     bool isMorning,
     StudentStop? currentStop,
   ) {
-    if (_isFinished) {
-      return isArabic ? 'الرحلة منتهية' : 'Trip Finished';
-    }
+    if (_isFinished) return isArabic ? 'الرحلة منتهية' : 'Trip Finished';
     if (currentStop?.isAbsent == true && !isSchoolState) {
       return isArabic ? 'تخطي الطالب (غائب)' : 'Skip Student (Absent)';
     }
     if (isSchoolState) {
       if (isMorning) return isArabic ? '🏢 الوصول إلى المدرسة' : '🏢 Arrive at School';
-      if (!_isArrived)
-        return isArabic ? '👪 تسجيل ركوب الجميع' : '👪 Board All';
       return isArabic ? '🚀 مغادرة المدرسة' : '🚀 Depart School';
-    }
-    if (_isArrived) {
-      if (!isMorning && _currentStopIndex == _stops.length - 1) {
-        return isArabic ? '🏁 إنزال آخر طالب وإنهاء' : '🏁 Drop Last Student & End';
-      }
-      return isMorning
-          ? (isArabic ? '✅ تم الركوب' : '✅ Boarded')
-          : (isArabic ? '✅ تم النزول' : '✅ Dropped Off');
     }
     return isArabic ? '📍 بجوار المنزل' : '📍 Near House';
   }
@@ -1027,95 +969,13 @@ class _TripTypeBadge extends StatelessWidget {
   }
 }
 
-class _WaitingStudentCard extends StatelessWidget {
-  final bool isArabic;
-  final StudentStop student;
-  final int secondsRemaining;
-  final VoidCallback onDismiss;
-
-  const _WaitingStudentCard({
-    required this.isArabic,
-    required this.student,
-    required this.secondsRemaining,
-    required this.onDismiss,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final minutes = secondsRemaining ~/ 60;
-    final seconds = secondsRemaining % 60;
-    final timeStr = "$minutes:${seconds.toString().padLeft(2, '0')}";
-    final isTimeUp = secondsRemaining == 0;
-
-    return GlassCard(
-      width: 140,
-      padding: const EdgeInsets.all(12),
-      borderRadius: 20,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage(student.photoUrl),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isArabic ? student.nameAr : student.nameEn,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isTimeUp ? Colors.red.withOpacity(0.2) : Colors.green.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  PhosphorIconsFill.clock,
-                  size: 14,
-                  color: isTimeUp ? Colors.red : Colors.green,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  timeStr,
-                  style: TextStyle(
-                    color: isTimeUp ? Colors.red : Colors.green,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isTimeUp)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                isArabic ? 'انتهى الوقت' : "Time's up",
-                style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-            ),
-        ],
-      ),
-    ).animate().slideX(begin: 1, end: 0, duration: 400.ms);
-  }
-}
 
 class _NextStopCard extends StatelessWidget {
-  const _NextStopCard({required this.isArabic, required this.stop});
+  const _NextStopCard({required this.isArabic, required this.stop, this.secondsRemaining});
 
   final bool isArabic;
   final StudentStop stop;
+  final int? secondsRemaining;
 
   @override
   Widget build(BuildContext context) {
@@ -1142,7 +1002,7 @@ class _NextStopCard extends StatelessWidget {
             ),
             child: CircleAvatar(
               radius: 26,
-              backgroundImage: NetworkImage(stop.photoUrl),
+              backgroundImage: NetworkImage(stop.photoUrl ?? ''),
               onBackgroundImageError: (exception, stackTrace) =>
                   const Icon(Icons.person),
             ),
@@ -1211,6 +1071,42 @@ class _NextStopCard extends StatelessWidget {
               ],
             ),
           ),
+          if (secondsRemaining != null) ...[
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: (secondsRemaining! <= 0)
+                    ? Colors.red.withValues(alpha: 0.15)
+                    : Colors.green.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: (secondsRemaining! <= 0)
+                      ? Colors.red.withValues(alpha: 0.3)
+                      : Colors.green.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    PhosphorIconsFill.timer,
+                    size: 18,
+                    color: (secondsRemaining! <= 0) ? Colors.red : Colors.green,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "${(secondsRemaining! ~/ 60)}:${(secondsRemaining! % 60).toString().padLeft(2, '0')}",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      color: (secondsRemaining! <= 0) ? Colors.red : Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     )

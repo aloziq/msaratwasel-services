@@ -158,7 +158,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                           conversation: conversation,
                           onTap: () {
                             setState(() {
-                              conversation.unreadCount = 0;
+                              _conversations[index] = conversation.copyWith(unreadCount: 0);
                             });
                             context.push(
                               AppRoutes.messages,

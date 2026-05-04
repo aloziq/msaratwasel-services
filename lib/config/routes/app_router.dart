@@ -214,6 +214,11 @@ class AppRouter {
             ),
           ),
           GoRoute(
+            path: AppRoutes.assistantEndTrip,
+            name: 'assistantEndTrip',
+            builder: (context, state) => const EndTripScreen(),
+          ),
+          GoRoute(
             path: AppRoutes.dailyChecklist,
             name: 'dailyChecklist',
             builder: (context, state) => const DailyChecklistScreen(),

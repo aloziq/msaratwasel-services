@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:intl/intl.dart';
 
 class LocationUtils {
@@ -45,4 +46,20 @@ class LocationUtils {
     }
     return '$minutes min';
   }
+
+  /// Calculates distance between two points in meters
+  static double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    var p = 0.017453292519943295;
+    var c = Math.cos;
+    var a = 0.5 - c((lat2 - lat1) * p) / 2 +
+        c(lat1 * p) * c(lat2 * p) *
+            (1 - c((lon2 - lon1) * p)) / 2;
+    return 12742 * Math.asin(Math.sqrt(a)) * 1000;
+  }
+}
+
+class Math {
+  static double cos(double x) => math.cos(x);
+  static double asin(double x) => math.asin(x);
+  static double sqrt(double x) => math.sqrt(x);
 }

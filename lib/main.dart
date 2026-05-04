@@ -15,6 +15,7 @@ import 'package:msaratwasel_services/features/teacher/teacher/presentation/cubit
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:msaratwasel_services/core/services/fcm_service.dart';
+import 'package:msaratwasel_services/core/services/location_service.dart';
 
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
@@ -22,7 +23,10 @@ import 'package:flutter/foundation.dart';
 class AppBlocObserver extends BlocObserver {
   @override
   void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
-    developer.log('Bloc Error in ${bloc.runtimeType}: $error', stackTrace: stackTrace);
+    developer.log(
+      'Bloc Error in ${bloc.runtimeType}: $error',
+      stackTrace: stackTrace,
+    );
     super.onError(bloc, error, stackTrace);
   }
 
@@ -39,10 +43,12 @@ void main() async {
   // إخفاء أزرار التنقل الخاصة بنظام أندرويد (الرجوع / الرئيسية / المهام الأخيرة)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    developer.log('Flutter Error: ${details.exception}', stackTrace: details.stack);
+    developer.log(
+      'Flutter Error: ${details.exception}',
+      stackTrace: details.stack,
+    );
   };
 
   // Handle platform/asynchronous errors
@@ -65,7 +71,7 @@ void main() async {
     await settingsController.load();
 
     await configureDependencies();
-    
+
     // Initialize FCM
     await getIt<FcmService>().init();
 
@@ -75,6 +81,13 @@ void main() async {
         settingsController: settingsController,
       ),
     );
+
+    // Initialize Background Location Service asynchronously after UI starts
+    // to prevent blocking the main thread and causing ANR.
+    Future.delayed(const Duration(seconds: 1), () async {
+      await LocationService.initialize();
+      debugPrint('📡 [Main] Background Location Service Initialized (Delayed)');
+    });
   } catch (e, stack) {
     developer.log('Initialization Error: $e', stackTrace: stack);
   }

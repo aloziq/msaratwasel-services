@@ -3,6 +3,7 @@ import '../entities/student_stop.dart';
 
 abstract class RouteRepository {
   String get currentTripType;
+  LatLng? get schoolLocation;
   Future<List<StudentStop>> getTripStops();
   Future<List<LatLng>> getRoutePoints();
   Future<void> markStudentBoarded({required String studentId});
@@ -12,7 +13,11 @@ abstract class RouteRepository {
   Future<void> updateLocation({
     required double latitude,
     required double longitude,
+    double? heading,
+    double? speed,
+    double? accuracy,
   });
   Future<void> arriveAtSchool();
   int getOnBoardCount(List<StudentStop> stops);
+  int getUnprocessedCount(List<StudentStop> stops);
 }

@@ -7,8 +7,6 @@ import '../cubit/qr_scan_cubit.dart';
 import '../cubit/qr_scan_state.dart';
 
 import 'package:msaratwasel_services/core/di/injection.dart';
-import 'package:msaratwasel_services/features/teacher/students/presentation/screens/class_details_screen.dart'
-    show AttendanceStatus;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 
