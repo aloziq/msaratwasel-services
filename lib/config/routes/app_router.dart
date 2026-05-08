@@ -237,11 +237,11 @@ class AppRouter {
             path: AppRoutes.messages,
             name: 'messages',
             builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>?;
+              final Map<String, dynamic>? extra = (state.extra as Map?)?.cast<String, dynamic>();
               return MessagesScreen(
-                conversationId: extra?['id'] as String?,
-                recipientName: extra?['name'] as String?,
-                receiverId: extra?['receiverId'] as String?,
+                conversationId: extra?['id']?.toString(),
+                recipientName: extra?['name']?.toString(),
+                receiverId: extra?['receiverId']?.toString(),
               );
             },
           ),
@@ -355,6 +355,8 @@ class AppRouter {
   /// Redirect logic based on authentication state.
   String? _guardRoute(BuildContext context, GoRouterState state) {
     final authState = authCubit.state;
+    debugPrint('🚦 [Router] Guard checking route: ${state.matchedLocation} | State: $authState');
+    
     final isAuthenticated = authState is AuthAuthenticated;
     final isOnAuthRoute =
         state.matchedLocation == AppRoutes.login ||
@@ -367,14 +369,16 @@ class AppRouter {
 
     // If authenticated and on login page, redirect to home
     if (isAuthenticated && state.matchedLocation == AppRoutes.login) {
+      String target = AppRoutes.teacherHome;
       if (authState.user.role == UserRole.assistant) {
-        return AppRoutes.assistantHome;
+        target = AppRoutes.assistantHome;
       } else if (authState.user.role == UserRole.driver) {
-        return AppRoutes.driverHome;
+        target = AppRoutes.driverHome;
       } else if (authState.user.role == UserRole.fieldSupervisor) {
-        return AppRoutes.supervisorHome;
+        target = AppRoutes.supervisorHome;
       }
-      return AppRoutes.teacherHome;
+      debugPrint('🚀 [Router] Authenticated! Redirecting from login to: $target');
+      return target;
     }
 
     // Role-based route protection

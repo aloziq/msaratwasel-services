@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'adaptive_sliver_app_bar.dart';
 
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
+
 class AppSliverHeader extends StatelessWidget {
   const AppSliverHeader({
     super.key,
@@ -42,7 +44,7 @@ class AppSliverHeader extends StatelessWidget {
                     ? Material(
                         color: Colors.transparent,
                         child: IconButton(
-                          icon: Icon(
+                          icon: DirectionalIcon(
                             Icons.arrow_back_ios_new_rounded,
                             color: isDark ? Colors.white : AppColors.primary,
                             size: 22,

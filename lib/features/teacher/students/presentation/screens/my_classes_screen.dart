@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -119,7 +120,7 @@ class _ClassCard extends StatelessWidget {
           ),
         ),
         subtitle: Text('عدد الطلاب: ${classroom.studentCount}'),
-        trailing: Icon(
+        trailing: DirectionalIcon(
           Icons.arrow_forward_ios_rounded,
           size: 16,
           color: theme.colorScheme.primary,

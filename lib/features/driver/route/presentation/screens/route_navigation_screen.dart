@@ -35,10 +35,10 @@ class RouteNavigationScreen extends StatefulWidget {
 class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   final Completer<GoogleMapController> _controller = Completer();
 
-  // Optimized Start Position: Al Mouj/Seeb (West of Azaiba) for linear flow
+  // Improved fallback initial position (more central to Ibb/Yemen)
   static const CameraPosition _kInitialPosition = CameraPosition(
-    target: LatLng(23.6264, 58.2618), // Al Mouj Area
-    zoom: 13.0,
+    target: LatLng(13.9307, 43.7773), 
+    zoom: 14,
   );
 
   // Simulation Data (Optimized Linear Route: West -> East)
@@ -52,8 +52,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Set<Polyline> _polylines = {};
   bool _isArrived = false;
   bool _isActionLoading = false;
+  bool _followMe = true; // Automatically follow the bus
+  bool _isFirstLock = true; // Track first GPS lock to center camera
+  bool _isProgrammaticMove = false; // Distinguish between manual and automatic camera moves
   bool _hasDepartedSchool = false; // Only used for afternoon trip
-  bool _isFinished = false; // When the trip phase logic finishes
+  final bool _isFinished = false; // When the trip phase logic finishes
 
   // Waiting Timer Logic
   Timer? _waitingTimer;
@@ -121,15 +124,52 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
     debugPrint('GPS: Location permissions granted. Starting stream...');
 
-    // 3. Get initial position immediately
+    // 3. Check if service is enabled before getting initial position
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      debugPrint('GPS: Location services are disabled.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('الرجاء تفعيل خدمة الموقع (GPS)')),
+        );
+      }
+      
+      /* 
+      // Smart Mock: If GPS is off in debug mode, use school location as starting point to show the blue line
+      if (kDebugMode && _currentPosition == null) {
+        debugPrint('🛠️ [GPS] Using School Location as Mock Position for Debugging');
+        if (mounted) {
+          setState(() {
+            _currentPosition = _routeRepository.schoolLocation ?? const LatLng(13.9407, 43.7873);
+          });
+          _fetchRoadFollowingRoute();
+        }
+      }
+      */
+      return;
+    }
+
+    // 4. Get initial position immediately and center map
     try {
       final initialPosition = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
       if (mounted) {
+        final initialLatLng = LatLng(initialPosition.latitude, initialPosition.longitude);
         setState(() {
-          _currentPosition = LatLng(initialPosition.latitude, initialPosition.longitude);
+          _currentPosition = initialLatLng;
         });
+        
+        // Initial camera animation to bus
+        final controller = await _controller.future;
+        _isProgrammaticMove = true;
+        controller.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: initialLatLng, zoom: 16),
+          ),
+        );
+        _isFirstLock = false;
+        
         _fetchRoadFollowingRoute();
       }
     } catch (e) {
@@ -161,6 +201,17 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         _currentPosition = newPos;
       });
 
+      // Automatically track camera if enabled and moved significantly
+      if ((_followMe && distance > 5) || _isFirstLock) {
+        _controller.future.then((controller) {
+          _isProgrammaticMove = true;
+          controller.animateCamera(
+            CameraUpdate.newLatLng(newPos),
+          );
+        });
+        if (_isFirstLock) _isFirstLock = false;
+      }
+
       _routeRepository.updateLocation(
         latitude: position.latitude,
         longitude: position.longitude,
@@ -182,8 +233,12 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
   Future<void> _fetchRoadFollowingRoute() async {
     final target = _currentTarget;
-    if (target == null || _currentPosition == null) {
-      debugPrint("DEBUG: Cannot fetch route - Target: $target, Position: $_currentPosition");
+    if (_currentPosition == null) {
+      debugPrint("⚠️ [Navigation] Cannot fetch route: Position is NULL");
+      return;
+    }
+    if (target == null) {
+      debugPrint("⚠️ [Navigation] Cannot fetch route: Target is NULL");
       return;
     }
 
@@ -207,7 +262,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     final origin = "${_currentPosition!.latitude},${_currentPosition!.longitude}";
     final dest = "${target.latitude},${target.longitude}";
 
-    debugPrint("DEBUG: Requesting Road Route to Target: (${target.latitude}, ${target.longitude})");
+    debugPrint("🚀 [Navigation] Requesting Directions: $origin -> $dest");
 
     try {
       final url = Uri.parse(
@@ -255,7 +310,9 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         _error = null;
       });
 
+      debugPrint('📡 [Navigation] Fetching route data from repository...');
       final stops = await _routeRepository.getTripStops();
+      debugPrint('✅ [Navigation] Fetched ${stops.length} stops.');
 
       if (!mounted) return;
 
@@ -263,10 +320,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       int initialIndex = 0;
 
       if (isMorning) {
-        // Skip students who are already boarded OR have an absence request
         initialIndex = stops.indexWhere((s) => !s.isBoarded && !s.isAbsent);
       } else {
-        // Skip students who are already dropped off OR have an absence request
         initialIndex = stops.indexWhere((s) => !s.isDroppedOff && !s.isAbsent);
       }
 
@@ -274,11 +329,21 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         _stops = stops;
         _currentStopIndex = initialIndex == -1 ? stops.length : initialIndex;
         _isLoading = false;
-        _activeRoutePoints = []; // Clear old route as targets might have changed
+        _activeRoutePoints = []; 
         _initMapData();
       });
-      _fetchRoadFollowingRoute(); // Trigger fresh route fetch
+
+      // Log coordinates for debugging
+      if (_stops.isNotEmpty && _currentStopIndex < _stops.length) {
+        final target = _stops[_currentStopIndex].location;
+        debugPrint('📍 [Navigation] Current Target Stop: ${target.latitude}, ${target.longitude}');
+      } else {
+        debugPrint('📍 [Navigation] Target: School (${_routeRepository.schoolLocation?.latitude}, ${_routeRepository.schoolLocation?.longitude})');
+      }
+
+      _fetchRoadFollowingRoute();
     } catch (e) {
+      debugPrint('❌ [Navigation] Error fetching route data: $e');
       if (!mounted) return;
       setState(() {
         _error = e.toString();
@@ -349,7 +414,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
   void _updatePolylines() {
     final target = _currentTarget;
-    if (_currentPosition == null) return;
+    if (_currentPosition == null) {
+      debugPrint('⚠️ [Navigation] Cannot draw polyline: Current Position is NULL (Wait for GPS lock)');
+      return;
+    }
 
     Set<Polyline> newPolylines = {};
 
@@ -583,7 +651,23 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                   markers: _markers,
                   polylines: _polylines,
                   myLocationEnabled: true,
+                  myLocationButtonEnabled: false, // Using custom button
                   zoomControlsEnabled: false,
+                  onCameraMove: (position) {
+                    // If user moves camera manually, disable followMe
+                  },
+                  onCameraMoveStarted: () {
+                    // If the move was NOT programmatic, it's manual -> disable followMe
+                    if (!_isProgrammaticMove && _followMe) {
+                      setState(() {
+                        _followMe = false;
+                      });
+                    }
+                  },
+                  onCameraIdle: () {
+                    // Reset programmatic flag when camera stops moving
+                    _isProgrammaticMove = false;
+                  },
                   onMapCreated: (GoogleMapController controller) {
                     _controller.complete(controller);
                     // Show the first stop's name immediately
@@ -663,6 +747,38 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                       ),
                     ),
                   ),
+
+                // 2.5 Follow Me / Recenter Button
+                Positioned(
+                  right: 20,
+                  bottom: 240, // Adjusted to be above the bottom panel
+                  child: Column(
+                    children: [
+                      FloatingActionButton(
+                        heroTag: 'recenter',
+                        mini: true,
+                        backgroundColor: _followMe ? Colors.blue[700] : Colors.white,
+                        foregroundColor: _followMe ? Colors.white : Colors.blue[700],
+                        onPressed: () async {
+                          setState(() {
+                            _followMe = !_followMe;
+                          });
+                          if (_followMe && _currentPosition != null) {
+                            final controller = await _controller.future;
+                            controller.animateCamera(
+                              CameraUpdate.newLatLngZoom(_currentPosition!, 16),
+                            );
+                          }
+                        },
+                        child: Icon(
+                          _followMe 
+                              ? PhosphorIconsBold.navigationArrow 
+                              : PhosphorIconsBold.crosshair,
+                        ),
+                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
+                    ],
+                  ),
+                ),
 
                 // 3. Bottom Action Panel
                 Positioned(
@@ -840,13 +956,13 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                     : ((currentStop?.isAbsent == true && !isSchoolState)
                                         ? LinearGradient(
                                             colors: [Colors.red[600]!, Colors.orange[800]!],
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
+                                            begin: AlignmentDirectional.centerStart,
+                                            end: AlignmentDirectional.centerEnd,
                                           )
                                         : const LinearGradient(
                                             colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
+                                            begin: AlignmentDirectional.topStart,
+                                            end: AlignmentDirectional.bottomEnd,
                                           )),
                                 onTap: () {
                                   if (_isFinished) return;

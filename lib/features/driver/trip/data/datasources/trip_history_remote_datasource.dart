@@ -26,10 +26,10 @@ class TripHistoryRemoteDataSourceImpl implements TripHistoryRemoteDataSource {
       final response = await _dio.get(
         'driver/trips-history',
         queryParameters: {
-          if (startDate != null) 'start_date': startDate,
-          if (endDate != null) 'end_date': endDate,
-          if (status != null) 'status': status,
-          if (page != null) 'page': page,
+          'start_date': ?startDate,
+          'end_date': ?endDate,
+          'status': ?status,
+          'page': ?page,
         },
       );
 

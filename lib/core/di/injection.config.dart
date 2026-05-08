@@ -127,7 +127,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => registerModule.prefs,
       preResolve: true,
     );
-    gh.lazySingleton<_i928.FcmService>(() => _i928.FcmService());
+    gh.lazySingleton<_i928.FcmService>(() => _i928.FcmService(gh<_i277.AuthCubit>()));
     gh.lazySingleton<_i71.MaintenanceRepository>(
       () => _i391.MaintenanceRepositoryImpl(),
     );

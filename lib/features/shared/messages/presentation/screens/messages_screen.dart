@@ -6,14 +6,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import '../../domain/entities/message_entity.dart';
-import '../../data/models/message_model.dart';
 import 'package:msaratwasel_services/core/utils/date_utils.dart' as date_utils;
 
 import '../../domain/repositories/messages_repository.dart';
 import 'package:get_it/get_it.dart';
 
 class MessagesScreen extends StatefulWidget {
-  const MessagesScreen({super.key, this.conversationId, this.recipientName, this.receiverId});
+  const MessagesScreen({
+    super.key,
+    this.conversationId,
+    this.recipientName,
+    this.receiverId,
+  });
 
   final String? conversationId;
   final String? recipientName;
@@ -31,7 +35,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   bool _isLoading = true;
   String? _error;
-  final MessagesRepository _messagesRepository = GetIt.instance<MessagesRepository>();
+  final MessagesRepository _messagesRepository =
+      GetIt.instance<MessagesRepository>();
 
   List<MessageEntity> _messages = [];
   String? _currentConversationId;
@@ -39,14 +44,20 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('--- MessagesScreen Init ---');
+    debugPrint('conversationId: ${widget.conversationId}');
+    debugPrint('receiverId: ${widget.receiverId}');
+    debugPrint('recipientName: ${widget.recipientName}');
+
     _currentConversationId = widget.conversationId;
 
-    if (_currentConversationId != null) {
+    if (_currentConversationId != null && _currentConversationId!.isNotEmpty) {
       _loadMessages();
       _startPolling();
-    } else if (widget.receiverId != null) {
+    } else if (widget.receiverId != null && widget.receiverId!.isNotEmpty) {
       _startNewConversation();
     } else {
+      debugPrint('Error: Missing conversationId and receiverId');
       setState(() {
         _isLoading = false;
         _error = 'بيانات المحادثة غير مكتملة';
@@ -56,7 +67,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   Future<void> _startNewConversation() async {
     try {
-      final conv = await _messagesRepository.startConversation(widget.receiverId!);
+      final conv = await _messagesRepository.startConversation(
+        widget.receiverId!,
+      );
       if (mounted) {
         setState(() {
           _currentConversationId = conv.id;
@@ -92,28 +105,30 @@ class _MessagesScreenState extends State<MessagesScreen> {
     }
     try {
       if (_currentConversationId == null) return;
-      final msgs = await _messagesRepository.getMessages(_currentConversationId!);
+      final msgs = await _messagesRepository.getMessages(
+        _currentConversationId!,
+      );
       if (mounted) {
         final hadNewMessages = msgs.length > _messages.length;
         setState(() {
           _messages = List<MessageEntity>.from(msgs);
           _isLoading = false;
         });
-        
+
         // Mark as read if we just loaded messages normally OR if polling found new ones
         if (_currentConversationId != null && (!isPolling || hadNewMessages)) {
           _messagesRepository.markAsRead(_currentConversationId!);
         }
       }
-    } catch(e) {
+    } catch (e) {
       if (mounted && !isPolling) {
         setState(() {
           _error = e.toString();
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل تحميل الرسائل: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('فشل تحميل الرسائل: $e')));
       }
     }
   }
@@ -154,19 +169,27 @@ class _MessagesScreenState extends State<MessagesScreen> {
     try {
       if (_currentConversationId == null && widget.receiverId != null) {
         // Wait a bit if it's still initializing, or try to initialize now
-        final conv = await _messagesRepository.startConversation(widget.receiverId!);
+        final conv = await _messagesRepository.startConversation(
+          widget.receiverId!,
+        );
         _currentConversationId = conv.id;
       }
 
       if (_currentConversationId != null) {
-        await _messagesRepository.sendMessage(_currentConversationId!, trimmedText);
+        await _messagesRepository.sendMessage(
+          _currentConversationId!,
+          trimmedText,
+        );
       } else {
         throw Exception('لم يتم العثور على محادثة');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الإرسال: $e'), backgroundColor: Colors.red)
+          SnackBar(
+            content: Text('فشل الإرسال: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
         // Optional: Remove the optimistically added message on failure
       }
@@ -249,11 +272,16 @@ class _MessagesScreenState extends State<MessagesScreen> {
         child: Column(
           children: [
             Expanded(
-              child: _isLoading 
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null 
-                ? Center(child: Text('خطأ: $_error', style: const TextStyle(color: Colors.red)))
-                : hasMessages
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(
+                      child: Text(
+                        'خطأ: $_error',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    )
+                  : hasMessages
                   ? ListView.builder(
                       controller: _scrollController,
                       reverse: true,
@@ -301,6 +329,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         children: [
                           Icon(
                             Icons.chat_bubble_outline_rounded,
+                            matchTextDirection: true,
                             size: 48,
                             color: isDark
                                 ? Colors.white38
@@ -380,8 +409,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [AppColors.primary, AppColors.secondary],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                          begin: AlignmentDirectional.topStart,
+                          end: AlignmentDirectional.bottomEnd,
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -391,22 +420,23 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           ),
                         ],
                       ),
-                      child: _isSending 
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                      child: _isSending
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : IconButton(
+                              onPressed: () => _sendMessage(_controller.text),
+                              icon: const Icon(
+                                Icons.send_rounded,
+                                matchTextDirection: true,
+                                size: 22, // Increased size
+                                color: Colors.white,
+                              ),
                             ),
-                          )
-                        : IconButton(
-                            onPressed: () => _sendMessage(_controller.text),
-                            icon: const Icon(
-                              Icons.send_rounded,
-                              size: 22, // Increased size
-                              color: Colors.white,
-                            ),
-                          ),
                     ),
                   ),
                 ],
@@ -482,7 +512,9 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final alignment = isParent ? Alignment.centerRight : Alignment.centerLeft;
+    final alignment = isParent
+        ? AlignmentDirectional.centerEnd
+        : AlignmentDirectional.centerStart;
     final theme = Theme.of(context);
 
     final bubbleColor = isParent
@@ -495,11 +527,11 @@ class _MessageBubble extends StatelessWidget {
         ? Colors.white
         : (isDark ? Colors.white : theme.colorScheme.onSurface);
 
-    final radius = BorderRadius.only(
-      topLeft: Radius.circular(isParent ? 18 : 4),
-      topRight: Radius.circular(isParent ? 4 : 18),
-      bottomLeft: const Radius.circular(18),
-      bottomRight: const Radius.circular(18),
+    final radius = BorderRadiusDirectional.only(
+      topStart: Radius.circular(isParent ? 18 : 4),
+      topEnd: Radius.circular(isParent ? 4 : 18),
+      bottomStart: const Radius.circular(18),
+      bottomEnd: const Radius.circular(18),
     );
 
     final statusIcon = isParent ? Icons.done_all_rounded : null;

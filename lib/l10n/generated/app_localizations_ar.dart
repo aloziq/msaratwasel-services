@@ -1400,4 +1400,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get incidentReportedSuccessfully => 'تم إرسال البلاغ بنجاح';
+
+  @override
+  String get overview => 'نظرة عامة';
+
+  @override
+  String get totalDriversLabel => 'إجمالي السائقين';
+
+  @override
+  String get activeStatus => 'نشط/ة';
+
+  @override
+  String get todayIncidents => 'حوادث اليوم';
+
+  @override
+  String get todayInspections => 'تفتيشات اليوم';
 }

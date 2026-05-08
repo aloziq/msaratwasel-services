@@ -438,8 +438,8 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
             theme.colorScheme.primary,
             theme.colorScheme.primary.withValues(alpha: 0.8),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -664,7 +664,7 @@ class _StudentCard extends StatelessWidget {
                   _StatusBadge(status: student.status),
                   if (isSelectionMode)
                     Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
+                      padding: const EdgeInsetsDirectional.only(end: 8.0),
                       child: Checkbox(
                         value: isSelected,
                         onChanged: (val) => onTap?.call(),

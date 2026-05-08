@@ -10,13 +10,11 @@ import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart
 import 'package:video_compress/video_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:msaratwasel_services/features/driver/trip/presentation/manager/end_trip_cubit.dart';
-import 'package:flutter/foundation.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';

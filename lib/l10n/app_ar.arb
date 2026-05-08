@@ -527,5 +527,11 @@
     "resolved": "مكتمل",
     "photoAttached": "تم إرفاق الصورة",
     "pleaseDescribeIncident": "يرجى كتابة وصف الحادث",
-    "incidentReportedSuccessfully": "تم إرسال البلاغ بنجاح"
+    "incidentReportedSuccessfully": "تم إرسال البلاغ بنجاح",
+    "overview": "نظرة عامة",
+    "totalDriversLabel": "إجمالي السائقين",
+    "activeStatus": "نشط/ة",
+    "todayTrips": "رحلات اليوم",
+    "todayIncidents": "حوادث اليوم",
+    "todayInspections": "تفتيشات اليوم"
 }

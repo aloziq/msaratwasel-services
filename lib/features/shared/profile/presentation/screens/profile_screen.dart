@@ -358,8 +358,8 @@ class _ProfileHeader extends StatelessWidget {
             theme.colorScheme.primary,
             AppColors.lightBlue,
           ], // Blue Gradient
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -373,7 +373,7 @@ class _ProfileHeader extends StatelessWidget {
       child: Column(
         children: [
           Stack(
-            alignment: Alignment.bottomRight,
+            alignment: AlignmentDirectional.bottomEnd,
             children: [
               Container(
                 padding: const EdgeInsets.all(4),

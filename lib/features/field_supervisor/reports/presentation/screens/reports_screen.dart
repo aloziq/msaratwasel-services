@@ -63,10 +63,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 onRefresh: _loadData,
                 child: CustomScrollView(
                   slivers: [
-                    AppSliverHeader(
-                      title: l10n.reports,
-                      showMenu: true,
-                    ),
+                    AppSliverHeader(title: l10n.reports, showMenu: true),
 
                     // Summary Cards
                     SliverToBoxAdapter(
@@ -123,11 +120,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                       sliver: SliverToBoxAdapter(
                         child: Text(
-                          'نظرة عامة',
+                          l10n.overview,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -139,44 +138,51 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurface : Colors.white,
+                            color: isDark
+                                ? AppColors.darkSurface
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border,
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : AppColors.border,
                             ),
                           ),
                           child: Column(
                             children: [
                               _OverviewRow(
-                                label: 'إجمالي الحافلات',
+                                label: l10n.totalBuses,
                                 value: '${_report['total_buses'] ?? 0}',
-                                subValue: '${_report['active_buses'] ?? 0} نشطة',
+                                subValue:
+                                    '${_report['active_buses'] ?? 0} ${l10n.activeStatus}',
                                 isDark: isDark,
                               ),
                               const Divider(height: 24),
                               _OverviewRow(
-                                label: 'إجمالي السائقين',
+                                label: l10n.totalDriversLabel,
                                 value: '${_report['total_drivers'] ?? 0}',
-                                subValue: '${_report['active_drivers'] ?? 0} نشط',
+                                subValue:
+                                    '${_report['active_drivers'] ?? 0} ${l10n.activeStatus}',
                                 isDark: isDark,
                               ),
                               const Divider(height: 24),
                               _OverviewRow(
-                                label: 'رحلات اليوم',
+                                label: l10n.todayTrips,
                                 value: '${_report['today_trips'] ?? 0}',
                                 subValue: '',
                                 isDark: isDark,
                               ),
                               const Divider(height: 24),
                               _OverviewRow(
-                                label: 'حوادث اليوم',
+                                label: l10n.todayIncidents,
                                 value: '${_report['today_incidents'] ?? 0}',
-                                subValue: '${_report['pending_incidents'] ?? 0} معلقة',
+                                subValue:
+                                    '${_report['pending_incidents'] ?? 0} ${l10n.statusPending}',
                                 isDark: isDark,
                               ),
                               const Divider(height: 24),
                               _OverviewRow(
-                                label: 'تفتيشات اليوم',
+                                label: l10n.todayInspections,
                                 value: '${_report['today_inspections'] ?? 0}',
                                 subValue: '',
                                 isDark: isDark,
@@ -196,7 +202,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -419,6 +427,7 @@ class _ReportTile extends StatelessWidget {
           Icons.arrow_forward_ios,
           size: 16,
           color: isDark ? Colors.white54 : AppColors.textSecondary,
+          matchTextDirection: true,
         ),
       ),
     );

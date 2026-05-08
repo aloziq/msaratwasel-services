@@ -3,16 +3,10 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:msaratwasel_services/config/routes/app_routes.dart';
-import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/data/field_supervisor_remote_datasource.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
-import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
-import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 /// Screen showing list of all drivers and supervisors.

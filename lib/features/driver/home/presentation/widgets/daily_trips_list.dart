@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/features/driver/home/domain/entities/trip_status.dart';
@@ -109,8 +110,8 @@ class _TripListItem extends StatelessWidget {
             isDark ? const Color(0xFF1E293B) : Colors.white,
             isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
@@ -237,7 +238,7 @@ class _TripListItem extends StatelessWidget {
                     ),
                     if (actionEnabled) ...[
                       const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_rounded, size: 20),
+                      const DirectionalIcon(Icons.arrow_forward_rounded, size: 20),
                     ]
                   ],
                 ),

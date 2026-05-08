@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/adaptive_sliver_app_bar.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -633,7 +634,7 @@ class _StudentDetailsModal extends StatelessWidget {
               ),
             ),
             if (onTap != null)
-              Icon(
+              DirectionalIcon(
                 PhosphorIconsRegular.arrowSquareOut,
                 size: 16,
                 color: AppColors.primary.withValues(alpha: 0.5),

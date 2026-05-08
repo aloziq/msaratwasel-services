@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart' as intl;
 
@@ -82,11 +82,9 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                   leading: Material(
                     color: Colors.transparent,
                     child: IconButton(
-                      icon: Icon(
+                      icon: DirectionalIcon(
                         selectedClass != null 
-                          ? (Directionality.of(context) == TextDirection.rtl 
-                              ? PhosphorIconsRegular.arrowLeft 
-                              : PhosphorIconsRegular.arrowRight)
+                          ? PhosphorIconsRegular.arrowLeft
                           : PhosphorIconsRegular.list,
                         color: Theme.of(context).colorScheme.onSurface,
                         size: 28,
@@ -243,8 +241,8 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_right, color: Color(0xFF1E293B)),
-            onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
+            icon: const DirectionalIcon(Icons.chevron_left, color: Color(0xFF1E293B)),
+            onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
           ),
           Text(
             '$monthName $year',
@@ -255,8 +253,8 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: Color(0xFF1E293B)),
-            onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
+            icon: const DirectionalIcon(Icons.chevron_right, color: Color(0xFF1E293B)),
+            onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
           ),
         ],
       ),
@@ -693,12 +691,10 @@ class _ClassCard extends StatelessWidget {
           AppLocalizations.of(context)!.dailyRecordCount(classModel.dailyRecords.length),
           style: GoogleFonts.cairo(color: Colors.grey[600], fontSize: 13),
         ),
-        trailing: Icon(
-          Directionality.of(context) == TextDirection.rtl 
-            ? PhosphorIconsRegular.caretRight 
-            : PhosphorIconsRegular.caretLeft, 
+        trailing: const DirectionalIcon(
+          PhosphorIconsRegular.caretRight, 
           size: 20, 
-          color: const Color(0xFF94A3B8)
+          color: Color(0xFF94A3B8),
         ),
         onTap: onTap,
       ),

@@ -168,8 +168,8 @@ class _WelcomeHeader extends StatelessWidget {
     // Gradient from Image: Cyan/Blue to Dark Blue - now using AppColors
     final gradient = LinearGradient(
       colors: [AppColors.lightBlue, AppColors.primary],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+      begin: AlignmentDirectional.topStart,
+      end: AlignmentDirectional.bottomEnd,
     );
 
     return Container(

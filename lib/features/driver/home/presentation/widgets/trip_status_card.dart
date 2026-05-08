@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -34,8 +35,8 @@ class TripStatusCard extends StatelessWidget {
             isDark ? const Color(0xFF1E293B) : Colors.white,
             isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
@@ -159,7 +160,7 @@ class TripStatusCard extends StatelessWidget {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                  const DirectionalIcon(Icons.arrow_forward_rounded, size: 20),
                 ],
               ),
             ),

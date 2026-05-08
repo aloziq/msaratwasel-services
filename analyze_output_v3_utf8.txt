@@ -1,0 +1,79 @@
+﻿Analyzing msaratwasel-services...
+
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:986:33 - Expected to find ']'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1000:23 - Expected to find ')'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1002:19 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1002:20 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1002:20 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1002:20 - Unexpected text ';'. Try removing the text. - unexpected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1003:17 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1003:17 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1003:17 - Unexpected text ';'. Try removing the text. - unexpected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1003:18 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1003:18 - Unexpected text ';'. Try removing the text. - unexpected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1025:17 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1025:18 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1025:18 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1025:18 - Unexpected text ';'. Try removing the text. - unexpected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1026:15 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1026:15 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1026:15 - Unexpected text ';'. Try removing the text. - unexpected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1026:16 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1026:16 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1026:16 - Unexpected text ';'. Try removing the text. - unexpected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1027:13 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1027:13 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1027:13 - Unexpected text ';'. Try removing the text. - unexpected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1027:14 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1027:14 - Expected to find ';'. - expected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1027:14 - Unexpected text ';'. Try removing the text. - unexpected_token
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1028:5 - Expected an identifier. - missing_identifier
+  error - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1028:5 - Unexpected text ';'. Try removing the text. - unexpected_token
+warning - lib\features\driver\maintenance\presentation\screens\maintenance_entry_screen.dart:149:48 - Dead code. Try removing the code, or fixing the code before it so that it can be reached. - dead_code
+warning - lib\features\driver\maintenance\presentation\screens\maintenance_entry_screen.dart:149:51 - The left operand can't be null, so the right operand is never executed. Try removing the operator and the right operand. - dead_null_aware_expression
+warning - lib\features\driver\maintenance\presentation\screens\maintenance_logs_screen.dart:106:44 - Dead code. Try removing the code, or fixing the code before it so that it can be reached. - dead_code
+warning - lib\features\driver\maintenance\presentation\screens\maintenance_logs_screen.dart:106:47 - The left operand can't be null, so the right operand is never executed. Try removing the operator and the right operand. - dead_null_aware_expression
+warning - lib\features\driver\maintenance\presentation\screens\maintenance_logs_screen.dart:166:11 - The value of the local variable 'isArabic' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - lib\features\driver\maintenance\presentation\screens\maintenance_logs_screen.dart:238:11 - The value of the local variable 'l10n' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:1002:20 - Dead code. Try removing the code, or fixing the code before it so that it can be reached. - dead_code
+warning - lib\features\driver\trip\presentation\screens\end_trip_screen.dart:509:11 - The value of the local variable 'cubit' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - lib\features\shared\profile\presentation\screens\profile_screen.dart:30:9 - The value of the field '_profileImage' isn't used. Try removing the field, or using it. - unused_field
+warning - lib\features\teacher\attendance_history\presentation\screens\attendance_history_screen.dart:265:11 - The value of the local variable 'firstDayOfMonth' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - lib\features\teacher\attendance_history\presentation\screens\attendance_history_screen.dart:957:8 - The declaration '_launchWhatsApp' isn't referenced. Try removing the declaration of '_launchWhatsApp'. - unused_element
+warning - lib\features\teacher\teacher\presentation\screens\teacher_home_screen.dart:251:9 - The value of the local variable 'studentCount' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - lib\features\teacher\teacher\presentation\screens\teacher_home_screen.dart:278:19 - The value of the local variable 'cardWidth' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - scratch\test_cast.dart:4:32 - The value of the local variable 'm2' isn't used. Try removing the variable or using it. - unused_local_variable
+   info - lib\core\services\direction_service.dart:23:18 - 'PolylineRequest' is deprecated and shouldn't be used. Use RoutesApiRequest instead. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:457:52 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:462:54 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:575:50 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:582:52 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:602:35 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:628:43 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:659:50 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:663:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:664:43 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\assistant\incidents\presentation\screens\incident_report_screen.dart:674:52 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:118:40 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:118:71 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:122:33 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:137:47 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:137:78 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:154:52 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:154:83 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:225:56 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:278:32 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\home\presentation\widgets\daily_trips_list.dart:279:31 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\route\presentation\screens\route_navigation_screen.dart:443:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\trip\presentation\screens\end_trip_screen.dart:11:8 - The imported package 'path_provider' isn't a dependency of the importing package. Try adding a dependency for 'path_provider' in the 'pubspec.yaml' file. - depend_on_referenced_packages
+   info - lib\features\driver\trip\presentation\screens\end_trip_screen.dart:358:52 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\trip\presentation\screens\end_trip_screen.dart:406:39 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\trip\presentation\screens\end_trip_screen.dart:445:39 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
+   info - lib\features\driver\trip\presentation\screens\trip_history_page.dart:304:65 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\driver\trip\presentation\screens\trip_history_page.dart:404:22 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib\features\shared\messages\data\repositories\messages_repository_impl.dart:148:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib\features\shared\profile\presentation\screens\change_password_screen.dart:98:48 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - scratch\test_cast.dart:5:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - scratch\test_cast.dart:7:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+
+75 issues found.

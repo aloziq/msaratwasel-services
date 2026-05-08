@@ -10,6 +10,7 @@ import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/aut
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:dartz/dartz.dart' hide State;
 import 'package:msaratwasel_services/features/teacher/teacher/domain/entities/classroom_entity.dart';
 import 'package:msaratwasel_services/features/teacher/teacher/domain/usecases/get_teacher_classrooms_usecase.dart';
@@ -642,7 +643,7 @@ class _AppDrawerState extends State<AppDrawer> {
         child: Column(
           children: [
             Stack(
-              alignment: Alignment.bottomRight,
+              alignment: AlignmentDirectional.centerStart,
               children: [
                 Container(
                   padding: const EdgeInsets.all(4),
@@ -827,7 +828,7 @@ class _DrawerItem extends StatelessWidget {
             vertical: 2,
           ),
           minLeadingWidth: 24,
-          leading: Icon(icon, color: foregroundColor, size: 22),
+          leading: DirectionalIcon(icon, color: foregroundColor, size: 22),
           title: Text(
             title,
             style: TextStyle(

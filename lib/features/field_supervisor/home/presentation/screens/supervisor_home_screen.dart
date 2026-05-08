@@ -11,8 +11,6 @@ import 'package:msaratwasel_services/features/field_supervisor/home/presentation
 import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
-import 'package:go_router/go_router.dart';
-import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 /// Main dashboard screen for Field Supervisor role.
@@ -274,8 +272,8 @@ class _WelcomeHeader extends StatelessWidget {
                 AppColors.primary,
                 AppColors.primary.withValues(alpha: 0.85),
               ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [

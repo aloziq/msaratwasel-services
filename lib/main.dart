@@ -40,9 +40,6 @@ class AppBlocObserver extends BlocObserver {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // إخفاء أزرار التنقل الخاصة بنظام أندرويد (الرجوع / الرئيسية / المهام الأخيرة)
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     developer.log(
@@ -60,20 +57,17 @@ void main() async {
   Bloc.observer = AppBlocObserver();
 
   try {
+    debugPrint('🚀 [Main] Initializing Firebase...');
     await Firebase.initializeApp();
+    debugPrint('✅ [Main] Firebase Initialized');
 
-    // Initialize ThemeController
+    // Initialize Controllers without blocking main
     final themeController = ThemeController();
-    await themeController.load();
-
-    // Initialize SettingsController
     final settingsController = SettingsController();
-    await settingsController.load();
 
+    debugPrint('🚀 [Main] Configuring Dependencies...');
     await configureDependencies();
-
-    // Initialize FCM
-    await getIt<FcmService>().init();
+    debugPrint('✅ [Main] Dependencies Configured');
 
     runApp(
       MainApp(
@@ -82,14 +76,29 @@ void main() async {
       ),
     );
 
-    // Initialize Background Location Service asynchronously after UI starts
-    // to prevent blocking the main thread and causing ANR.
-    Future.delayed(const Duration(seconds: 1), () async {
-      await LocationService.initialize();
-      debugPrint('📡 [Main] Background Location Service Initialized (Delayed)');
+    // Initialize services that don't need to block the first frame
+    // We use longer delays to prevent ANR on devices using Impeller (Vulkan)
+    Future.delayed(const Duration(seconds: 3), () async {
+      try {
+        debugPrint('🚀 [Main] Initializing Post-startup Services...');
+        
+        // 1. Initialize FCM (Starts a background engine)
+        getIt<FcmService>().init();
+        debugPrint('✅ [Main] FCM Init Triggered');
+
+        // 2. Wait more before starting the next heavy engine
+        await Future.delayed(const Duration(seconds: 5));
+        
+        debugPrint('🚀 [Main] Initializing Background Location Service...');
+        await LocationService.initialize();
+        debugPrint('✅ [Main] Background Location Service Initialized');
+      } catch (e) {
+        debugPrint('❌ [Main] Post-startup Initialization Error: $e');
+      }
     });
   } catch (e, stack) {
     developer.log('Initialization Error: $e', stackTrace: stack);
+    debugPrint('❌ [Main] Critical Initialization Error: $e');
   }
 }
 
@@ -114,6 +123,14 @@ class _MainAppState extends State<MainApp> {
   void initState() {
     super.initState();
     _appRouter = AppRouter(authCubit: getIt<AuthCubit>());
+    getIt<FcmService>().setRouter(_appRouter.router);
+
+    // Load controllers in background without blocking the first frame
+    widget.themeController.load();
+    widget.settingsController.load();
+
+    // Hide system UI (back/home/recents) after the app starts
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   @override

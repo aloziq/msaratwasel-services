@@ -162,7 +162,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: _busStudents.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (ctx, index) {
                       final student = _busStudents[index];
                       final String studentId = (student['id'] ?? '').toString();

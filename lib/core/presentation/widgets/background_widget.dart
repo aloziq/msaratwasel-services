@@ -58,10 +58,9 @@ class BackgroundWidget extends StatelessWidget {
             delay: const Duration(seconds: 4),
           ),
         ),
-        // Blur overlay for soft/subtle effect
         Positioned.fill(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
             child: Container(color: Colors.transparent),
           ),
         ),

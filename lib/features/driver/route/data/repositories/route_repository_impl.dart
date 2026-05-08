@@ -279,9 +279,11 @@ class RouteRepositoryImpl implements RouteRepository {
     final parsedLng = double.tryParse(lng?.toString() ?? '0.0') ?? 0.0;
 
     if (parsedLat != 0.0 || parsedLng != 0.0) {
+      debugPrint('📍 [REPO] Found location for student: $parsedLat, $parsedLng');
       return LatLng(parsedLat, parsedLng);
     }
     
+    debugPrint('⚠️ [REPO] No valid location for student: ${json['name']}, falling back to school/default');
     // Final fallback to school location or Muscat if everything fails (to avoid Null Island)
     return _schoolLocation ?? const LatLng(23.6080, 58.4500);
   }

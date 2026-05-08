@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:google_fonts/google_fonts.dart';
 
@@ -466,8 +466,8 @@ class _SummaryCard extends StatelessWidget {
                     padding: const EdgeInsets.all(8), // Smaller padding
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                        begin: AlignmentDirectional.topStart,
+                        end: AlignmentDirectional.bottomEnd,
                         colors: [
                           color.withValues(alpha: 0.15),
                           color.withValues(alpha: 0.05),
@@ -681,8 +681,8 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(Icons.chevron_right, color: Color(0xFF1E293B)),
-          onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
+          icon: const DirectionalIcon(Icons.chevron_left, color: Color(0xFF1E293B)),
+          onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
         ),
         Text(
           '$monthName $year',
@@ -693,8 +693,8 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.chevron_left, color: Color(0xFF1E293B)),
-          onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
+          icon: const DirectionalIcon(Icons.chevron_right, color: Color(0xFF1E293B)),
+          onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
         ),
       ],
     );

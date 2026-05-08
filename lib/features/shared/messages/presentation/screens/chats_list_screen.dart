@@ -42,7 +42,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
       final conversations = await _messagesRepository.getConversations();
       
       setState(() {
-        _conversations = conversations;
+        _conversations = List<ConversationEntity>.from(conversations);
         _isLoading = false;
       });
     } catch (e) {
@@ -530,7 +530,7 @@ class _ChatAvatar extends StatelessWidget {
               ),
             );
           },
-          errorBuilder: (_, __, ___) => fallback,
+          errorBuilder: (_, _, _) => fallback,
         ),
       ),
     );

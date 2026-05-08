@@ -1409,4 +1409,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get incidentReportedSuccessfully => 'Incident reported successfully';
+
+  @override
+  String get overview => 'Overview';
+
+  @override
+  String get totalDriversLabel => 'Total Drivers';
+
+  @override
+  String get activeStatus => 'Active';
+
+  @override
+  String get todayIncidents => 'Today\'s Incidents';
+
+  @override
+  String get todayInspections => 'Today\'s Inspections';
 }

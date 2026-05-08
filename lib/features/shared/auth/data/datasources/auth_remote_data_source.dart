@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
-import '../../domain/entities/user_entity.dart';
 import '../models/user_model.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../../../../core/di/injection.dart';
@@ -55,7 +54,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'password': password,
           'device_name': 'device_1',
           'app_context': 'services',
-          if (fcmToken != null) 'fcm_token': fcmToken,
+          'fcm_token': ?fcmToken,
         },
       );
 

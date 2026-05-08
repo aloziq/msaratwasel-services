@@ -432,7 +432,7 @@ class _NewInspectionSheetState extends State<_NewInspectionSheet> {
           ),
           const SizedBox(height: 20),
           DropdownButtonFormField<int>(
-            value: _selectedBusId,
+            initialValue: _selectedBusId,
             decoration: InputDecoration(
               labelText: widget.l10n.selectBus,
               border: OutlineInputBorder(

@@ -552,7 +552,7 @@ class _NewDelaySheetState extends State<_NewDelaySheet> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _selectedReason,
+            initialValue: _selectedReason,
             decoration: InputDecoration(
               labelText: widget.l10n.delayReason,
               border: OutlineInputBorder(
@@ -766,7 +766,7 @@ class _StudentSearchSheetState extends State<_StudentSearchSheet> {
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _searchController,
-                  builder: (_, value, __) {
+                  builder: (_, value, _) {
                     if (value.text.isEmpty) return const SizedBox.shrink();
                     return IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 20),
@@ -827,7 +827,7 @@ class _StudentSearchSheetState extends State<_StudentSearchSheet> {
                           vertical: 8,
                         ),
                         itemCount: _students.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final student = _students[index];
                           return ListTile(
@@ -969,7 +969,7 @@ class _BusSearchSheetState extends State<_BusSearchSheet> {
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _searchController,
-                  builder: (_, value, __) {
+                  builder: (_, value, _) {
                     if (value.text.isEmpty) return const SizedBox.shrink();
                     return IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 20),
@@ -1027,7 +1027,7 @@ class _BusSearchSheetState extends State<_BusSearchSheet> {
                       vertical: 8,
                     ),
                     itemCount: _filteredBuses.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final bus = _filteredBuses[index];
                       return ListTile(

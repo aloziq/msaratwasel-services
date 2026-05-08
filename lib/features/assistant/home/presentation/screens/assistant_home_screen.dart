@@ -396,8 +396,8 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
             const Color(0xFF2563EB), // Blue 600
             const Color(0xFF1E40AF), // Blue 800
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
         ),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
@@ -411,8 +411,8 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
       child: Stack(
         children: [
           // Decorative circles
-          Positioned(
-            right: -20,
+          PositionedDirectional(
+            end: -20,
             top: -20,
             child: Container(
               width: 100,

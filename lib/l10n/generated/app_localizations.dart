@@ -2779,6 +2779,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Incident reported successfully'**
   String get incidentReportedSuccessfully;
+
+  /// No description provided for @overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get overview;
+
+  /// No description provided for @totalDriversLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Drivers'**
+  String get totalDriversLabel;
+
+  /// No description provided for @activeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get activeStatus;
+
+  /// No description provided for @todayIncidents.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Incidents'**
+  String get todayIncidents;
+
+  /// No description provided for @todayInspections.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Inspections'**
+  String get todayInspections;
 }
 
 class _AppLocalizationsDelegate

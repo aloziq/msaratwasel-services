@@ -527,5 +527,11 @@
     "resolved": "Resolved",
     "photoAttached": "Photo attached",
     "pleaseDescribeIncident": "Please describe the incident",
-    "incidentReportedSuccessfully": "Incident reported successfully"
+    "incidentReportedSuccessfully": "Incident reported successfully",
+    "overview": "Overview",
+    "totalDriversLabel": "Total Drivers",
+    "activeStatus": "Active",
+    "todayTrips": "Today's Trips",
+    "todayIncidents": "Today's Incidents",
+    "todayInspections": "Today's Inspections"
 }

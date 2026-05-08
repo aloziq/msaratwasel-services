@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 
 import '../../../config/theme/app_spacing.dart';
 
@@ -78,7 +79,7 @@ class PremiumButton extends StatelessWidget {
                     ),
                     if (icon != null) ...[
                       const SizedBox(width: AppSpacing.sm),
-                      Icon(icon, size: 20, color: Colors.white),
+                      DirectionalIcon(icon!, size: 20, color: Colors.white),
                     ],
                   ],
                 ),

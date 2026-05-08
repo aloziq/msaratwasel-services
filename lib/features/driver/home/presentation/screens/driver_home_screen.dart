@@ -126,8 +126,8 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                            begin: AlignmentDirectional.topStart,
+                            end: AlignmentDirectional.bottomEnd,
                           ),
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
@@ -178,8 +178,9 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                                         fit: BoxFit.cover,
                                         loadingBuilder:
                                             (context, child, progress) {
-                                              if (progress == null)
+                                              if (progress == null) {
                                                 return child;
+                                              }
                                               return Container(
                                                 color: Colors.white24,
                                                 child: const Center(

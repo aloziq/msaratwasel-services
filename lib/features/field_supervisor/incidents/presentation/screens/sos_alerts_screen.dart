@@ -33,11 +33,12 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final data = await FieldSupervisorRemoteDataSource.getIncidents();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _incidents = data;
         _isLoading = false;
       });
+    }
   }
 
   @override
@@ -124,7 +125,7 @@ class _SosAlertsScreenState extends State<SosAlertsScreen> {
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    'لا توجد حوادث مسجلة',
+                                    l10n.noResultsFound,
                                     style: TextStyle(
                                       color: isDark
                                           ? Colors.white54
@@ -239,7 +240,7 @@ class _ActiveEmergencyBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${l10n.activeEmergency}',
+                  l10n.activeEmergency,
                   style: const TextStyle(
                     color: Color(0xFFDC2626),
                     fontSize: 14,
@@ -276,17 +277,17 @@ class _ActiveEmergencyBanner extends StatelessWidget {
   String _typeLabel(String? type) {
     switch (type) {
       case 'sos':
-        return 'طوارئ';
+        return l10n.typeSOS;
       case 'behavioral':
-        return 'سلوكي';
+        return l10n.typeBehavioral;
       case 'health':
-        return 'صحي';
+        return l10n.typeHealth;
       case 'technical':
-        return 'تقني';
+        return l10n.typeTechnical;
       case 'traffic':
-        return 'مروري';
+        return l10n.typeTraffic;
       default:
-        return 'بلاغ';
+        return l10n.reports;
     }
   }
 }
@@ -342,15 +343,15 @@ class _IncidentCard extends StatelessWidget {
       case 'sos':
         return 'SOS';
       case 'behavioral':
-        return 'سلوكي';
+        return l10n.typeBehavioral;
       case 'health':
-        return 'صحي';
+        return l10n.typeHealth;
       case 'technical':
-        return 'تقني';
+        return l10n.typeTechnical;
       case 'traffic':
-        return 'مروري';
+        return l10n.typeTraffic;
       default:
-        return 'بلاغ';
+        return l10n.reports;
     }
   }
 
@@ -491,7 +492,7 @@ class _IncidentCard extends StatelessWidget {
                         border: Border.all(
                           color: isDark
                               ? Colors.white12
-                              : Colors.grey.withOpacity(0.2),
+                              : Colors.grey.withValues(alpha: 0.2),
                         ),
                       ),
                       child: Stack(
@@ -517,13 +518,13 @@ class _IncidentCard extends StatelessWidget {
                                   end: Alignment.bottomCenter,
                                   colors: [
                                     Colors.transparent,
-                                    Colors.black.withOpacity(0.5),
+                                    Colors.black.withValues(alpha: 0.5),
                                   ],
                                 ),
                               ),
                             ),
                           ),
-                          const Positioned(
+                          Positioned(
                             bottom: 8,
                             right: 12,
                             child: Row(
@@ -535,7 +536,7 @@ class _IncidentCard extends StatelessWidget {
                                 ),
                                 SizedBox(width: 4),
                                 Text(
-                                  'عرض المرفق',
+                                  l10n.details,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 12,
@@ -583,7 +584,7 @@ class _IncidentCard extends StatelessWidget {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('الطلاب المعنيين بالبلاغ'),
+                          title: Text(l10n.students),
                           content: SingleChildScrollView(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -603,7 +604,7 @@ class _IncidentCard extends StatelessWidget {
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text('إغلاق'),
+                              child: Text(l10n.close),
                             ),
                           ],
                         ),
@@ -703,7 +704,7 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
   bool _isLoadingData = true;
 
   int? _selectedBusId;
-  List<int> _selectedStudentIds = [];
+  final List<int> _selectedStudentIds = [];
   List<Map<String, dynamic>> _buses = [];
   List<Map<String, dynamic>> _students = [];
 

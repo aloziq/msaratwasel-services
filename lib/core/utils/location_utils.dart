@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'package:intl/intl.dart';
 
 class LocationUtils {
   /// Speed constant in km/h as requested by the user

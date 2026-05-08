@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/app_drawer.dart'; // Added Import
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -368,7 +369,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         elevation: 0,
                       ),
-                      icon: const Icon(Icons.logout_rounded),
+                      icon: const DirectionalIcon(Icons.logout_rounded),
                       label: Text(
                         l10n.logout,
                         style: TextStyle(
@@ -520,7 +521,7 @@ class _SettingsTile extends StatelessWidget {
               if (trailing != null)
                 trailing!
               else
-                Icon(
+                DirectionalIcon(
                   Icons.arrow_forward_ios_rounded,
                   size: 16,
                   color: isDark ? Colors.white30 : Colors.black26,
