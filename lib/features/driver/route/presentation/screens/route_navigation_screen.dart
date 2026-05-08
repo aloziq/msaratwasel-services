@@ -939,7 +939,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                           )),
                                 icon: (currentStop?.isAbsent == true && !isSchoolState)
                                     ? PhosphorIconsBold.skipForward
-                                    : (_hasNotified || isSchoolState
+                                    : (_hasNotified || isSchoolState || !_isMovingToStop
                                         ? PhosphorIconsBold.arrowRight
                                         : PhosphorIconsBold.mapPin),
                                 onTap: () {
@@ -1022,7 +1022,14 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     }
 
     if (_hasNotified) {
-      return isArabic ? 'الانتقال للوجهة التالية' : 'Next Destination';
+      final baseText = isArabic ? 'الانتقال للوجهة التالية' : 'Next Destination';
+      if (_waitingStudent?.id == currentStop?.id && _secondsRemaining > 0) {
+        final minutes = _secondsRemaining ~/ 60;
+        final seconds = _secondsRemaining % 60;
+        final timerText = '(${minutes}:${seconds.toString().padLeft(2, '0')})';
+        return '$baseText $timerText';
+      }
+      return baseText;
     }
     
     if (!_isMovingToStop) {

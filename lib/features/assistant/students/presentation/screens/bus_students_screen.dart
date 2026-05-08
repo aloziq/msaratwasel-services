@@ -349,6 +349,12 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
 
   Widget _buildSearchAndFilter(BuildContext context, bool isDark) {
     final l10n = AppLocalizations.of(context)!;
+    final cubitState = context.read<BusTripCubit>().state;
+    final direction = (cubitState is BusTripLoaded)
+        ? cubitState.trip.suggestedDirection
+        : 'to_school';
+    final isToSchool = direction == 'to_school';
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -377,11 +383,17 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
               children: [
                 _buildFilterChip(null, l10n.all),
                 const SizedBox(width: AppSpacing.xs),
-                _buildFilterChip(BusStudentStatus.atHome, l10n.atHome),
+                if (isToSchool)
+                  _buildFilterChip(BusStudentStatus.atHome, l10n.atHome)
+                else
+                  _buildFilterChip(BusStudentStatus.atSchool, l10n.atSchool),
                 const SizedBox(width: AppSpacing.xs),
                 _buildFilterChip(BusStudentStatus.onBus, l10n.onBus),
                 const SizedBox(width: AppSpacing.xs),
-                _buildFilterChip(BusStudentStatus.atSchool, l10n.atSchool),
+                if (isToSchool)
+                  _buildFilterChip(BusStudentStatus.atSchool, l10n.atSchool)
+                else
+                  _buildFilterChip(BusStudentStatus.atHome, l10n.atHome),
                 const SizedBox(width: AppSpacing.xs),
                 _buildFilterChip(BusStudentStatus.absent, l10n.absent),
               ],
@@ -851,6 +863,12 @@ class _StudentCard extends StatelessWidget {
 
   Widget _buildMoreButton(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final cubitState = context.read<BusTripCubit>().state;
+    final direction = (cubitState is BusTripLoaded)
+        ? cubitState.trip.suggestedDirection
+        : 'to_school';
+    final isToSchool = direction == 'to_school';
+
     return PopupMenuButton<BusStudentStatus>(
       icon: const Icon(PhosphorIconsRegular.dotsThreeVertical),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -858,12 +876,15 @@ class _StudentCard extends StatelessWidget {
         context.read<BusTripCubit>().updateStudentStatus(student.id, status);
       },
       itemBuilder: (context) => [
-        PopupMenuItem(value: BusStudentStatus.atHome, child: Text(l10n.atHome)),
+        if (isToSchool)
+          PopupMenuItem(value: BusStudentStatus.atHome, child: Text(l10n.atHome)),
+        if (!isToSchool)
+          PopupMenuItem(value: BusStudentStatus.atSchool, child: Text(l10n.atSchool)),
         PopupMenuItem(value: BusStudentStatus.onBus, child: Text(l10n.onBus)),
-        PopupMenuItem(
-          value: BusStudentStatus.atSchool,
-          child: Text(l10n.atSchool),
-        ),
+        if (isToSchool)
+          PopupMenuItem(value: BusStudentStatus.atSchool, child: Text(l10n.atSchool)),
+        if (!isToSchool)
+          PopupMenuItem(value: BusStudentStatus.atHome, child: Text(l10n.atHome)),
         PopupMenuItem(value: BusStudentStatus.absent, child: Text(l10n.absent)),
       ],
     );
