@@ -56,6 +56,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   bool _isFirstLock = true; // Track first GPS lock to center camera
   bool _isProgrammaticMove = false; // Distinguish between manual and automatic camera moves
   bool _hasDepartedSchool = false; // Only used for afternoon trip
+  bool _hasNotified = false; // Whether parent has been notified for the current stop
+  bool _isMovingToStop = false; // Whether the driver has started moving to the current stop
   final bool _isFinished = false; // When the trip phase logic finishes
 
   // Waiting Timer Logic
@@ -475,44 +477,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       // 2. Start Timer
       _startWaitingTimer(currentStudent);
 
-      // 3. IMMEDIATE Advance to next student route
+      // 3. Mark as notified to change button to "Next Destination"
       setState(() {
-        _currentStopIndex++;
-        _activeRoutePoints = []; // Clear old route
+        _hasNotified = true;
         _isActionLoading = false;
-        _initMapData();
-        _fetchRoadFollowingRoute(); // Refresh road route for next student
       });
-
-      // Update map view
-      final controller = await _controller.future;
-      if (_currentStopIndex < _stops.length) {
-        controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: _stops[_currentStopIndex].location,
-              zoom: 15,
-            ),
-          ),
-        );
-        controller.showMarkerInfoWindow(
-          MarkerId('stop_$_currentStopIndex'),
-        );
-      } else {
-        // Reached last student, go to school (if morning)
-        final isMorning = _routeRepository.currentTripType == 'morning';
-        if (isMorning) {
-          controller.animateCamera(
-            CameraUpdate.newCameraPosition(
-              CameraPosition(
-                target: _routeRepository.schoolLocation ?? const LatLng(23.6080, 58.4500),
-                zoom: 15,
-              ),
-            ),
-          );
-          controller.showMarkerInfoWindow(const MarkerId('school_stop'));
-        }
-      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -556,6 +525,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         if (_currentStopIndex < _stops.length) {
           setState(() {
             _currentStopIndex++;
+            _hasNotified = false;
+            _isMovingToStop = false;
             _activeRoutePoints = [];
             _isArrived = false;
             _isActionLoading = false;
@@ -594,6 +565,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         } else if (_currentStopIndex < _stops.length) {
           setState(() {
             _currentStopIndex++;
+            _hasNotified = false;
+            _isMovingToStop = false;
             _activeRoutePoints = [];
             _isActionLoading = false;
             _initMapData();
@@ -964,6 +937,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                             begin: AlignmentDirectional.topStart,
                                             end: AlignmentDirectional.bottomEnd,
                                           )),
+                                icon: (currentStop?.isAbsent == true && !isSchoolState)
+                                    ? PhosphorIconsBold.skipForward
+                                    : (_hasNotified || isSchoolState
+                                        ? PhosphorIconsBold.arrowRight
+                                        : PhosphorIconsBold.mapPin),
                                 onTap: () {
                                   if (_isFinished) return;
                                   // If absent, skip directly
@@ -974,14 +952,15 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                   if (isSchoolState) {
                                     _advanceToNextStop();
                                   } else {
-                                    _handleNearHouse();
+                                    if (_hasNotified) {
+                                      _advanceToNextStop();
+                                    } else if (!_isMovingToStop) {
+                                      setState(() { _isMovingToStop = true; });
+                                    } else {
+                                      _handleNearHouse();
+                                    }
                                   }
                                 },
-                                icon: (currentStop?.isAbsent == true && !isSchoolState)
-                                    ? PhosphorIconsBold.skipForward
-                                    : (_isArrived || isSchoolState
-                                        ? PhosphorIconsBold.arrowRight
-                                        : PhosphorIconsBold.mapPin),
                               ).animate(
                                 onPlay: (controller) {
                                   if (currentStop?.isAbsent == true && !isSchoolState) {
@@ -1041,6 +1020,15 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       if (isMorning) return isArabic ? '🏢 الوصول إلى المدرسة' : '🏢 Arrive at School';
       return isArabic ? '🚀 مغادرة المدرسة' : '🚀 Depart School';
     }
+
+    if (_hasNotified) {
+      return isArabic ? 'الانتقال للوجهة التالية' : 'Next Destination';
+    }
+    
+    if (!_isMovingToStop) {
+      return isArabic ? 'الانتقال للوجهة التالية' : 'Next Destination';
+    }
+
     return isArabic ? '📍 بجوار المنزل' : '📍 Near House';
   }
 }

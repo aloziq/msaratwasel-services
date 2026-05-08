@@ -427,7 +427,6 @@ class _ReportTile extends StatelessWidget {
           Icons.arrow_forward_ios,
           size: 16,
           color: isDark ? Colors.white54 : AppColors.textSecondary,
-          matchTextDirection: true,
         ),
       ),
     );

@@ -329,7 +329,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         children: [
                           Icon(
                             Icons.chat_bubble_outline_rounded,
-                            matchTextDirection: true,
                             size: 48,
                             color: isDark
                                 ? Colors.white38
@@ -432,7 +431,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
                               onPressed: () => _sendMessage(_controller.text),
                               icon: const Icon(
                                 Icons.send_rounded,
-                                matchTextDirection: true,
                                 size: 22, // Increased size
                                 color: Colors.white,
                               ),
