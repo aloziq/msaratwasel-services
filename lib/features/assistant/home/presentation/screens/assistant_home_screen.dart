@@ -47,7 +47,7 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
           onTripStatusUpdated: (data) {
             debugPrint('🔄 Trip status updated via Reverb: $data');
             if (mounted) {
-              context.read<BusTripCubit>().loadTrip();
+              context.read<BusTripCubit>().loadTrip(silent: true);
             }
           },
         );

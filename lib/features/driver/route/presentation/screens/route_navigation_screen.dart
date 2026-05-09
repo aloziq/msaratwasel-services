@@ -88,7 +88,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         dio: ApiClient.instance,
         onStudentLocationUpdated: (data) {
           debugPrint("REVERB: Student location updated, refreshing route data...");
-          _fetchRouteData();
+          _fetchRouteData(silent: true);
         }
       );
       _reverbService!.connect();
@@ -305,12 +305,14 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     }
   }
 
-  Future<void> _fetchRouteData() async {
+  Future<void> _fetchRouteData({bool silent = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (!silent) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       debugPrint('📡 [Navigation] Fetching route data from repository...');
       final stops = await _routeRepository.getTripStops();

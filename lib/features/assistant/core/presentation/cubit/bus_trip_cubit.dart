@@ -11,8 +11,8 @@ class BusTripCubit extends Cubit<BusTripState> {
 
   BusTripCubit({required this.repository}) : super(BusTripInitial());
 
-  Future<void> loadTrip() async {
-    emit(BusTripLoading());
+  Future<void> loadTrip({bool silent = false}) async {
+    if (!silent) emit(BusTripLoading());
     final result = await repository.getActiveTrip();
     result.fold(
       (failure) => emit(BusTripError(failure)),

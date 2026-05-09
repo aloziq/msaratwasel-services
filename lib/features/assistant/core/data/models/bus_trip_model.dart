@@ -34,7 +34,7 @@ class BusTripModel extends BusTripEntity {
           : null,
       isCompleted: json['isCompleted'] as bool? ?? false,
       suggestedDirection: json['suggested_direction'] as String?,
-      suggestedTripType: json['suggested_trip_type'] as String?,
+      suggestedTripType: json['trip_type'] as String?,
       tripStatus: json['trip_status'] as String?,
     );
   }

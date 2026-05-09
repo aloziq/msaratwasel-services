@@ -43,7 +43,7 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
         if (cubit.state is BusTripLoaded) {
           final trip = (cubit.state as BusTripLoaded).trip;
           if (trip.tripStatus == 'in_progress') {
-            cubit.loadTrip();
+            cubit.loadTrip(silent: true);
           }
         }
       }
@@ -777,7 +777,7 @@ class _StudentCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final cubitState = context.read<BusTripCubit>().state;
     final direction = (cubitState is BusTripLoaded)
-        ? cubitState.trip.suggestedDirection
+        ? cubitState.trip.suggestedTripType
         : 'to_school';
 
     final isToSchool = direction == 'to_school';
@@ -865,7 +865,7 @@ class _StudentCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final cubitState = context.read<BusTripCubit>().state;
     final direction = (cubitState is BusTripLoaded)
-        ? cubitState.trip.suggestedDirection
+        ? cubitState.trip.suggestedTripType
         : 'to_school';
     final isToSchool = direction == 'to_school';
 
@@ -876,10 +876,6 @@ class _StudentCard extends StatelessWidget {
         context.read<BusTripCubit>().updateStudentStatus(student.id, status);
       },
       itemBuilder: (context) => [
-        if (isToSchool)
-          PopupMenuItem(value: BusStudentStatus.atHome, child: Text(l10n.atHome)),
-        if (!isToSchool)
-          PopupMenuItem(value: BusStudentStatus.atSchool, child: Text(l10n.atSchool)),
         PopupMenuItem(value: BusStudentStatus.onBus, child: Text(l10n.onBus)),
         if (isToSchool)
           PopupMenuItem(value: BusStudentStatus.atSchool, child: Text(l10n.atSchool)),
