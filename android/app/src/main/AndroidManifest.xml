@@ -47,6 +47,10 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs" />
 
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="msarat_wasel_high_importance_v2" />
+
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:foregroundServiceType="location"

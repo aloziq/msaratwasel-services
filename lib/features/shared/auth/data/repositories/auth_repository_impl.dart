@@ -7,6 +7,8 @@ import '../models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_local_data_source.dart';
 import '../datasources/auth_remote_data_source.dart';
+import '../../../../../core/di/injection.dart';
+import '../../../../../core/services/fcm_service.dart';
 
 @LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
@@ -46,10 +48,14 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       // جلب الـ token المحفوظ محلياً لإرساله للـ API
       final user = await localDataSource.getCachedUser();
+      final fcmToken = await getIt<FcmService>().getToken();
 
       // إرسال طلب تسجيل الخروج للخلفية دون انتظار (Fire and Forget)
       // لتجنب التأخير لمدة 30 ثانية في حال كان السيرفر غير متاح
-      remoteDataSource.logout(token: user.token).catchError((_) {});
+      remoteDataSource.logout(
+        token: user.token,
+        fcmToken: fcmToken,
+      ).catchError((_) {});
 
       await localDataSource.clearCache();
       return const Right(null);

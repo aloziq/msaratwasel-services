@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:injectable/injectable.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
@@ -17,8 +18,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 @lazySingleton
 class FcmService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   final AuthCubit _authCubit;
   GoRouter? _router;
+
+  // Channel Constants
+  static const String _channelId = 'msarat_wasel_high_importance_v2';
+  static const String _channelName = 'تنبيهات خدمات مسارات';
+  static const String _channelDesc = 'تستخدم لإرسال تنبيهات الرحلات والرسائل الهامة للعمليات';
 
   FcmService(this._authCubit);
 
@@ -28,31 +35,91 @@ class FcmService {
   }
 
   Future<void> init() async {
+    // 1. Background message handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+    // 2. Request FCM permissions
     await requestPermission();
 
-    // Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Got a message whilst in the foreground!');
-      debugPrint('Message data: ${message.data}');
+    // 3. Initialize Local Notifications for foreground support
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: DarwinInitializationSettings(),
+    );
 
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Handle tap on local notification (which was manually triggered in foreground)
+        if (response.payload != null) {
+          // Payload parsing if needed
+        }
+      },
+    );
+
+    // 4. Create Android Notification Channel
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      _channelId,
+      _channelName,
+      description: _channelDesc,
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    // 5. Handle foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('🔔 [FCM] Message received in foreground: ${message.notification?.title}');
+      
       if (message.notification != null) {
-        debugPrint('Message also contained a notification: ${message.notification?.title}');
-        // TODO: show local notification if needed
+        _showLocalNotification(message);
       }
     });
 
-    // Handle notification taps when app is in background but not terminated
+    // 6. Handle notification taps when app is in background but not terminated
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
-    // Handle initial message when app is opened from a terminated state
+    // 7. Handle initial message when app is opened from a terminated state
     _messaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         debugPrint('🔔 [FCM] App opened from terminated state via notification');
         _handleNotificationTap(message);
       }
     });
+  }
+
+  Future<void> _showLocalNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null) return;
+
+    await _localNotifications.show(
+      notification.hashCode,
+      notification.title,
+      notification.body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDesc,
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
   }
 
   void _handleNotificationTap(RemoteMessage message) {

@@ -20,7 +20,7 @@ import '../../features/driver/home/domain/repositories/home_repository.dart'
 import '../../features/driver/home/presentation/manager/driver_home_cubit.dart'
     as _i903;
 import '../../features/driver/maintenance/data/repositories/maintenance_repository_impl.dart'
-    as _i391;
+    as _i491;
 import '../../features/driver/maintenance/domain/repositories/maintenance_repository.dart'
     as _i71;
 import '../../features/driver/maintenance/presentation/manager/maintenance_cubit.dart'
@@ -127,10 +127,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => registerModule.prefs,
       preResolve: true,
     );
-    gh.lazySingleton<_i928.FcmService>(() => _i928.FcmService(gh<_i277.AuthCubit>()));
-    gh.lazySingleton<_i71.MaintenanceRepository>(
-      () => _i391.MaintenanceRepositoryImpl(),
-    );
     gh.lazySingleton<_i920.HomeRepository>(() => _i215.HomeRepositoryImpl());
     gh.lazySingleton<_i573.ReportsRemoteDataSource>(
       () => _i573.ReportsRemoteDataSourceImpl(),
@@ -159,6 +155,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i319.StudentsRepository>(
       () => _i704.StudentsRepositoryImpl(gh<_i222.StudentsRemoteDataSource>()),
+    );
+    gh.lazySingleton<_i71.MaintenanceRepository>(
+      () => _i491.MaintenanceRepositoryImpl(),
     );
     gh.lazySingleton<_i423.RouteRepository>(() => _i973.RouteRepositoryImpl());
     gh.lazySingleton<_i554.AuthRemoteDataSource>(
@@ -262,6 +261,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i877.FleetTrackingCubit>(
       () => _i877.FleetTrackingCubit(gh<_i301.GetFleetBusesUseCase>()),
+    );
+    gh.lazySingleton<_i928.FcmService>(
+      () => _i928.FcmService(gh<_i277.AuthCubit>()),
     );
     return this;
   }

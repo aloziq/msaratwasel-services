@@ -5,21 +5,21 @@ import '../../../../../core/network/api_client.dart';
 import '../../../../../core/di/injection.dart';
 import '../../../../../core/services/fcm_service.dart';
 
+import '../../../../../core/utils/device_utils.dart';
+
 abstract class AuthRemoteDataSource {
   Future<UserModel> login({
     required String nationalId,
     required String password,
   });
 
-  Future<void> logout({required String token});
+  Future<void> logout({required String token, String? fcmToken});
 
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
     required String confirmPassword,
   });
-
-  Future<String> updateAvatar({required String imagePath});
 
   Future<void> updateProfile({
     required String phone,
@@ -28,6 +28,8 @@ abstract class AuthRemoteDataSource {
     double? latitude,
     double? longitude,
   });
+
+  Future<String> updateAvatar({required String imagePath});
 }
 
 @LazySingleton(as: AuthRemoteDataSource)
@@ -46,15 +48,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final fcmService = getIt<FcmService>();
       final fcmToken = await fcmService.getToken();
+      final deviceName = await DeviceUtils.getDeviceName();
 
       final response = await _dio.post(
         '/auth/login',
         data: {
           'national_id': nationalId,
           'password': password,
-          'device_name': 'device_1',
+          'device_name': deviceName,
           'app_context': 'services',
-          'fcm_token': ?fcmToken,
+          'fcm_token': fcmToken,
         },
       );
 
@@ -95,10 +98,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> logout({required String token}) async {
+  Future<void> logout({required String token, String? fcmToken}) async {
     try {
       final authenticatedDio = ApiClient.authenticatedInstance(token);
-      await authenticatedDio.post('/auth/logout');
+      await authenticatedDio.post('/auth/logout', data: {
+        if (fcmToken != null) 'fcm_token': fcmToken,
+      });
     } catch (_) {
       // نتجاهل الخطأ في حالة logout - نمسح التوكن محلياً على أي حال
     }
