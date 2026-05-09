@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:widget_to_marker/widget_to_marker.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
@@ -12,9 +14,6 @@ import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
 import '../../domain/entities/fleet_bus.dart';
 import '../cubit/fleet_tracking_cubit.dart';
-// ... (imports)
-
-// ...
 
 /// Fleet tracking map screen for Field Supervisor.
 /// Shows all buses on a Google Map with status-colored markers.
@@ -559,6 +558,23 @@ class _BusDetailSheet extends StatelessWidget {
               label: 'المدرسة',
               value: bus.schoolName,
               isDark: isDark,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.push(AppRoutes.supervisorTrackingPath(bus.id));
+              },
+              icon: const Icon(Icons.location_on_rounded),
+              label: const Text('تتبع الحافلة الآن'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
             ),
           ],
         ),

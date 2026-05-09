@@ -57,6 +57,7 @@ import '../../features/field_supervisor/incidents/presentation/screens/sos_alert
 import '../../features/field_supervisor/inspection/presentation/screens/field_inspection_screen.dart';
 import '../../features/field_supervisor/delays/presentation/screens/delays_screen.dart';
 import '../../features/field_supervisor/field_trips/presentation/screens/field_trips_screen.dart';
+import '../../features/field_supervisor/buses/presentation/screens/supervisor_tracking_screen.dart';
 
 /// Application router configuration using GoRouter.
 ///
@@ -346,6 +347,15 @@ class AppRouter {
             name: 'supervisorReports',
             builder: (context, state) =>
                 const supervisor_reports.ReportsScreen(),
+          ),
+          GoRoute(
+            path: 'tracking/:busId',
+            name: 'supervisorTracking',
+            builder: (context, state) {
+              final busId =
+                  int.tryParse(state.pathParameters['busId'] ?? '0') ?? 0;
+              return SupervisorTrackingScreen(busId: busId);
+            },
           ),
         ],
       ),

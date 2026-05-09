@@ -34,6 +34,7 @@ abstract class AppRoutes {
   static const supervisorDelays = '/supervisor/delays';
   static const supervisorTrips = '/supervisor/trips';
   static const supervisorReports = '/supervisor/reports';
+  static const supervisorTracking = '/supervisor/tracking/:busId';
 
   // Driver routes
   static const driverHome = '/driver/home';
@@ -49,4 +50,5 @@ abstract class AppRoutes {
 
   /// Helper to generate class details path with classId
   static String classDetailsPath(String classId) => '/class/$classId';
+  static String supervisorTrackingPath(String busId) => '/supervisor/tracking/$busId';
 }
