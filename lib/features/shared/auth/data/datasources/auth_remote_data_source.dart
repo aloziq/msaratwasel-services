@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import '../models/user_model.dart';
@@ -30,6 +31,8 @@ abstract class AuthRemoteDataSource {
   });
 
   Future<String> updateAvatar({required String imagePath});
+
+  Future<void> updateLanguage(String languageCode);
 }
 
 @LazySingleton(as: AuthRemoteDataSource)
@@ -49,6 +52,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final fcmService = getIt<FcmService>();
       final fcmToken = await fcmService.getToken();
       final deviceName = await DeviceUtils.getDeviceName();
+      final deviceId = await DeviceUtils.getDeviceId();
 
       final response = await _dio.post(
         '/auth/login',
@@ -56,15 +60,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'national_id': nationalId,
           'password': password,
           'device_name': deviceName,
+          'device_id': deviceId,
+          'device_type': Platform.isAndroid ? 'android' : 'ios',
+          'app_bundle_id': 'com.msaratwasel.services',
           'app_context': 'services',
           'fcm_token': fcmToken,
         },
       );
 
       final data = response.data;
-
-      // استخراج بيانات المستخدم من الـ response
-      // Laravel يرجع البيانات بهيكلين: data.user أو user مباشرةً
       final userJson = data['data']?['user'] ?? data['user'];
       final token = data['data']?['token'] ?? data['token'];
 
@@ -86,7 +90,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'bus': userJson['bus'],
       });
     } on DioException catch (e) {
-      // خطأ من السيرفر (مثلاً 422 Validation Error)
       final serverMessage =
           e.response?.data?['message'] ??
           e.response?.data?['errors']?['national_id']?.first ??
@@ -104,9 +107,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await authenticatedDio.post('/auth/logout', data: {
         if (fcmToken != null) 'fcm_token': fcmToken,
       });
-    } catch (_) {
-      // نتجاهل الخطأ في حالة logout - نمسح التوكن محلياً على أي حال
-    }
+    } catch (_) {}
   }
 
   @override
@@ -163,6 +164,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await _dio.post('/auth/profile/update', data: data);
     } on DioException catch (e) {
       throw Exception(e.response?.data?['message'] ?? 'فشل تحديث البيانات');
+    }
+  }
+
+  @override
+  Future<void> updateLanguage(String languageCode) async {
+    try {
+      await _dio.post('/auth/profile/language', data: {'language': languageCode});
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['message'] ?? 'فشل تحديث اللغة');
     }
   }
 }

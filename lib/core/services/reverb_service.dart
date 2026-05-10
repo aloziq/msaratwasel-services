@@ -14,16 +14,17 @@ class ReverbService {
   Timer? _pingTimer;
   bool _isConnected = false;
   bool _isDisposed = false;
-  String? _lastSocketId; 
+  String? _lastSocketId;
 
   final Dio _dio;
   final void Function(Map<String, dynamic> data)? _onBusLocationUpdated;
   final void Function(Map<String, dynamic> data)? _onStudentStatusUpdated;
   final void Function(Map<String, dynamic> data)? _onTripStatusUpdated;
   final void Function(Map<String, dynamic> data)? _onStudentLocationUpdated;
+  final void Function(Map<String, dynamic> data)? _onNotificationReceived;
 
   static const String _reverbKey = 'masarat-wasel-key';
-  
+
   static String get _reverbHost {
     if (!ApiConfig.isLocal) return '187.77.162.203';
     final apiUrl = ApiConfig.baseUrl;
@@ -32,8 +33,9 @@ class ReverbService {
   }
 
   static const int _reverbPort = 8080;
-  static const bool _forceNonSecure = true; 
-  static bool get _isSecure => _forceNonSecure ? false : ApiConfig.baseUrl.startsWith('https');
+  static const bool _forceNonSecure = true;
+  static bool get _isSecure =>
+      _forceNonSecure ? false : ApiConfig.baseUrl.startsWith('https');
 
   final Set<String> _subscribedChannels = {};
 
@@ -43,11 +45,13 @@ class ReverbService {
     void Function(Map<String, dynamic> data)? onStudentStatusUpdated,
     void Function(Map<String, dynamic> data)? onTripStatusUpdated,
     void Function(Map<String, dynamic> data)? onStudentLocationUpdated,
-  })  : _dio = dio,
-        _onBusLocationUpdated = onBusLocationUpdated,
-        _onStudentStatusUpdated = onStudentStatusUpdated,
-        _onTripStatusUpdated = onTripStatusUpdated,
-        _onStudentLocationUpdated = onStudentLocationUpdated;
+    void Function(Map<String, dynamic> data)? onNotificationReceived,
+  }) : _dio = dio,
+       _onBusLocationUpdated = onBusLocationUpdated,
+       _onStudentStatusUpdated = onStudentStatusUpdated,
+       _onTripStatusUpdated = onTripStatusUpdated,
+       _onStudentLocationUpdated = onStudentLocationUpdated,
+       _onNotificationReceived = onNotificationReceived;
 
   Future<void> connect() async {
     if (_isDisposed) return;
@@ -104,7 +108,7 @@ class ReverbService {
           final data = _parseData(message['data']);
           _onBusLocationUpdated?.call(data);
           break;
-          
+
         case 'student.status.updated':
           final data = _parseData(message['data']);
           _onStudentStatusUpdated?.call(data);
@@ -120,8 +124,17 @@ class ReverbService {
           _onStudentLocationUpdated?.call(data);
           break;
 
+        case 'notification.pushed':
+        case 'NotificationPushed':
+          final data = _parseData(message['data']);
+          _onNotificationReceived?.call(data);
+          break;
+
         case 'pusher_internal:subscription_succeeded':
-          developer.log('✅ Subscription succeeded for: ${message['channel']}', name: 'REVERB');
+          developer.log(
+            '✅ Subscription succeeded for: ${message['channel']}',
+            name: 'REVERB',
+          );
           break;
       }
     } catch (e) {
@@ -145,10 +158,16 @@ class ReverbService {
     try {
       if (channelName.startsWith('private-')) {
         if (effectiveSocketId == null) {
-          developer.log('⚠️ Cannot subscribe to private channel $channelName without socketId', name: 'REVERB');
+          developer.log(
+            '⚠️ Cannot subscribe to private channel $channelName without socketId',
+            name: 'REVERB',
+          );
           return;
         }
-        final authData = await _authenticateChannel(channelName, effectiveSocketId);
+        final authData = await _authenticateChannel(
+          channelName,
+          effectiveSocketId,
+        );
         _send({
           'event': 'pusher:subscribe',
           'data': {'channel': channelName, 'auth': authData['auth']},
@@ -162,23 +181,32 @@ class ReverbService {
       _subscribedChannels.add(channelName);
       developer.log('📡 Subscribed to: $channelName', name: 'REVERB');
     } catch (e) {
-      developer.log('❌ Subscription failed for $channelName: $e', name: 'REVERB');
+      developer.log(
+        '❌ Subscription failed for $channelName: $e',
+        name: 'REVERB',
+      );
     }
   }
 
-  Future<Map<String, dynamic>> _authenticateChannel(String channelName, String socketId) async {
+  Future<Map<String, dynamic>> _authenticateChannel(
+    String channelName,
+    String socketId,
+  ) async {
     try {
-      final response = await _dio.post('broadcasting/auth', data: {
-        'socket_id': socketId,
-        'channel_name': channelName,
-      });
+      final response = await _dio.post(
+        'broadcasting/auth',
+        data: {'socket_id': socketId, 'channel_name': channelName},
+      );
 
       if (response.statusCode == 200) {
         return response.data as Map<String, dynamic>;
       }
       throw Exception('Auth failed with status ${response.statusCode}');
     } catch (e) {
-      developer.log('❌ Channel auth failed for $channelName: $e', name: 'REVERB');
+      developer.log(
+        '❌ Channel auth failed for $channelName: $e',
+        name: 'REVERB',
+      );
       rethrow;
     }
   }

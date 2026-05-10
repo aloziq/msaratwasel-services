@@ -21,6 +21,10 @@ class FcmService {
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   final AuthCubit _authCubit;
   GoRouter? _router;
+  
+  // Track processed notification IDs to prevent duplicates
+  final Set<String> _processedIds = {};
+  final Set<String> _processedCorrelationIds = {};
 
   // Channel Constants
   static const String _channelId = 'msarat_wasel_high_importance_v2';
@@ -35,11 +39,18 @@ class FcmService {
   }
 
   Future<void> init() async {
-    // 1. Background message handler
+    // 1. Background Message Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // 2. Request FCM permissions
     await requestPermission();
+
+    // 2b. Enable iOS foreground notification banners (CRITICAL for iOS popup)
+    await _messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
     // 3. Initialize Local Notifications for foreground support
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -47,18 +58,29 @@ class FcmService {
     
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
-      iOS: DarwinInitializationSettings(),
+      iOS: DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      ),
     );
 
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle tap on local notification (which was manually triggered in foreground)
+        // Handle tap on local notification
         if (response.payload != null) {
-          // Payload parsing if needed
+          // Add logic if needed
         }
       },
     );
+
+    // 3b. Request iOS local notification permissions explicitly
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
 
     // 4. Create Android Notification Channel
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -68,25 +90,61 @@ class FcmService {
       importance: Importance.max,
       playSound: true,
       enableVibration: true,
+      showBadge: true,
     );
 
     await _localNotifications
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
-    // 5. Handle foreground messages
+    // 5. iOS APNS Token Retry Logic
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      debugPrint('🍎 [FCM] iOS detected: waiting for APNS token...');
+      String? apnsToken;
+      int retryCount = 0;
+      while (apnsToken == null && retryCount < 10) {
+        apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null) {
+          debugPrint('⏳ [FCM] APNS token not ready, retrying ($retryCount/10)...');
+          await Future.delayed(const Duration(milliseconds: 500));
+          retryCount++;
+        }
+      }
+      if (apnsToken != null) {
+        debugPrint('✅ [FCM] APNS token ready: $apnsToken');
+      }
+    }
+
+    // 6. Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('🔔 [FCM] Message received in foreground: ${message.notification?.title}');
       
+      final data = message.data;
+      final correlationId = data['correlation_id']?.toString();
+      final notificationId = data['notification_id']?.toString() ?? message.messageId;
+
+      // Deduplication
+      if (correlationId != null && _processedCorrelationIds.contains(correlationId)) {
+        debugPrint('⚠️ [FCM] Skipping duplicate message via CID: $correlationId');
+        return;
+      }
+      if (notificationId != null && _processedIds.contains(notificationId)) {
+        debugPrint('⚠️ [FCM] Skipping duplicate message via ID: $notificationId');
+        return;
+      }
+
+      if (notificationId != null) _processedIds.add(notificationId);
+      if (correlationId != null) _processedCorrelationIds.add(correlationId);
+
       if (message.notification != null) {
         _showLocalNotification(message);
       }
     });
 
-    // 6. Handle notification taps when app is in background but not terminated
+    // 7. Handle notification taps
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
-    // 7. Handle initial message when app is opened from a terminated state
+    // 8. Handle initial message
     _messaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         debugPrint('🔔 [FCM] App opened from terminated state via notification');
@@ -99,24 +157,34 @@ class FcmService {
     final notification = message.notification;
     if (notification == null) return;
 
+    final data = message.data;
+    final notificationId = int.tryParse(data['notification_id']?.toString() ?? '') ?? 
+                           message.messageId.hashCode;
+
     await _localNotifications.show(
-      notification.hashCode,
+      notificationId,
       notification.title,
       notification.body,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
           channelDescription: _channelDesc,
           importance: Importance.max,
           priority: Priority.high,
-          ticker: 'ticker',
+          playSound: true,
+          enableVibration: true,
+          sound: const RawResourceAndroidNotificationSound('default'),
           icon: '@mipmap/ic_launcher',
+          styleInformation: BigTextStyleInformation(
+            notification.body ?? '',
+          ),
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
+          sound: 'default',
         ),
       ),
     );
@@ -135,7 +203,6 @@ class FcmService {
 
       if (id != null && _router != null) {
         debugPrint('🚀 [FCM] Navigating to chat screen for conversation: $id');
-        // We use pushNamed to allow the user to go back to the previous screen
         _router?.pushNamed('messages', extra: {
           'id': id,
           'name': name,
@@ -143,25 +210,22 @@ class FcmService {
         });
       }
     } 
-    // Handle Address Change (for Driver/Assistant)
+    // Handle Address Change
     else if (type == 'address_change') {
       final authState = _authCubit.state;
       if (authState is AuthAuthenticated && _router != null) {
         if (authState.user.role == UserRole.driver) {
-          debugPrint('🚀 [FCM] Navigating to Driver Route');
           _router?.push(AppRoutes.driverRoute);
         } else if (authState.user.role == UserRole.assistant) {
-          debugPrint('🚀 [FCM] Navigating to Assistant Bus Map');
           _router?.push(AppRoutes.busMap);
         }
       }
     }
-    // Handle Location Request (for Field Supervisor)
+    // Handle Location Request
     else if (type == 'location_request') {
       final authState = _authCubit.state;
       if (authState is AuthAuthenticated && _router != null) {
         if (authState.user.role == UserRole.fieldSupervisor) {
-          debugPrint('🚀 [FCM] Navigating to Supervisor Home/Alerts');
           _router?.push(AppRoutes.supervisorHome);
         }
       }

@@ -145,4 +145,14 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> updateLanguage(String languageCode) async {
+    try {
+      await remoteDataSource.updateLanguage(languageCode);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
 }

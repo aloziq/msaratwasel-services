@@ -45,13 +45,26 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs access to location when open to show the bus position on the map.</string>
+	<string>نحتاج الوصول لموقعك أثناء استخدام التطبيق لتتبع مسار الحافلة وتحديث موقعك للأهالي</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>نحتاج الوصول لموقعك دائماً لضمان استمرار تتبع الحافلة حتى عندما يكون التطبيق في الخلفية</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>نحتاج الوصول لموقعك دائماً لضمان استمرار تتبع الحافلة حتى عندما يكون التطبيق في الخلفية</string>
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs camera access to scan QR codes and record inspection videos.</string>
+	<string>نحتاج الوصول للكاميرا لمسح رموز QR وتوثيق الفحوصات</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app needs microphone access to record audio during inspection videos.</string>
+	<string>نحتاج الوصول للميكروفون لتسجيل الصوت أثناء توثيق الفحوصات</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs photo library access to save and select inspection media.</string>
+	<string>نحتاج الوصول لمعرض الصور لحفظ واختيار وسائط الفحص</string>
 </dict>
 </plist>
+

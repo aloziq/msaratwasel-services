@@ -29,4 +29,6 @@ abstract class AuthRepository {
     double? latitude,
     double? longitude,
   });
+
+  Future<Either<Failure, void>> updateLanguage(String languageCode);
 }

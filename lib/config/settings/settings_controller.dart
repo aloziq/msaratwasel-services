@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/di/injection.dart';
+import '../../features/shared/auth/domain/repositories/auth_repository.dart';
 
 class SettingsController extends ChangeNotifier {
   static const _localeKey = 'app_locale';
@@ -43,6 +45,18 @@ class SettingsController extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_localeKey, locale?.languageCode ?? 'system');
+
+    // Sync with server if logged in
+    try {
+      // Resolve the actual language code (ar or en)
+      final resolvedLocale = locale ??
+          WidgetsBinding.instance.platformDispatcher.platformLocales.first;
+      final langCode = resolvedLocale.languageCode == 'ar' ? 'ar' : 'en';
+
+      await getIt<AuthRepository>().updateLanguage(langCode);
+    } catch (_) {
+      // Silent failure for UI responsiveness
+    }
   }
 
   Future<void> setFontScale(double scale) async {
