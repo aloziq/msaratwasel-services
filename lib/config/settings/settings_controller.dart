@@ -50,7 +50,7 @@ class SettingsController extends ChangeNotifier {
     try {
       // Resolve the actual language code (ar or en)
       final resolvedLocale = locale ??
-          WidgetsBinding.instance.platformDispatcher.platformLocales.first;
+          WidgetsBinding.instance.platformDispatcher.locales.first;
       final langCode = resolvedLocale.languageCode == 'ar' ? 'ar' : 'en';
 
       await getIt<AuthRepository>().updateLanguage(langCode);
