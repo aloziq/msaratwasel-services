@@ -4,19 +4,24 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/features/driver/home/domain/entities/trip_status.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
 
 class DailyTripsList extends StatelessWidget {
   final List<TripStatus> trips;
   final bool isArabic;
   final bool isDark;
+  final UserRole userRole;
   final Function(TripStatus) onTripAction;
+  final Function(TripStatus) onConfirm;
 
   const DailyTripsList({
     super.key,
     required this.trips,
     required this.isArabic,
     required this.isDark,
+    required this.userRole,
     required this.onTripAction,
+    required this.onConfirm,
   });
 
   @override
@@ -43,7 +48,9 @@ class DailyTripsList extends StatelessWidget {
           trip: trip,
           isArabic: isArabic,
           isDark: isDark,
+          userRole: userRole,
           onAction: () => onTripAction(trip),
+          onConfirm: () => onConfirm(trip),
         ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideY(begin: 0.1, end: 0);
       },
     );
@@ -54,13 +61,17 @@ class _TripListItem extends StatelessWidget {
   final TripStatus trip;
   final bool isArabic;
   final bool isDark;
+  final UserRole userRole;
   final VoidCallback onAction;
+  final VoidCallback onConfirm;
 
   const _TripListItem({
     required this.trip,
     required this.isArabic,
     required this.isDark,
+    required this.userRole,
     required this.onAction,
+    required this.onConfirm,
   });
 
   @override
@@ -81,10 +92,13 @@ class _TripListItem extends StatelessWidget {
         actionText = isArabic ? 'بدء الرحلة' : 'Start Trip';
         break;
       case 'awaiting_confirmation':
+        final isSupervisor = userRole == UserRole.assistant || userRole == UserRole.fieldSupervisor;
         statusText = isArabic ? 'بانتظار التأكيد' : 'Awaiting Confirmation';
         statusColor = Colors.orange;
-        actionEnabled = false; // Cannot start until confirmed by supervisor
-        actionText = isArabic ? 'بانتظار المشرفة' : 'Waiting...';
+        actionEnabled = isSupervisor; 
+        actionText = isSupervisor 
+            ? (isArabic ? 'قبول وبدء التنفيذ' : 'Accept and Start')
+            : (isArabic ? 'بانتظار المشرفة' : 'Waiting...');
         break;
       case 'in_progress':
         statusText = isArabic ? 'الرحلة قيد التشغيل' : 'In Progress';
@@ -218,7 +232,9 @@ class _TripListItem extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: actionEnabled ? onAction : null,
+                onPressed: actionEnabled 
+                    ? (trip.status == 'awaiting_confirmation' ? onConfirm : onAction)
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.white,

@@ -13,6 +13,52 @@ import '../../config/routes/app_routes.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint("Handling a background message: ${message.messageId}");
+  
+  // Create local notification in background
+  final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
+  
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: DarwinInitializationSettings(),
+  );
+
+  await localNotifications.initialize(initializationSettings);
+
+  final notification = message.notification;
+  final data = message.data;
+  final String title = notification?.title ?? data['title'] ?? 'رسالة جديدة';
+  final String body = notification?.body ?? data['body'] ?? data['message'] ?? '';
+
+  if (title.isNotEmpty || body.isNotEmpty) {
+    const String channelId = 'msarat_wasel_high_importance_v3';
+    const String channelName = 'تنبيهات خدمات مسارات';
+
+    await localNotifications.show(
+      message.messageId.hashCode,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelName,
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: message.data.toString(),
+    );
+  }
 }
 
 @lazySingleton
@@ -27,7 +73,7 @@ class FcmService {
   final Set<String> _processedCorrelationIds = {};
 
   // Channel Constants
-  static const String _channelId = 'msarat_wasel_high_importance_v2';
+  static const String _channelId = 'msarat_wasel_high_importance_v3';
   static const String _channelName = 'تنبيهات خدمات مسارات';
   static const String _channelDesc = 'تستخدم لإرسال تنبيهات الرحلات والرسائل الهامة للعمليات';
 
@@ -117,7 +163,7 @@ class FcmService {
 
     // 6. Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('🔔 [FCM] Message received in foreground: ${message.notification?.title}');
+      debugPrint('🔔 [FCM] Message received in foreground: ${message.notification?.title ?? "Data Message"}');
       
       final data = message.data;
       final correlationId = data['correlation_id']?.toString();
@@ -136,7 +182,8 @@ class FcmService {
       if (notificationId != null) _processedIds.add(notificationId);
       if (correlationId != null) _processedCorrelationIds.add(correlationId);
 
-      if (message.notification != null) {
+      // Show notification if it has either notification OR data content
+      if (message.notification != null || data.isNotEmpty) {
         _showLocalNotification(message);
       }
     });
@@ -155,16 +202,19 @@ class FcmService {
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
-    if (notification == null) return;
-
     final data = message.data;
+    
+    // Fallback title/body from data if notification is null
+    final String title = notification?.title ?? data['title'] ?? 'رسالة جديدة';
+    final String body = notification?.body ?? data['body'] ?? data['message'] ?? '';
+
     final notificationId = int.tryParse(data['notification_id']?.toString() ?? '') ?? 
                            message.messageId.hashCode;
 
     await _localNotifications.show(
       notificationId,
-      notification.title,
-      notification.body,
+      title,
+      body,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
@@ -172,21 +222,24 @@ class FcmService {
           channelDescription: _channelDesc,
           importance: Importance.max,
           priority: Priority.high,
+          ticker: 'ticker',
           playSound: true,
           enableVibration: true,
-          sound: const RawResourceAndroidNotificationSound('default'),
+          // Use default sound explicitly
+          sound: null, 
           icon: '@mipmap/ic_launcher',
           styleInformation: BigTextStyleInformation(
-            notification.body ?? '',
+            body,
+            contentTitle: title,
           ),
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
-          sound: 'default',
         ),
       ),
+      payload: message.data.toString(),
     );
   }
 

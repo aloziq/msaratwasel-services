@@ -5,7 +5,7 @@ String formatDate(DateTime date, {String locale = 'en'}) {
   final format = locale == 'ar'
       ? DateFormat('d MMMM yyyy', 'ar')
       : DateFormat('MMMM d, yyyy', 'en');
-  return format.format(date);
+  return format.format(date.toLocal());
 }
 
 /// Format time for display in message bubbles.
@@ -13,5 +13,5 @@ String formatTime(DateTime time, {String locale = 'en'}) {
   final format = locale == 'ar'
       ? DateFormat('h:mm a', 'ar')
       : DateFormat('h:mm a', 'en');
-  return format.format(time);
+  return format.format(time.toLocal());
 }

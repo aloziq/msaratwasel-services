@@ -7,7 +7,7 @@ class ApiConfig {
   static const String _localUrl = "$_localDomain/api/";
 
   // رابط الاستضافة الحية
-  static const String _productionDomain = "https://masaratwasal.com/";
+  static const String _productionDomain = "https://masaratwasal.com";
 
   static const String _productionUrl = "$_productionDomain/api/";
 

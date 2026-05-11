@@ -18,6 +18,7 @@ import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:intl/intl.dart';
 
 import 'package:msaratwasel_services/features/driver/home/domain/entities/trip_status.dart';
+import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
 
 class DriverHomeScreen extends StatelessWidget {
@@ -309,10 +310,25 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                               .slideY(begin: 0.1, end: 0);
                         }
                         
+                        final userRole = authState is AuthAuthenticated ? authState.user.role : UserRole.driver;
+
                         return DailyTripsList(
                               trips: trips,
                               isArabic: isArabic,
                               isDark: isDark,
+                              userRole: userRole,
+                              onConfirm: (trip) async {
+                                final cubit = context.read<DriverHomeCubit>();
+                                await cubit.confirmTrip(trip.id.toString());
+                                if (context.mounted && cubit.state is DriverHomeError) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text((cubit.state as DriverHomeError).message),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
                               onTripAction: (trip) async {
                                 final cubit = context.read<DriverHomeCubit>();
                                 if (trip.status == 'in_progress') {
@@ -328,8 +344,6 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                                 if (context.mounted) {
                                   final updatedState = cubit.state;
                                   if (updatedState is DriverHomeLoaded) {
-                                      // Optional: could check if the trip changed status
-                                      // and navigate if in_progress. For now we stay on home or let the driver click resume
                                       cubit.loadDashboard();
                                   } else if (updatedState is DriverHomeError) {
                                     ScaffoldMessenger.of(context).showSnackBar(

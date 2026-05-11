@@ -95,6 +95,18 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
     }
   }
 
+  Future<void> confirmTrip(String tripId) async {
+    debugPrint('DriverHomeCubit: confirmTrip called with tripId: $tripId');
+    try {
+      await _repository.confirmTrip(tripId);
+      _wasAwaitingConfirmation = false; // Reset waiting flag
+      await loadDashboard();
+    } catch (e) {
+      if (isClosed) return;
+      emit(DriverHomeError(e.toString()));
+    }
+  }
+
   /// Check if we have a trip awaiting confirmation and start polling
   void _checkAndStartPolling(List<TripStatus> trips) {
     final hasAwaitingTrip = trips.any(

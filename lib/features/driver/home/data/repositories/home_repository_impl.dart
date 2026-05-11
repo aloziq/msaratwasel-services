@@ -124,4 +124,25 @@ class HomeRepositoryImpl implements HomeRepository {
       throw Exception('Failed to start trip: ${e.toString()}');
     }
   }
+
+  @override
+  Future<void> confirmTrip(String tripId) async {
+    debugPrint('HomeRepositoryImpl: confirmTrip called with tripId: $tripId');
+    try {
+      final busId = await _getBusId();
+      if (busId == null) throw Exception('No bus assigned');
+
+      final response = await ApiClient.instance.post('bus/$busId/confirm-trip');
+      
+      if (response.statusCode != 200) {
+        throw Exception(response.data['message'] ?? 'Failed to confirm trip');
+      }
+      debugPrint('HomeRepositoryImpl: Trip confirmed successfully');
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? e.message ?? 'Network error';
+      throw Exception('Failed to confirm trip: $message');
+    } catch (e) {
+      throw Exception('Failed to confirm trip: ${e.toString()}');
+    }
+  }
 }
