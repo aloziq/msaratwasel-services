@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:msaratwasel_services/core/utils/active_conversation_tracker.dart';
 import 'package:injectable/injectable.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
@@ -33,14 +35,20 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final String body = notification?.body ?? data['body'] ?? data['message'] ?? '';
 
   if (title.isNotEmpty || body.isNotEmpty) {
-    const String channelId = 'msarat_wasel_high_importance_v3';
-    const String channelName = 'تنبيهات خدمات مسارات';
+    String channelId = 'msarat_wasel_high_importance_v3';
+    String channelName = 'تنبيهات خدمات مسارات';
+    
+    final type = data['type']?.toString();
+    if (type == 'chat_message') {
+      channelId = 'chat_messages';
+      channelName = 'رسائل المحادثات';
+    }
 
     await localNotifications.show(
       message.messageId.hashCode,
       title,
       body,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
           channelName,
@@ -50,7 +58,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           enableVibration: true,
           icon: '@mipmap/ic_launcher',
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -116,7 +124,12 @@ class FcmService {
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         // Handle tap on local notification
         if (response.payload != null) {
-          // Add logic if needed
+          try {
+            final Map<String, dynamic> data = jsonDecode(response.payload!);
+            _handleDataTap(data);
+          } catch (e) {
+            debugPrint('❌ [FCM] Error parsing local notification payload: $e');
+          }
         }
       },
     );
@@ -128,7 +141,7 @@ class FcmService {
         >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
-    // 4. Create Android Notification Channel
+    // 4. Create Android Notification Channels
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       _channelId,
       _channelName,
@@ -139,9 +152,20 @@ class FcmService {
       showBadge: true,
     );
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+    const AndroidNotificationChannel chatChannel = AndroidNotificationChannel(
+      'chat_messages',
+      'رسائل المحادثات',
+      description: 'إشعارات الرسائل الجديدة في المحادثات',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
+    );
+
+    final plugin = _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await plugin?.createNotificationChannel(channel);
+    await plugin?.createNotificationChannel(chatChannel);
 
     // 5. iOS APNS Token Retry Logic
     if (defaultTargetPlatform == TargetPlatform.iOS) {
@@ -204,6 +228,23 @@ class FcmService {
     final notification = message.notification;
     final data = message.data;
     
+    // Dynamic channel selection based on notification type
+    String channelId = _channelId;
+    String channelName = _channelName;
+    final type = data['type']?.toString();
+    
+    // Suppress chat notification banner if user is actively in the chat screen
+    if (type == 'chat' || type == 'new_message' || type == 'chat_message' || data.containsKey('conversation_id')) {
+      final convId = data['conversation_id']?.toString() ?? data['id']?.toString();
+      if (convId != null && convId == ActiveConversationTracker.activeConversationId) {
+        debugPrint('🚫 [FCM] Suppressing chat notification banner because conversation $convId is active');
+        return;
+      }
+      
+      channelId = 'chat_messages';
+      channelName = 'رسائل المحادثات';
+    }
+
     // Fallback title/body from data if notification is null
     final String title = notification?.title ?? data['title'] ?? 'رسالة جديدة';
     final String body = notification?.body ?? data['body'] ?? data['message'] ?? '';
@@ -217,15 +258,14 @@ class FcmService {
       body,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
+          channelId,
+          channelName,
           channelDescription: _channelDesc,
           importance: Importance.max,
           priority: Priority.high,
           ticker: 'ticker',
           playSound: true,
           enableVibration: true,
-          // Use default sound explicitly
           sound: null, 
           icon: '@mipmap/ic_launcher',
           styleInformation: BigTextStyleInformation(
@@ -239,17 +279,20 @@ class FcmService {
           presentSound: true,
         ),
       ),
-      payload: message.data.toString(),
+      payload: jsonEncode(message.data),
     );
   }
 
   void _handleNotificationTap(RemoteMessage message) {
-    debugPrint('🔔 [FCM] Notification tapped: ${message.data}');
-    final data = message.data;
+    _handleDataTap(message.data);
+  }
+
+  void _handleDataTap(Map<String, dynamic> data) {
+    debugPrint('🔔 [FCM] Handling tap for data: $data');
     final type = data['type']?.toString();
     
     // Check for chat/message types
-    if (type == 'chat' || type == 'supervisorMessage' || data.containsKey('conversation_id')) {
+    if (type == 'chat' || type == 'new_message' || type == 'chat_message' || type == 'supervisorMessage' || data.containsKey('conversation_id')) {
       final id = data['conversation_id']?.toString() ?? data['id']?.toString();
       final name = data['sender_name']?.toString() ?? data['name']?.toString();
       final receiverId = data['sender_id']?.toString() ?? data['receiverId']?.toString();

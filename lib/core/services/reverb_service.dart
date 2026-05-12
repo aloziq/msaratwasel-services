@@ -5,9 +5,9 @@ import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import '../network/api_config.dart';
+import '../../config/app_config.dart';
 
-/// خدمة الاتصال بـ Laravel Reverb عبر WebSocket للمشرفة والسائق
+/// خدمة الاتصال بـ Laravel Reverb عبر WebSocket
 class ReverbService {
   WebSocketChannel? _channel;
   Timer? _reconnectTimer;
@@ -16,42 +16,31 @@ class ReverbService {
   bool _isDisposed = false;
   String? _lastSocketId;
 
+  final int _userId;
   final Dio _dio;
-  final void Function(Map<String, dynamic> data)? _onBusLocationUpdated;
-  final void Function(Map<String, dynamic> data)? _onStudentStatusUpdated;
-  final void Function(Map<String, dynamic> data)? _onTripStatusUpdated;
-  final void Function(Map<String, dynamic> data)? _onStudentLocationUpdated;
-  final void Function(Map<String, dynamic> data)? _onNotificationReceived;
+  
+  final _eventController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get eventStream => _eventController.stream;
 
-  static const String _reverbKey = 'masarat-wasel-key';
-
-  static String get _reverbHost {
-    if (!ApiConfig.isLocal) return '187.77.162.203';
-    final apiUrl = ApiConfig.baseUrl;
-    final uri = Uri.parse(apiUrl);
-    return uri.host;
-  }
-
-  static const int _reverbPort = 8080;
-  static const bool _forceNonSecure = true;
-  static bool get _isSecure =>
-      _forceNonSecure ? false : ApiConfig.baseUrl.startsWith('https');
+  // إعدادات Reverb المستمدة من AppConfig
+  static const String _reverbKey = AppConfig.reverbKey;
+  static String get _reverbHost => AppConfig.reverbHost;
+  static int get _reverbPort => AppConfig.reverbPort;
+  static bool get _isSecure => AppConfig.reverbUseSsl;
 
   final Set<String> _subscribedChannels = {};
+  final List<String> _pendingSubscriptions = [];
 
   ReverbService({
+    required int userId,
     required Dio dio,
-    void Function(Map<String, dynamic> data)? onBusLocationUpdated,
-    void Function(Map<String, dynamic> data)? onStudentStatusUpdated,
-    void Function(Map<String, dynamic> data)? onTripStatusUpdated,
-    void Function(Map<String, dynamic> data)? onStudentLocationUpdated,
-    void Function(Map<String, dynamic> data)? onNotificationReceived,
-  }) : _dio = dio,
-       _onBusLocationUpdated = onBusLocationUpdated,
-       _onStudentStatusUpdated = onStudentStatusUpdated,
-       _onTripStatusUpdated = onTripStatusUpdated,
-       _onStudentLocationUpdated = onStudentLocationUpdated,
-       _onNotificationReceived = onNotificationReceived;
+    Function(Map<String, dynamic>)? onMessageReceived,
+  }) : _userId = userId,
+       _dio = dio {
+    if (onMessageReceived != null) {
+      eventStream.listen(onMessageReceived);
+    }
+  }
 
   Future<void> connect() async {
     if (_isDisposed) return;
@@ -94,6 +83,7 @@ class ReverbService {
     try {
       final message = jsonDecode(rawMessage as String) as Map<String, dynamic>;
       final event = message['event'] as String?;
+      final channel = message['channel'] as String?;
 
       switch (event) {
         case 'pusher:connection_established':
@@ -102,39 +92,35 @@ class ReverbService {
           final socketId = data['socket_id'] as String;
           _lastSocketId = socketId;
           developer.log('✅ Connected! Socket ID: $socketId', name: 'REVERB');
-          break;
 
-        case 'bus.location.updated':
-          final data = _parseData(message['data']);
-          _onBusLocationUpdated?.call(data);
-          break;
+          // Subscribe to default user channels
+          subscribe('private-App.Models.User.$_userId', socketId);
 
-        case 'student.status.updated':
-          final data = _parseData(message['data']);
-          _onStudentStatusUpdated?.call(data);
-          break;
-
-        case 'trip.status.updated':
-          final data = _parseData(message['data']);
-          _onTripStatusUpdated?.call(data);
-          break;
-
-        case 'student.location.updated':
-          final data = _parseData(message['data']);
-          _onStudentLocationUpdated?.call(data);
-          break;
-
-        case 'notification.pushed':
-        case 'NotificationPushed':
-          final data = _parseData(message['data']);
-          _onNotificationReceived?.call(data);
+          if (_pendingSubscriptions.isNotEmpty) {
+            final pending = List<String>.from(_pendingSubscriptions);
+            _pendingSubscriptions.clear();
+            for (final ch in pending) {
+              subscribe(ch, socketId);
+            }
+          }
           break;
 
         case 'pusher_internal:subscription_succeeded':
-          developer.log(
-            '✅ Subscription succeeded for: ${message['channel']}',
-            name: 'REVERB',
-          );
+          developer.log('✅ Subscription succeeded for: $channel', name: 'REVERB');
+          break;
+
+        case 'pusher:pong':
+          break;
+
+        default:
+          if (event != null && !event.startsWith('pusher:')) {
+            final data = _parseData(message['data']);
+            _eventController.add({
+              'event': event,
+              'channel': channel,
+              'data': data,
+            });
+          }
           break;
       }
     } catch (e) {
@@ -144,30 +130,31 @@ class ReverbService {
 
   Map<String, dynamic> _parseData(dynamic data) {
     if (data is String) {
-      return jsonDecode(data) as Map<String, dynamic>;
+      try {
+        return jsonDecode(data) as Map<String, dynamic>;
+      } catch (_) {
+        return {'raw': data};
+      }
     }
-    return data as Map<String, dynamic>;
+    return (data as Map<String, dynamic>?) ?? {};
   }
 
   Future<void> subscribe(String channelName, [String? socketId]) async {
-    if (!_isConnected || _channel == null) return;
     if (_subscribedChannels.contains(channelName)) return;
+
+    if (!_isConnected || _channel == null) {
+      if (!_pendingSubscriptions.contains(channelName)) {
+        _pendingSubscriptions.add(channelName);
+      }
+      return;
+    }
 
     final effectiveSocketId = socketId ?? _lastSocketId;
 
     try {
       if (channelName.startsWith('private-')) {
-        if (effectiveSocketId == null) {
-          developer.log(
-            '⚠️ Cannot subscribe to private channel $channelName without socketId',
-            name: 'REVERB',
-          );
-          return;
-        }
-        final authData = await _authenticateChannel(
-          channelName,
-          effectiveSocketId,
-        );
+        if (effectiveSocketId == null) return;
+        final authData = await _authenticateChannel(channelName, effectiveSocketId);
         _send({
           'event': 'pusher:subscribe',
           'data': {'channel': channelName, 'auth': authData['auth']},
@@ -181,49 +168,29 @@ class ReverbService {
       _subscribedChannels.add(channelName);
       developer.log('📡 Subscribed to: $channelName', name: 'REVERB');
     } catch (e) {
-      developer.log(
-        '❌ Subscription failed for $channelName: $e',
-        name: 'REVERB',
-      );
+      developer.log('❌ Subscription failed for $channelName: $e', name: 'REVERB');
     }
   }
 
-  Future<Map<String, dynamic>> _authenticateChannel(
-    String channelName,
-    String socketId,
-  ) async {
-    try {
-      final response = await _dio.post(
-        'broadcasting/auth',
-        data: {'socket_id': socketId, 'channel_name': channelName},
-      );
-
-      if (response.statusCode == 200) {
-        return response.data as Map<String, dynamic>;
-      }
-      throw Exception('Auth failed with status ${response.statusCode}');
-    } catch (e) {
-      developer.log(
-        '❌ Channel auth failed for $channelName: $e',
-        name: 'REVERB',
-      );
-      rethrow;
+  Future<Map<String, dynamic>> _authenticateChannel(String channelName, String socketId) async {
+    final response = await _dio.post(
+      'broadcasting/auth',
+      data: {'socket_id': socketId, 'channel_name': channelName},
+    );
+    if (response.statusCode == 200) {
+      return response.data as Map<String, dynamic>;
     }
+    throw Exception('Auth failed');
   }
 
   void _send(Map<String, dynamic> data) {
-    try {
-      _channel?.sink.add(jsonEncode(data));
-    } catch (e) {
-      developer.log('❌ Failed to send: $e', name: 'REVERB');
-    }
+    _channel?.sink.add(jsonEncode(data));
   }
 
   void _scheduleReconnect() {
     if (_isDisposed) return;
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      developer.log('🔄 Reconnecting to Reverb...', name: 'REVERB');
       connect();
     });
   }
@@ -233,7 +200,7 @@ class ReverbService {
     _reconnectTimer?.cancel();
     _pingTimer?.cancel();
     _channel?.sink.close();
-    _channel = null;
+    _eventController.close();
     _isConnected = false;
     developer.log('🔌 ReverbService disposed', name: 'REVERB');
   }

@@ -7,6 +7,7 @@ import '../../../../../core/di/injection.dart';
 import '../../../../../core/services/fcm_service.dart';
 
 import '../../../../../core/utils/device_utils.dart';
+import 'dart:developer' as developer;
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> login({
@@ -33,6 +34,7 @@ abstract class AuthRemoteDataSource {
   Future<String> updateAvatar({required String imagePath});
 
   Future<void> updateLanguage(String languageCode);
+  Future<void> updateFcmToken(String fcmToken);
 }
 
 @LazySingleton(as: AuthRemoteDataSource)
@@ -173,6 +175,28 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await _dio.post('/auth/profile/language', data: {'language': languageCode});
     } on DioException catch (e) {
       throw Exception(e.response?.data?['message'] ?? 'فشل تحديث اللغة');
+    }
+  }
+
+  @override
+  Future<void> updateFcmToken(String fcmToken) async {
+    try {
+      final deviceName = await DeviceUtils.getDeviceName();
+      final deviceId = await DeviceUtils.getDeviceId();
+
+      await _dio.post(
+        '/auth/fcm-token',
+        data: {
+          'fcm_token': fcmToken,
+          'device_name': deviceName,
+          'device_id': deviceId,
+          'device_type': Platform.isAndroid ? 'android' : 'ios',
+          'app_bundle_id': 'com.msaratwasel.services',
+          'app_context': 'services',
+        },
+      );
+    } catch (e) {
+      developer.log('⚠️ FCM registration failed: $e');
     }
   }
 }

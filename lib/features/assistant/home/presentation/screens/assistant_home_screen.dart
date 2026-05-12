@@ -43,8 +43,9 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
       
       if (busId != null) {
         _reverbService = ReverbService(
+          userId: int.tryParse(user.id) ?? 0,
           dio: ApiClient.instance,
-          onTripStatusUpdated: (data) {
+          onMessageReceived: (data) {
             debugPrint('🔄 Trip status updated via Reverb: $data');
             if (mounted) {
               context.read<BusTripCubit>().loadTrip(silent: true);

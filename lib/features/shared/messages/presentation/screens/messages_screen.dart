@@ -10,6 +10,10 @@ import 'package:msaratwasel_services/core/utils/date_utils.dart' as date_utils;
 
 import '../../domain/repositories/messages_repository.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../../../core/services/reverb_service.dart';
+import '../../../../../core/utils/active_conversation_tracker.dart';
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({
@@ -30,7 +34,6 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
-  Timer? _pollTimer;
   bool _isSending = false;
 
   bool _isLoading = true;
@@ -40,6 +43,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   List<MessageEntity> _messages = [];
   String? _currentConversationId;
+  StreamSubscription? _reverbSubscription;
 
   @override
   void initState() {
@@ -52,8 +56,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
     _currentConversationId = widget.conversationId;
 
     if (_currentConversationId != null && _currentConversationId!.isNotEmpty) {
+      ActiveConversationTracker.setActiveConversation(_currentConversationId!);
       _loadMessages();
-      _startPolling();
+      _initWebSocket();
     } else if (widget.receiverId != null && widget.receiverId!.isNotEmpty) {
       _startNewConversation();
     } else {
@@ -74,8 +79,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
         setState(() {
           _currentConversationId = conv.id;
         });
+        ActiveConversationTracker.setActiveConversation(conv.id);
         _loadMessages();
-        _startPolling();
+        _initWebSocket();
       }
     } catch (e) {
       if (mounted) {
@@ -87,13 +93,29 @@ class _MessagesScreenState extends State<MessagesScreen> {
     }
   }
 
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!_isSending && _currentConversationId != null) {
-        _loadMessages(isPolling: true);
-      }
-    });
+  void _initWebSocket() {
+    if (_currentConversationId == null) return;
+    
+    final authCubit = context.read<AuthCubit>();
+    final reverb = authCubit.reverbService;
+    
+    if (reverb != null) {
+      // Unsubscribe from previous if any
+      _reverbSubscription?.cancel();
+      
+      // Subscribe to private channel
+      final channel = 'private-chat.conversation.$_currentConversationId';
+      reverb.subscribe(channel);
+      
+      _reverbSubscription = reverb.eventStream.listen((event) {
+        if (event['channel'] == channel) {
+          if (event['event'] == 'message.sent' || event['event'] == 'notification.pushed') {
+            debugPrint('🔔 [MessagesScreen] Real-time message received via WebSocket');
+            _loadMessages(isPolling: true); // Re-use polling flag to avoid full loading state
+          }
+        }
+      });
+    }
   }
 
   Future<void> _loadMessages({bool isPolling = false}) async {
@@ -135,7 +157,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   @override
   void dispose() {
-    _pollTimer?.cancel();
+    ActiveConversationTracker.clearActiveConversation();
+    _reverbSubscription?.cancel();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();

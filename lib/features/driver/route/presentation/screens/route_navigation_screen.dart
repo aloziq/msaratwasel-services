@@ -84,9 +84,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Future<void> _initReverb() async {
     final busId = GetIt.instance<SharedPreferences>().getString('USER_BUS_ID') ?? '';
     if (busId.isNotEmpty) {
+      final userId = GetIt.instance<SharedPreferences>().getInt('USER_ID') ?? 0;
       _reverbService = ReverbService(
+        userId: userId,
         dio: ApiClient.instance,
-        onStudentLocationUpdated: (data) {
+        onMessageReceived: (data) {
           debugPrint("REVERB: Student location updated, refreshing route data...");
           _fetchRouteData(silent: true);
         }

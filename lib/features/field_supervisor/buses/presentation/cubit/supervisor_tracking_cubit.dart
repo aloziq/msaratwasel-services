@@ -5,6 +5,8 @@ import 'package:msaratwasel_services/core/network/api_client.dart';
 import 'package:msaratwasel_services/core/services/reverb_service.dart';
 import 'package:msaratwasel_services/features/driver/route/domain/entities/student_stop.dart';
 import 'package:msaratwasel_services/features/driver/route/data/models/student_stop_model.dart';
+import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 abstract class SupervisorTrackingState {}
@@ -175,32 +177,35 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
   }
 
   void _initReverb() {
+    final userId = GetIt.instance<SharedPreferences>().getInt('USER_ID') ?? 0;
     _reverbService = ReverbService(
+      userId: userId,
       dio: ApiClient.instance,
-      onBusLocationUpdated: (data) {
-        if (state is SupervisorTrackingLoaded) {
-          final loaded = state as SupervisorTrackingLoaded;
-          final lat = double.tryParse(data['latitude']?.toString() ?? '');
-          final lng = double.tryParse(data['longitude']?.toString() ?? '');
-          final speed = double.tryParse(data['speed_kmh']?.toString() ?? '0') ?? 0;
-          final heading = double.tryParse(data['heading']?.toString() ?? '0') ?? 0;
+      onMessageReceived: (data) {
+        if (data.containsKey('latitude') && data.containsKey('longitude')) {
+          if (state is SupervisorTrackingLoaded) {
+            final loaded = state as SupervisorTrackingLoaded;
+            final lat = double.tryParse(data['latitude']?.toString() ?? '');
+            final lng = double.tryParse(data['longitude']?.toString() ?? '');
+            final speed = double.tryParse(data['speed_kmh']?.toString() ?? '0') ?? 0;
+            final heading = double.tryParse(data['heading']?.toString() ?? '0') ?? 0;
 
-          if (lat != null && lng != null) {
-            final newPos = LatLng(lat, lng);
-            emit(loaded.copyWith(
-              busPosition: newPos,
-              speed: speed,
-              heading: heading,
-            ));
-            
-            // Recalculate route if moved significantly or if no points exist
-            _calculateRoute();
+            if (lat != null && lng != null) {
+              final newPos = LatLng(lat, lng);
+              emit(loaded.copyWith(
+                busPosition: newPos,
+                speed: speed,
+                heading: heading,
+              ));
+              
+              // Recalculate route if moved significantly or if no points exist
+              _calculateRoute();
+            }
           }
+        } else {
+          // Refresh full data if student status changes
+          init();
         }
-      },
-      onStudentLocationUpdated: (_) {
-        // Refresh full data if student status changes
-        init();
       }
     );
     _reverbService!.connect();

@@ -31,4 +31,5 @@ abstract class AuthRepository {
   });
 
   Future<Either<Failure, void>> updateLanguage(String languageCode);
+  Future<Either<Failure, void>> updateFcmToken(String fcmToken);
 }

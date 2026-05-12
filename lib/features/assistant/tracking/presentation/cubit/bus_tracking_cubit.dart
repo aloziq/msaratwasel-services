@@ -75,9 +75,11 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
       BusPosition? currentPosition;
 
       // Connect to Reverb
+      final userId = GetIt.instance<SharedPreferences>().getInt('USER_ID') ?? 0;
       _reverbService = ReverbService(
+        userId: userId,
         dio: ApiClient.instance,
-        onBusLocationUpdated: (data) {
+        onMessageReceived: (data) {
           if (isClosed) return;
           final lat = double.tryParse(data['latitude']?.toString() ?? '') ?? currentPosition?.lat ?? 0.0;
           final lng = double.tryParse(data['longitude']?.toString() ?? '') ?? currentPosition?.lng ?? 0.0;

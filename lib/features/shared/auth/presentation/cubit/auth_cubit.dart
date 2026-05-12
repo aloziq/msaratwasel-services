@@ -8,6 +8,11 @@ import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/reset_password_usecase.dart';
 import '../../domain/usecases/change_password_usecase.dart';
 import '../../domain/usecases/update_avatar_usecase.dart';
+import '../../domain/usecases/update_fcm_token_usecase.dart';
+import '../../../../../core/services/reverb_service.dart';
+import '../../../../../core/services/fcm_service.dart';
+import '../../../../../core/di/injection.dart';
+import '../../../../../core/network/api_client.dart';
 import 'auth_state.dart';
 
 @lazySingleton
@@ -18,6 +23,10 @@ class AuthCubit extends Cubit<AuthState> {
   final ResetPasswordUseCase resetPasswordUseCase;
   final ChangePasswordUseCase changePasswordUseCase;
   final UpdateAvatarUseCase updateAvatarUseCase;
+  final UpdateFcmTokenUseCase updateFcmTokenUseCase;
+
+  ReverbService? _reverbService;
+  ReverbService? get reverbService => _reverbService;
 
   AuthCubit({
     required this.loginUseCase,
@@ -26,13 +35,17 @@ class AuthCubit extends Cubit<AuthState> {
     required this.resetPasswordUseCase,
     required this.changePasswordUseCase,
     required this.updateAvatarUseCase,
+    required this.updateFcmTokenUseCase,
   }) : super(AuthInitial());
 
   Future<void> checkAuthStatus() async {
     final result = await getCurrentUserUseCase(NoParams());
     result.fold(
       (failure) => emit(AuthUnauthenticated()),
-      (user) => emit(AuthAuthenticated(user)),
+      (user) {
+        emit(AuthAuthenticated(user));
+        _initReverbAndFcm(user);
+      },
     );
   }
 
@@ -48,20 +61,44 @@ class AuthCubit extends Cubit<AuthState> {
     result.fold(
       (failure) => emit(AuthError(failure.message ?? 'حدث خطأ غير متوقع')),
       (user) {
-        // السيرفر هو المرجع الوحيد للـ role الحقيقي.
-        // التوجيه يتم تلقائياً عبر _guardRoute في AppRouter بناءً على user.role.
         emit(AuthAuthenticated(user));
+        _initReverbAndFcm(user);
       },
     );
+  }
+
+  void _initReverbAndFcm(UserEntity user) async {
+    // 1. Register FCM Token
+    final fcmToken = await getIt<FcmService>().getToken();
+    if (fcmToken != null) {
+      await updateFcmTokenUseCase(fcmToken);
+    }
+
+    // 2. Initialize Reverb
+    _reverbService?.dispose();
+    _reverbService = ReverbService(
+      userId: int.parse(user.id),
+      dio: ApiClient.instance,
+      onMessageReceived: (data) {
+        // Handle global message events if needed
+      },
+    );
+    _reverbService!.connect();
   }
 
   Future<void> logout() async {
     emit(AuthLoading());
     final result = await logoutUseCase(NoParams());
     result.fold(
-      (failure) => emit(AuthUnauthenticated()), // نخرج حتى لو كان هناك خطأ
-      (_) => emit(AuthUnauthenticated()),
+      (failure) => _handleLogoutSuccess(),
+      (_) => _handleLogoutSuccess(),
     );
+  }
+
+  void _handleLogoutSuccess() {
+    _reverbService?.dispose();
+    _reverbService = null;
+    emit(AuthUnauthenticated());
   }
 
   Future<void> resetPassword(String id) async {

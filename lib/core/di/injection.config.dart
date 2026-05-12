@@ -65,6 +65,8 @@ import '../../features/shared/auth/domain/usecases/reset_password_usecase.dart'
     as _i307;
 import '../../features/shared/auth/domain/usecases/update_avatar_usecase.dart'
     as _i389;
+import '../../features/shared/auth/domain/usecases/update_fcm_token_usecase.dart'
+    as _i405;
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart' as _i277;
 import '../../features/shared/messages/data/repositories/messages_repository_impl.dart'
     as _i33;
@@ -204,6 +206,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i389.UpdateAvatarUseCase>(
       () => _i389.UpdateAvatarUseCase(gh<_i61.AuthRepository>()),
     );
+    gh.lazySingleton<_i405.UpdateFcmTokenUseCase>(
+      () => _i405.UpdateFcmTokenUseCase(gh<_i61.AuthRepository>()),
+    );
     gh.factory<_i514.EndTripCubit>(
       () => _i514.EndTripCubit(gh<_i932.TripRepository>()),
     );
@@ -252,6 +257,7 @@ extension GetItInjectableX on _i174.GetIt {
         resetPasswordUseCase: gh<_i307.ResetPasswordUseCase>(),
         changePasswordUseCase: gh<_i315.ChangePasswordUseCase>(),
         updateAvatarUseCase: gh<_i389.UpdateAvatarUseCase>(),
+        updateFcmTokenUseCase: gh<_i405.UpdateFcmTokenUseCase>(),
       ),
     );
     gh.lazySingleton<_i571.GetAttendanceHistoryUseCase>(
