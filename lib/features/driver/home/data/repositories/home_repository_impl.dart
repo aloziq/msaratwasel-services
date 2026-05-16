@@ -18,9 +18,12 @@ class HomeRepositoryImpl implements HomeRepository {
     try {
       final prefs = GetIt.instance<SharedPreferences>();
       final busIdStr = prefs.getString('USER_BUS_ID');
-      if (busIdStr != null) {
-        _cachedBusId = int.tryParse(busIdStr);
-        return _cachedBusId;
+      if (busIdStr != null && busIdStr.isNotEmpty) {
+        final parsed = int.tryParse(busIdStr);
+        if (parsed != null && parsed > 0) {
+          _cachedBusId = parsed;
+          return _cachedBusId;
+        }
       }
     } catch (_) {}
 
@@ -29,9 +32,19 @@ class HomeRepositoryImpl implements HomeRepository {
       final response = await ApiClient.instance.get('auth/user');
       final data =
           response.data['data'] ?? response.data['user'] ?? response.data;
-      final busId = data['bus_id'] ?? data['has_bus'] ?? data['id'];
+      
+      // CRITICAL FIX: Only use bus_id or has_bus. NEVER fallback to user 'id'.
+      final busId = data['bus_id'] ?? data['has_bus'];
+      
       if (busId != null) {
         _cachedBusId = int.tryParse(busId.toString());
+        
+        // Update local storage too
+        if (_cachedBusId != null) {
+          final prefs = GetIt.instance<SharedPreferences>();
+          await prefs.setString('USER_BUS_ID', _cachedBusId.toString());
+        }
+        
         return _cachedBusId;
       }
     } catch (_) {}
@@ -132,7 +145,10 @@ class HomeRepositoryImpl implements HomeRepository {
       final busId = await _getBusId();
       if (busId == null) throw Exception('No bus assigned');
 
-      final response = await ApiClient.instance.post('bus/$busId/confirm-trip');
+      final response = await ApiClient.instance.post(
+        'bus/$busId/confirm-trip',
+        data: {'trip_id': tripId},
+      );
       
       if (response.statusCode != 200) {
         throw Exception(response.data['message'] ?? 'Failed to confirm trip');

@@ -242,6 +242,7 @@ class AppRouter {
               return MessagesScreen(
                 conversationId: extra?['id']?.toString(),
                 recipientName: extra?['name']?.toString(),
+                recipientAvatarUrl: extra?['avatarUrl']?.toString(),
                 receiverId: extra?['receiverId']?.toString(),
               );
             },

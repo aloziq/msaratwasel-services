@@ -11,7 +11,8 @@ import '../../domain/entities/conversation_entity.dart';
 import '../../domain/entities/contact_entity.dart';
 import '../../domain/repositories/messages_repository.dart';
 import 'package:get_it/get_it.dart';
-import '../../../../../core/network/api_config.dart';
+import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
+import '../../../../../core/presentation/widgets/chat_avatar.dart';
 
 class ChatsListScreen extends StatefulWidget {
   const ChatsListScreen({super.key});
@@ -64,7 +65,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
       body: CustomScrollView(
         slivers: [
           AdaptiveSliverAppBar(
-            title: isArabic ? 'المحادثات' : 'Chats',
+            title: isArabic ? AppLocalizations.of(context)!.chats : 'Chats',
             leading: Material(
               color: Colors.transparent,
               child: IconButton(
@@ -165,6 +166,7 @@ class _ChatsListScreenState extends State<ChatsListScreen> {
                               extra: {
                                 'id': conversation.id,
                                 'name': conversation.parentName,
+                                'avatarUrl': conversation.avatarUrl,
                               },
                             ).then((_) => _fetchConversations());
                           },
@@ -276,7 +278,7 @@ class _NewChatDialogState extends State<_NewChatDialog> {
                               itemBuilder: (context, index) {
                                 final contact = _contacts[index];
                                 return ListTile(
-                                  leading: _ChatAvatar(
+                                  leading: ChatAvatar(
                                     avatarUrl: contact.avatarUrl,
                                     name: contact.name,
                                     radius: 24,
@@ -295,7 +297,8 @@ class _NewChatDialogState extends State<_NewChatDialog> {
                                       extra: {
                                         'id': null, // New chat
                                         'name': contact.name,
-                                        'receiverId': contact.id, // We need to pass receiverId
+                                        'avatarUrl': contact.avatarUrl,
+                                        'receiverId': contact.id,
                                       },
                                     );
                                   },
@@ -334,7 +337,7 @@ class _ConversationTile extends StatelessWidget {
               // Avatar
               Stack(
                 children: [
-                  _ChatAvatar(
+                  ChatAvatar(
                     avatarUrl: conversation.avatarUrl,
                     name: conversation.parentName,
                     radius: 28,
@@ -458,81 +461,3 @@ class _ConversationTile extends StatelessWidget {
   }
 }
 
-/// Widget موحّد لعرض صورة المستخدم (ولي الأمر / جهة الاتصال).
-/// يعرض الصورة من الـ Backend مع loading indicator وfallback بالحرف الأول.
-class _ChatAvatar extends StatelessWidget {
-  final String? avatarUrl;
-  final String name;
-  final double radius;
-
-  const _ChatAvatar({
-    required this.avatarUrl,
-    required this.name,
-    this.radius = 24,
-  });
-
-  String get _initial {
-    if (name.isEmpty) return '؟';
-    final runes = name.runes.toList();
-    return runes.isEmpty ? '؟' : String.fromCharCode(runes.first);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final size = radius * 2;
-
-    Widget fallback = Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          _initial,
-          style: TextStyle(
-            color: theme.colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.bold,
-            fontSize: radius * 0.75,
-          ),
-        ),
-      ),
-    );
-
-    final resolvedUrl = avatarUrl != null
-        ? ApiConfig.getImageUrl(avatarUrl)
-        : null;
-
-    if (resolvedUrl == null) return fallback;
-
-    return ClipOval(
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: Image.network(
-          resolvedUrl,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: theme.colorScheme.primaryContainer,
-              child: Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: theme.colorScheme.primary,
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              ),
-            );
-          },
-          errorBuilder: (_, _, _) => fallback,
-        ),
-      ),
-    );
-  }
-}

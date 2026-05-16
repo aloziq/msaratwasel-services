@@ -177,7 +177,10 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
   }
 
   void _initReverb() {
-    final userId = GetIt.instance<SharedPreferences>().getInt('USER_ID') ?? 0;
+    final prefs = GetIt.instance<SharedPreferences>();
+    final userIdStr = prefs.getString('USER_ID') ?? '';
+    final userId = int.tryParse(userIdStr) ?? 0;
+
     _reverbService = ReverbService(
       userId: userId,
       dio: ApiClient.instance,

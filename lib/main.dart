@@ -76,29 +76,29 @@ void main() async {
       ),
     );
 
-    // Initialize services that don't need to block the first frame
-    // We use longer delays to prevent ANR on devices using Impeller (Vulkan)
-    Future.delayed(const Duration(seconds: 3), () async {
-      try {
-        debugPrint('🚀 [Main] Initializing Post-startup Services...');
-        
-        // 1. Initialize FCM (Starts a background engine)
-        getIt<FcmService>().init();
-        debugPrint('✅ [Main] FCM Init Triggered');
-
-        // 2. Wait more before starting the next heavy engine
-        await Future.delayed(const Duration(seconds: 5));
-        
-        debugPrint('🚀 [Main] Initializing Background Location Service...');
-        await LocationService.initialize();
-        debugPrint('✅ [Main] Background Location Service Initialized');
-      } catch (e) {
-        debugPrint('❌ [Main] Post-startup Initialization Error: $e');
-      }
-    });
+    // ─── Post-startup Sequence ───
+    // We use a progressive sequence to avoid overwhelming the CPU/Memory
+    _runPostStartupTasks();
+    
   } catch (e, stack) {
     developer.log('Initialization Error: $e', stackTrace: stack);
     debugPrint('❌ [Main] Critical Initialization Error: $e');
+  }
+}
+
+void _runPostStartupTasks() async {
+  // Wait for the app to stabilize
+  await Future.delayed(const Duration(seconds: 1));
+  
+  try {
+    debugPrint('🚀 [Main] Step 1: Initializing FCM...');
+    await getIt<FcmService>().init();
+    debugPrint('✅ [Main] FCM Initialized');
+
+    // Location Service will now be initialized ON DEMAND when a trip starts
+    // to comply with Android 12+ Foreground Service restrictions.
+  } catch (e) {
+    debugPrint('❌ [Main] Post-startup Task Error: $e');
   }
 }
 

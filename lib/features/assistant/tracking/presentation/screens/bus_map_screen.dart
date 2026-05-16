@@ -34,8 +34,75 @@ class _BusMapScreenState extends State<BusMapScreen> {
           return Scaffold(
             body: BlocBuilder<BusTrackingCubit, BusTrackingState>(
               builder: (context, state) {
-                if (state is! BusTrackingLoaded || state.position == null) {
+                // Error state
+                if (state is BusTrackingError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            state.message,
+                            style: Theme.of(context).textTheme.titleMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          FilledButton.icon(
+                            onPressed: () => context.read<BusTrackingCubit>().startTracking(),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: Text(AppLocalizations.of(context)!.refresh),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                // Loading state
+                if (state is! BusTrackingLoaded) {
                   return const Center(child: CircularProgressIndicator());
+                }
+
+                // Loaded but no position yet — show waiting UI
+                if (state.position == null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: AppSpacing.lg),
+                          Text(
+                            'في انتظار بيانات الموقع...',
+                            style: Theme.of(context).textTheme.titleMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            'لم يتم تسجيل موقع للحافلة بعد',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          OutlinedButton.icon(
+                            onPressed: () => context.read<BusTrackingCubit>().startTracking(),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: Text(l10n.refresh),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
                 }
 
                 final tracking = state.position!;
@@ -49,10 +116,6 @@ class _BusMapScreenState extends State<BusMapScreen> {
                         students: students,
                       ),
                     ),
-                    // Menu button at top-right (RTL awareness handled by Positioned/Directionality or manual)
-                    // Assuming generic positioning for now, typically top-right in LTR, top-left in RTL?
-                    // But standard Scaffold AppBar uses leading/actions.
-                    // Reference uses Positioned.
                     Positioned(
                       top: MediaQuery.of(context).padding.top + AppSpacing.sm,
                       right: AppSpacing.md,

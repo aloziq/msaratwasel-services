@@ -14,17 +14,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../../core/services/reverb_service.dart';
 import '../../../../../core/utils/active_conversation_tracker.dart';
+import '../../../../../core/presentation/widgets/chat_avatar.dart';
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({
     super.key,
     this.conversationId,
     this.recipientName,
+    this.recipientAvatarUrl,
     this.receiverId,
   });
 
   final String? conversationId;
   final String? recipientName;
+  final String? recipientAvatarUrl;
   final String? receiverId;
 
   @override
@@ -44,6 +47,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
   List<MessageEntity> _messages = [];
   String? _currentConversationId;
   StreamSubscription? _reverbSubscription;
+  final Set<String> _processedCids = {};
 
   @override
   void initState() {
@@ -109,8 +113,24 @@ class _MessagesScreenState extends State<MessagesScreen> {
       
       _reverbSubscription = reverb.eventStream.listen((event) {
         if (event['channel'] == channel) {
-          if (event['event'] == 'message.sent' || event['event'] == 'notification.pushed') {
-            debugPrint('🔔 [MessagesScreen] Real-time message received via WebSocket');
+          final eventName = event['event'];
+          if (eventName == 'message.sent' || eventName == 'notification.pushed') {
+            // Deduplication using correlation_id if present
+            final data = event['data'] as Map<String, dynamic>?;
+            final cid = data?['correlation_id']?.toString() ?? 
+                       data?['message']?['correlation_id']?.toString() ??
+                       data?['notification']?['correlation_id']?.toString();
+            
+            if (cid != null) {
+              if (_processedCids.contains(cid)) {
+                debugPrint('♻️ [MessagesScreen] Skipping duplicate event via WebSocket (CID: $cid)');
+                return;
+              }
+              _processedCids.add(cid);
+              if (_processedCids.length > 50) _processedCids.remove(_processedCids.first);
+            }
+
+            debugPrint('🔔 [MessagesScreen] Real-time message received via WebSocket: $eventName');
             _loadMessages(isPolling: true); // Re-use polling flag to avoid full loading state
           }
         }
@@ -278,13 +298,27 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          name,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-            fontSize: 20,
-          ),
+        title: Row(
+          children: [
+            ChatAvatar(
+              avatarUrl: widget.recipientAvatarUrl,
+              name: name,
+              radius: 18,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                name,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 18,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         backgroundColor: theme.scaffoldBackgroundColor,

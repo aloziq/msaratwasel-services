@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:get_it/get_it.dart';
@@ -68,14 +69,48 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
         return;
       }
 
-      // Emit loaded state with null position initially.
-      // The tracking location remains null/empty until the first real backend/WebSocket update arrives.
-      emit(BusTrackingLoaded(null, students));
-
+      // Fetch the current bus location from the API
       BusPosition? currentPosition;
+      try {
+        final locationResponse = await ApiClient.instance.get('/bus/$busId/location');
+        final locData = locationResponse.data;
+        
+        // Handle different response structures
+        final locationData = locData is Map && locData.containsKey('data') 
+            ? locData['data'] 
+            : locData;
+        
+        if (locationData != null && locationData is Map) {
+          final lat = double.tryParse(locationData['latitude']?.toString() ?? '') ?? 0.0;
+          final lng = double.tryParse(locationData['longitude']?.toString() ?? '') ?? 0.0;
+          
+          if (lat != 0.0 || lng != 0.0) {
+            currentPosition = BusPosition(
+              busId: busId,
+              lat: lat,
+              lng: lng,
+              speedKmh: double.tryParse(locationData['speed_kmh']?.toString() ?? '') ?? 0.0,
+              distanceKm: 0.0,
+              etaMinutes: 0,
+              studentsOnBoard: int.tryParse(locationData['students_on_board']?.toString() ?? '') ?? 0,
+              state: BusState.enRoute,
+              updatedAt: DateTime.now(),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Could not fetch initial bus location: $e');
+        // Non-fatal: we'll continue and wait for WebSocket updates
+      }
 
-      // Connect to Reverb
-      final userId = GetIt.instance<SharedPreferences>().getInt('USER_ID') ?? 0;
+      // Emit loaded state (position may be null if API didn't return a location)
+      emit(BusTrackingLoaded(currentPosition, students));
+
+      // Get user ID safely as it is stored as a String in SharedPreferences
+      final prefs = GetIt.instance<SharedPreferences>();
+      final userIdStr = prefs.getString('USER_ID') ?? '';
+      final userId = int.tryParse(userIdStr) ?? 0;
+      
       _reverbService = ReverbService(
         userId: userId,
         dio: ApiClient.instance,

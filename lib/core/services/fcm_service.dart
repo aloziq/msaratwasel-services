@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:msaratwasel_services/core/utils/active_conversation_tracker.dart';
@@ -16,36 +17,57 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint("Handling a background message: ${message.messageId}");
   
-  // Create local notification in background
-  final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
-  
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-  
-  const InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-    iOS: DarwinInitializationSettings(),
-  );
-
-  await localNotifications.initialize(initializationSettings);
-
-  final notification = message.notification;
   final data = message.data;
-  final String title = notification?.title ?? data['title'] ?? 'رسالة جديدة';
-  final String body = notification?.body ?? data['body'] ?? data['message'] ?? '';
+  final String? cid = data['correlation_id']?.toString() ?? 
+                     data['notification_id']?.toString() ?? 
+                     data['id']?.toString() ?? 
+                     message.messageId;
+
+  // 1. Persistent Deduplication check
+  final prefs = await SharedPreferences.getInstance();
+  final List<String> processedCids = prefs.getStringList('processed_fcm_cids') ?? [];
+  if (cid != null && processedCids.contains(cid)) {
+    debugPrint('🚫 [FCM BG] Skipping persistent duplicate (CID: $cid)');
+    return;
+  }
+  
+  // Save CID
+  if (cid != null) {
+    processedCids.add(cid);
+    if (processedCids.length > 50) processedCids.removeAt(0);
+    await prefs.setStringList('processed_fcm_cids', processedCids);
+  }
+
+  // 2. Avoid Double Notification: 
+  // If notification object is present, Android/iOS OS will show it automatically.
+  if (message.notification != null) {
+    debugPrint('🔔 [FCM BG] OS handles UI. Skipping local show.');
+    return;
+  }
+
+  // 3. Robust Content Extraction (Fallback to data fields)
+  String? pick(List<dynamic> options) {
+    for (final opt in options) {
+      final str = opt?.toString();
+      if (str != null && str.trim().isNotEmpty) return str;
+    }
+    return null;
+  }
+
+  final String title = pick([message.notification?.title, data['title_ar'], data['title_en'], data['title'], data['sender_name']]) ?? 'رسالة جديدة';
+  final String body = pick([message.notification?.body, data['message_ar'], data['message_en'], data['message'], data['body'], data['content'], data['messagePreview']]) ?? '';
 
   if (title.isNotEmpty || body.isNotEmpty) {
-    String channelId = 'msarat_wasel_high_importance_v3';
-    String channelName = 'تنبيهات خدمات مسارات';
-    
-    final type = data['type']?.toString();
-    if (type == 'chat_message') {
-      channelId = 'chat_messages';
-      channelName = 'رسائل المحادثات';
-    }
+    final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid, iOS: DarwinInitializationSettings());
+    await localNotifications.initialize(initializationSettings);
 
+    String channelId = 'chat_messages';
+    String channelName = 'رسائل المحادثة';
+    
     await localNotifications.show(
-      message.messageId.hashCode,
+      cid.hashCode,
       title,
       body,
       NotificationDetails(
@@ -54,9 +76,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           channelName,
           importance: Importance.max,
           priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
           playSound: true,
           enableVibration: true,
-          icon: '@mipmap/ic_launcher',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -64,7 +86,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           presentSound: true,
         ),
       ),
-      payload: message.data.toString(),
+      payload: json.encode(data),
     );
   }
 }
@@ -79,9 +101,10 @@ class FcmService {
   // Track processed notification IDs to prevent duplicates
   final Set<String> _processedIds = {};
   final Set<String> _processedCorrelationIds = {};
+  bool _isInitialized = false;
 
   // Channel Constants
-  static const String _channelId = 'msarat_wasel_high_importance_v3';
+  static const String _channelId = 'msarat_wasel_high_importance_v4';
   static const String _channelName = 'تنبيهات خدمات مسارات';
   static const String _channelDesc = 'تستخدم لإرسال تنبيهات الرحلات والرسائل الهامة للعمليات';
 
@@ -93,15 +116,21 @@ class FcmService {
   }
 
   Future<void> init() async {
+    if (_isInitialized) {
+      debugPrint('🔔 [FCM] FcmService already initialized, skipping...');
+      return;
+    }
+    _isInitialized = true;
+
     // 1. Background Message Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // 2. Request FCM permissions
     await requestPermission();
 
-    // 2b. Enable iOS foreground notification banners (CRITICAL for iOS popup)
+    // 2b. Disable OS foreground banners (we show them manually via _showLocalNotification for better control)
     await _messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
+      alert: false, // 🚫 No OS banner in foreground
       badge: true,
       sound: true,
     );
@@ -154,8 +183,8 @@ class FcmService {
 
     const AndroidNotificationChannel chatChannel = AndroidNotificationChannel(
       'chat_messages',
-      'رسائل المحادثات',
-      description: 'إشعارات الرسائل الجديدة في المحادثات',
+      'رسائل المحادثة',
+      description: 'إشعارات الرسائل الجديدة في المحادثة',
       importance: Importance.max,
       playSound: true,
       enableVibration: true,
@@ -186,25 +215,46 @@ class FcmService {
     }
 
     // 6. Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint('🔔 [FCM] Message received in foreground: ${message.notification?.title ?? "Data Message"}');
       
       final data = message.data;
-      final correlationId = data['correlation_id']?.toString();
-      final notificationId = data['notification_id']?.toString() ?? message.messageId;
+      final correlationId = _pick([data['correlation_id']]);
+      final notificationId = _pick([data['notification_id'], data['id'], message.messageId]);
 
-      // Deduplication
-      if (correlationId != null && _processedCorrelationIds.contains(correlationId)) {
-        debugPrint('⚠️ [FCM] Skipping duplicate message via CID: $correlationId');
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> persistentCids = prefs.getStringList('processed_fcm_cids') ?? [];
+
+      // Check both in-memory and persistent storage
+      bool isDuplicate = false;
+      if (correlationId != null && (_processedCorrelationIds.contains(correlationId) || persistentCids.contains(correlationId))) {
+        isDuplicate = true;
+      } else if (notificationId != null && (_processedIds.contains(notificationId) || persistentCids.contains(notificationId))) {
+        isDuplicate = true;
+      }
+
+      if (isDuplicate) {
+        debugPrint('⚠️ [FCM] Skipping duplicate message (ID: $notificationId / CID: $correlationId)');
         return;
       }
-      if (notificationId != null && _processedIds.contains(notificationId)) {
-        debugPrint('⚠️ [FCM] Skipping duplicate message via ID: $notificationId');
-        return;
+
+      // Track it everywhere
+      if (notificationId != null) {
+        _processedIds.add(notificationId);
+        if (!persistentCids.contains(notificationId)) {
+          persistentCids.add(notificationId);
+        }
+      }
+      if (correlationId != null) {
+        _processedCorrelationIds.add(correlationId);
+        if (!persistentCids.contains(correlationId)) {
+          persistentCids.add(correlationId);
+        }
       }
 
-      if (notificationId != null) _processedIds.add(notificationId);
-      if (correlationId != null) _processedCorrelationIds.add(correlationId);
+      // Limit persistence
+      if (persistentCids.length > 50) persistentCids.removeAt(0);
+      await prefs.setStringList('processed_fcm_cids', persistentCids);
 
       // Show notification if it has either notification OR data content
       if (message.notification != null || data.isNotEmpty) {
@@ -224,33 +274,57 @@ class FcmService {
     });
   }
 
+  String? _pick(List<dynamic> options) {
+    for (final opt in options) {
+      final str = opt?.toString();
+      if (str != null && str.trim().isNotEmpty) return str;
+    }
+    return null;
+  }
+
   Future<void> _showLocalNotification(RemoteMessage message) async {
-    final notification = message.notification;
     final data = message.data;
+    final String? cid = _pick([data['correlation_id'], data['id'], data['notification_id'], message.messageId]);
+
+    // 1. Deduplication check
+    final prefs = await SharedPreferences.getInstance();
+    final processedCids = prefs.getStringList('processed_fcm_cids') ?? [];
+    if (cid != null && processedCids.contains(cid)) {
+      debugPrint('♻️ [FCM FG] Skipping duplicate message (CID: $cid)');
+      return;
+    }
     
-    // Dynamic channel selection based on notification type
-    String channelId = _channelId;
-    String channelName = _channelName;
+    // Save CID
+    if (cid != null) {
+      processedCids.add(cid);
+      if (processedCids.length > 50) processedCids.removeAt(0);
+      await prefs.setStringList('processed_fcm_cids', processedCids);
+    }
+
+    // 2. Suppress if active in conversation
     final type = data['type']?.toString();
-    
-    // Suppress chat notification banner if user is actively in the chat screen
     if (type == 'chat' || type == 'new_message' || type == 'chat_message' || data.containsKey('conversation_id')) {
       final convId = data['conversation_id']?.toString() ?? data['id']?.toString();
       if (convId != null && convId == ActiveConversationTracker.activeConversationId) {
-        debugPrint('🚫 [FCM] Suppressing chat notification banner because conversation $convId is active');
+        debugPrint('🔇 [FCM FG] Suppressing notification - active in conversation $convId');
         return;
       }
-      
-      channelId = 'chat_messages';
-      channelName = 'رسائل المحادثات';
     }
 
-    // Fallback title/body from data if notification is null
-    final String title = notification?.title ?? data['title'] ?? 'رسالة جديدة';
-    final String body = notification?.body ?? data['body'] ?? data['message'] ?? '';
+    // 3. Content extraction with fallback
+    final String title = _pick([message.notification?.title, data['title_ar'], data['title_en'], data['title'], data['sender_name']]) ?? 'رسالة جديدة';
+    final String body = _pick([message.notification?.body, data['message_ar'], data['message_en'], data['message'], data['body'], data['content'], data['messagePreview']]) ?? '';
 
-    final notificationId = int.tryParse(data['notification_id']?.toString() ?? '') ?? 
-                           message.messageId.hashCode;
+    if (title.isEmpty && body.isEmpty) return;
+
+    final notificationId = cid.hashCode;
+
+    String channelId = _channelId;
+    String channelName = _channelName;
+    if (type == 'chat' || type == 'new_message' || type == 'chat_message' || data.containsKey('conversation_id')) {
+      channelId = 'chat_messages';
+      channelName = 'رسائل المحادثة';
+    }
 
     await _localNotifications.show(
       notificationId,
@@ -266,7 +340,6 @@ class FcmService {
           ticker: 'ticker',
           playSound: true,
           enableVibration: true,
-          sound: null, 
           icon: '@mipmap/ic_launcher',
           styleInformation: BigTextStyleInformation(
             body,

@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import '../../domain/entities/trip_status.dart';
 import '../../domain/repositories/home_repository.dart';
+import 'package:msaratwasel_services/core/services/location_service.dart';
 
 // States
 abstract class DriverHomeState extends Equatable {
@@ -59,6 +60,15 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
       if (isClosed) return;
       debugPrint('DriverHomeCubit: trips loaded: ${trips.length}');
       emit(DriverHomeLoaded(trips));
+
+      // Handle Location Service Lifecycle
+      final activeTrip = trips.where((t) => t.status == 'in_progress').firstOrNull;
+      if (activeTrip != null) {
+        LocationService.start();
+      } else {
+        // If no active trips, we might want to stop the service to save battery
+        LocationService.stop();
+      }
 
       _checkAndStartPolling(trips);
     } catch (e) {
@@ -156,6 +166,10 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
               'DriverHomeCubit: 🎉 Poll detected confirmation! Trip ${inProgressTrip.id}',
             );
             _wasAwaitingConfirmation = false;
+            
+            // Start location tracking now that trip is confirmed
+            LocationService.start();
+
             // Stop current polling and emit confirmed state
             _stopPolling();
             emit(DriverHomeTripConfirmed(trips, inProgressTrip.id.toString()));

@@ -30,7 +30,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
         String? avatarUrl;
         if (participants.isNotEmpty) {
           parentName = participants.first['name'] ?? 'ولي أمر';
-          avatarUrl  = participants.first['avatar'];
+          avatarUrl  = participants.first['avatar_url'];
         }
 
         final lastMessageObj = json['last_message'];
@@ -48,7 +48,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
         );
       }).toList();
     } catch (e) {
-      throw Exception('فشل جلب المحادثات: ${e.toString()}');
+      throw Exception('فشل جلب المحادثة: ${e.toString()}');
     }
   }
 
@@ -98,7 +98,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
           id: json['id'].toString(),
           name: json['name'] ?? 'مستخدم',
           description: json['chat_description'] ?? '',
-          avatarUrl: json['avatar'],
+          avatarUrl: json['avatar_url'],
         );
       }).toList();
     } catch (e) {
@@ -116,13 +116,17 @@ class MessagesRepositoryImpl implements MessagesRepository {
       
       final List<dynamic> participants = json['participants'] ?? [];
       String parentName = 'مستخدم';
+      String? avatarUrl;
       if (participants.isNotEmpty) {
-        // find someone who is not me
+        // find someone who is not me (the receiver)
+        // the backend usually returns participants including the current user
+        // so we try to find the one that matches the receiverId or just the first one that isn't null
         final other = participants.firstWhere(
-          (p) => true, // ideally check id != myId but backend usually puts receiver first or we just take first
-          orElse: () => {'name': 'مستخدم'}
+          (p) => p['id'].toString() == receiverId.toString(),
+          orElse: () => participants.first,
         );
         parentName = other['name'] ?? 'مستخدم';
+        avatarUrl = other['avatar_url'];
       }
 
       return ConversationModel(
@@ -132,7 +136,7 @@ class MessagesRepositoryImpl implements MessagesRepository {
         lastMessage: 'بدء محادثة',
         lastMessageTime: DateTime.now(),
         unreadCount: 0,
-        avatarUrl: null,
+        avatarUrl: avatarUrl,
       );
     } catch (e) {
       throw Exception('فشل بدء المحادثة');

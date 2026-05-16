@@ -591,7 +591,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notifications => 'الإشعارات';
 
   @override
-  String get chats => 'المحادثات';
+  String get chats => 'المحادثة';
 
   @override
   String get location => 'الموقع';

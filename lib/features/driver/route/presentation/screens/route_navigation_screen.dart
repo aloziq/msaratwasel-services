@@ -84,7 +84,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Future<void> _initReverb() async {
     final busId = GetIt.instance<SharedPreferences>().getString('USER_BUS_ID') ?? '';
     if (busId.isNotEmpty) {
-      final userId = GetIt.instance<SharedPreferences>().getInt('USER_ID') ?? 0;
+      final prefs = GetIt.instance<SharedPreferences>();
+      final userIdStr = prefs.getString('USER_ID') ?? '';
+      final userId = int.tryParse(userIdStr) ?? 0;
+      
       _reverbService = ReverbService(
         userId: userId,
         dio: ApiClient.instance,

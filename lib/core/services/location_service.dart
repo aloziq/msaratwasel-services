@@ -10,16 +10,18 @@ import 'package:msaratwasel_services/features/driver/route/data/repositories/rou
 
 @pragma('vm:entry-point')
 class LocationService {
+  static bool _isConfigured = false;
+
   static Future<void> initialize() async {
+    if (_isConfigured) return;
+    
     final service = FlutterBackgroundService();
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'location_tracking', // id
       'Location Tracking', // title
-      description:
-          'This channel is used for location tracking notifications.', // description
-      importance: Importance
-          .low, // importance must be at least low for foreground service
+      description: 'This channel is used for location tracking notifications.',
+      importance: Importance.low,
     );
 
     final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -39,8 +41,8 @@ class LocationService {
         autoStart: false,
         isForegroundMode: true,
         notificationChannelId: 'location_tracking',
-        initialNotificationTitle: 'مسارات واصل - تتبع النشط',
-        initialNotificationContent: 'يتم بث موقعك الآن للأهالي والمدرسة',
+        initialNotificationTitle: 'تتبع الرحلة نشط',
+        initialNotificationContent: 'يتم الآن مشاركة موقعك لتأمين سلامة الطلاب',
         foregroundServiceNotificationId: 888,
         foregroundServiceTypes: [AndroidForegroundType.location],
       ),
@@ -50,14 +52,22 @@ class LocationService {
         onBackground: onIosBackground,
       ),
     );
+    _isConfigured = true;
+    debugPrint('✅ [LocationService] Configured successfully');
   }
 
-  static void start() {
-    FlutterBackgroundService().startService();
+  static Future<void> start() async {
+    await initialize(); // Ensure it's initialized before starting
+    final service = FlutterBackgroundService();
+    if (!await service.isRunning()) {
+      service.startService();
+      debugPrint('🚀 [LocationService] Service started');
+    }
   }
 
   static void stop() {
     FlutterBackgroundService().invoke('stopService');
+    debugPrint('🛑 [LocationService] Service stopped');
   }
 }
 

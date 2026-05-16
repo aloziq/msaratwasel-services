@@ -14,6 +14,7 @@ import 'package:msaratwasel_services/core/network/api_client.dart';
 import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
 import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:msaratwasel_services/core/services/reverb_service.dart';
+import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../../../core/domain/entities/bus_student_entity.dart';
 import '../../../core/presentation/cubit/bus_trip_cubit.dart';
 
@@ -548,7 +549,7 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
             ),
             _ActionCard(
               icon: PhosphorIconsFill.chatCircle,
-              label: 'المحادثات',
+              label: AppLocalizations.of(context)!.chats,
               color: const Color(0xFF8B5CF6), // Violet
               onTap: () => context.push(AppRoutes.chats),
               delay: 600,
