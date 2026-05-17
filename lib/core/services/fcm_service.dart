@@ -63,7 +63,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid, iOS: DarwinInitializationSettings());
     await localNotifications.initialize(initializationSettings);
 
-    String channelId = 'chat_messages';
+    String channelId = 'chat_messages_v3';
     String channelName = 'رسائل المحادثة';
     
     await localNotifications.show(
@@ -182,7 +182,7 @@ class FcmService {
     );
 
     const AndroidNotificationChannel chatChannel = AndroidNotificationChannel(
-      'chat_messages',
+      'chat_messages_v3',
       'رسائل المحادثة',
       description: 'إشعارات الرسائل الجديدة في المحادثة',
       importance: Importance.max,
@@ -322,7 +322,7 @@ class FcmService {
     String channelId = _channelId;
     String channelName = _channelName;
     if (type == 'chat' || type == 'new_message' || type == 'chat_message' || data.containsKey('conversation_id')) {
-      channelId = 'chat_messages';
+      channelId = 'chat_messages_v3';
       channelName = 'رسائل المحادثة';
     }
 
