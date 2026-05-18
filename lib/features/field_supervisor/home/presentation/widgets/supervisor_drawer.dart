@@ -49,7 +49,7 @@ class SupervisorDrawer extends StatelessWidget {
               String? avatar;
               
               if (state is AuthAuthenticated) {
-                name = state.user.name;
+                name = state.user.getLocalizedName(Localizations.localeOf(context).languageCode);
                 avatar = state.user.avatar;
               }
 

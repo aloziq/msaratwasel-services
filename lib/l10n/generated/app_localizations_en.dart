@@ -1111,7 +1111,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thisWeek => 'This Week';
 
   @override
-  String get thisMonth => 'This Month';
+  String get thisMonth => 'this month';
 
   @override
   String get errorOccurred => 'An error occurred';
@@ -1424,4 +1424,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todayInspections => 'Today\'s Inspections';
+
+  @override
+  String get attendanceDays => 'Attendance Days';
+
+  @override
+  String get absenceDays => 'Absence Days';
+
+  @override
+  String get sunday => 'Sunday';
+
+  @override
+  String get monday => 'Monday';
+
+  @override
+  String get tuesday => 'Tuesday';
+
+  @override
+  String get wednesday => 'Wednesday';
+
+  @override
+  String get thursday => 'Thursday';
 }

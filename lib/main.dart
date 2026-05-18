@@ -14,11 +14,14 @@ import 'package:msaratwasel_services/features/teacher/students/presentation/cubi
 import 'package:msaratwasel_services/features/teacher/teacher/presentation/cubit/teacher_cubit.dart';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:msaratwasel_services/core/services/fcm_service.dart';
 import 'package:msaratwasel_services/core/services/location_service.dart';
 
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class AppBlocObserver extends BlocObserver {
   @override
@@ -40,50 +43,67 @@ class AppBlocObserver extends BlocObserver {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    developer.log(
-      'Flutter Error: ${details.exception}',
-      stackTrace: details.stack,
-    );
-  };
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = 'https://8adfbcae8fb55fae2f47c92b23a9d4a8@o4507028168212480.ingest.us.sentry.io/4507038161747968';
+      options.tracesSampleRate = 1.0;
+      options.attachScreenshot = true;
+      options.attachThreads = true;
+    },
+    appRunner: () async {
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        developer.log(
+          'Flutter Error: ${details.exception}',
+          stackTrace: details.stack,
+        );
+        // Send report to Firebase Crashlytics & Sentry
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+        Sentry.captureException(details.exception, stackTrace: details.stack);
+      };
 
-  // Handle platform/asynchronous errors
-  PlatformDispatcher.instance.onError = (error, stack) {
-    developer.log('Unhandled Async Error: $error', stackTrace: stack);
-    return true; // Prevent app from crashing
-  };
+      // Handle platform/asynchronous errors
+      PlatformDispatcher.instance.onError = (error, stack) {
+        developer.log('Unhandled Async Error: $error', stackTrace: stack);
+        // Send report to Firebase Crashlytics & Sentry
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        Sentry.captureException(error, stackTrace: stack);
+        return true; // Prevent app from crashing
+      };
 
-  Bloc.observer = AppBlocObserver();
+      Bloc.observer = AppBlocObserver();
 
-  try {
-    debugPrint('🚀 [Main] Initializing Firebase...');
-    await Firebase.initializeApp();
-    debugPrint('✅ [Main] Firebase Initialized');
+      try {
+        debugPrint('🚀 [Main] Initializing Firebase...');
+        await Firebase.initializeApp();
+        debugPrint('✅ [Main] Firebase Initialized');
 
-    // Initialize Controllers without blocking main
-    final themeController = ThemeController();
-    final settingsController = SettingsController();
+        // Initialize Controllers without blocking main
+        final themeController = ThemeController();
+        final settingsController = SettingsController();
 
-    debugPrint('🚀 [Main] Configuring Dependencies...');
-    await configureDependencies();
-    debugPrint('✅ [Main] Dependencies Configured');
+        debugPrint('🚀 [Main] Configuring Dependencies...');
+        await configureDependencies();
+        debugPrint('✅ [Main] Dependencies Configured');
 
-    runApp(
-      MainApp(
-        themeController: themeController,
-        settingsController: settingsController,
-      ),
-    );
+        runApp(
+          MainApp(
+            themeController: themeController,
+            settingsController: settingsController,
+          ),
+        );
 
-    // ─── Post-startup Sequence ───
-    // We use a progressive sequence to avoid overwhelming the CPU/Memory
-    _runPostStartupTasks();
-    
-  } catch (e, stack) {
-    developer.log('Initialization Error: $e', stackTrace: stack);
-    debugPrint('❌ [Main] Critical Initialization Error: $e');
-  }
+        // ─── Post-startup Sequence ───
+        // We use a progressive sequence to avoid overwhelming the CPU/Memory
+        _runPostStartupTasks();
+        
+      } catch (e, stack) {
+        developer.log('Initialization Error: $e', stackTrace: stack);
+        debugPrint('❌ [Main] Critical Initialization Error: $e');
+        Sentry.captureException(e, stackTrace: stack);
+      }
+    },
+  );
 }
 
 void _runPostStartupTasks() async {

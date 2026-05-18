@@ -166,6 +166,9 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                     student.name.toLowerCase().contains(
                       _searchQuery.toLowerCase(),
                     ) ||
+                    (student.nameEn?.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ?? false) ||
                     student.schoolId.contains(_searchQuery);
                 final matchesStatus =
                     _selectedStatus == null ||
@@ -634,7 +637,7 @@ class _StudentCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          student.name,
+                          student.getLocalizedName(Localizations.localeOf(context).languageCode),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -713,11 +716,14 @@ class _StudentCard extends StatelessWidget {
                         () {
                           final receiverId = student.parentUserId;
                           if (receiverId != null && receiverId.isNotEmpty) {
+                            final localeCode = Localizations.localeOf(context).languageCode;
                             context.push(
                               AppRoutes.messages,
                               extra: {
                                 'id': null,
-                                'name': 'ولي أمر ${student.name}',
+                                'name': localeCode == 'ar'
+                                    ? 'ولي أمر ${student.getLocalizedName('ar')}'
+                                    : 'Parent of ${student.getLocalizedName('en')}',
                                 'receiverId': receiverId,
                               },
                             );

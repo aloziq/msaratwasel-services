@@ -55,6 +55,7 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
           students = trip.students.map((e) => StudentEntity(
             id: e.id,
             name: e.name,
+            nameEn: e.nameEn,
             parentName: e.parentName,
             parentPhone: e.parentPhone,
             status: _mapStatus(e.status.name),

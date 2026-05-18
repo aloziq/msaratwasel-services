@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     String? avatar;
 
                     if (authState is AuthAuthenticated) {
-                      displayName = authState.user.name;
+                      displayName = authState.user.getLocalizedName(Localizations.localeOf(context).languageCode);
                       displayRole = authState.user.role.getDisplayName(context);
                       avatar = authState.user.avatar;
                     }

@@ -183,16 +183,25 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
         absentCount: absentCount,
         unmarkedCount: unmarkedCount,
         onConfirm: () async {
-          await context.read<ClassDetailsCubit>().submitDailyReport();
+          final success = await context.read<ClassDetailsCubit>().submitDailyReport();
           if (context.mounted) {
             Navigator.of(dialogContext).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.dailyReportSentSuccess),
-                backgroundColor: Colors.green,
-              ),
-            );
-            context.pop(true);
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.dailyReportSentSuccess),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              context.pop(true);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('فشل تأكيد وإرسال التقرير، يرجى المحاولة لاحقاً'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
           }
         },
       ),
@@ -270,9 +279,11 @@ class _StudentCard extends StatelessWidget {
                           backgroundImage: student.photoUrl != null && student.photoUrl!.isNotEmpty
                               ? NetworkImage(student.photoUrl!)
                               : null,
-                          child: (student.photoUrl == null || student.photoUrl!.isEmpty)
+                           child: (student.photoUrl == null || student.photoUrl!.isEmpty)
                               ? Text(
-                                  student.name.isNotEmpty ? student.name[0] : '?',
+                                  student.getLocalizedName(Localizations.localeOf(context).languageCode).isNotEmpty
+                                      ? student.getLocalizedName(Localizations.localeOf(context).languageCode)[0]
+                                      : '?',
                                   style: GoogleFonts.cairo(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
@@ -289,7 +300,7 @@ class _StudentCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            student.name,
+                            student.getLocalizedName(Localizations.localeOf(context).languageCode),
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onSurface,
@@ -305,7 +316,7 @@ class _StudentCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                student.parentName,
+                                student.getLocalizedParentName(Localizations.localeOf(context).languageCode),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
@@ -528,7 +539,7 @@ class _StudentDetailsModal extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            student.name,
+            student.getLocalizedName(Localizations.localeOf(context).languageCode),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface,
@@ -547,7 +558,7 @@ class _StudentDetailsModal extends StatelessWidget {
             icon: PhosphorIconsDuotone.user,
             imageUrl: student.parentPhotoUrl,
             label: AppLocalizations.of(context)!.parentGuardian,
-            value: student.parentName,
+            value: student.getLocalizedParentName(Localizations.localeOf(context).languageCode),
           ),
           const SizedBox(height: AppSpacing.md),
           _buildInfoRow(

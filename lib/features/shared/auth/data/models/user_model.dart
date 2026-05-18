@@ -4,6 +4,7 @@ class UserModel extends UserEntity {
   const UserModel({
     required super.id,
     required super.name,
+    super.nameEn,
     required super.role,
     required super.token,
     super.avatar,
@@ -19,6 +20,7 @@ class UserModel extends UserEntity {
     return UserModel(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
+      nameEn: json['name_en']?.toString() ?? json['nameEn']?.toString(),
       role: UserRole.fromString(json['role']?.toString() ?? ''),
       token: json['token']?.toString() ?? '',
       avatar: json['avatar']?.toString(),
@@ -35,6 +37,7 @@ class UserModel extends UserEntity {
     return UserModel(
       id: entity.id,
       name: entity.name,
+      nameEn: entity.nameEn,
       role: entity.role,
       token: entity.token,
       avatar: entity.avatar,
@@ -51,6 +54,7 @@ class UserModel extends UserEntity {
   UserModel copyWith({
     String? id,
     String? name,
+    String? nameEn,
     UserRole? role,
     String? token,
     String? avatar,
@@ -64,6 +68,7 @@ class UserModel extends UserEntity {
     return UserModel(
       id: id ?? this.id,
       name: name ?? this.name,
+      nameEn: nameEn ?? this.nameEn,
       role: role ?? this.role,
       token: token ?? this.token,
       avatar: avatar ?? this.avatar,
@@ -80,6 +85,7 @@ class UserModel extends UserEntity {
     return {
       'id': id,
       'name': name,
+      'name_en': nameEn,
       'role': role.name,
       'token': token,
       'avatar': avatar,

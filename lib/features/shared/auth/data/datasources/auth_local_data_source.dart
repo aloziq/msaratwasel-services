@@ -18,6 +18,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
 
   static const String _userIdKey = 'USER_ID';
   static const String _userNameKey = 'USER_NAME';
+  static const String _userNameEnKey = 'USER_NAME_EN';
   static const String _userRoleKey = 'USER_ROLE';
   static const String _userTokenKey = 'USER_TOKEN';
   static const String _userAvatarKey = 'USER_AVATAR';
@@ -32,6 +33,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   Future<UserModel> getCachedUser() async {
     final id = sharedPreferences.getString(_userIdKey);
     final name = sharedPreferences.getString(_userNameKey);
+    final nameEn = sharedPreferences.getString(_userNameEnKey);
     final roleString = sharedPreferences.getString(_userRoleKey);
     final token = sharedPreferences.getString(_userTokenKey);
     final avatar = sharedPreferences.getString(_userAvatarKey);
@@ -51,6 +53,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
       return UserModel(
         id: id,
         name: name,
+        nameEn: nameEn,
         role: UserRole.fromString(roleString),
         token: token,
         avatar: avatar,
@@ -73,6 +76,12 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
     await sharedPreferences.setString(_userRoleKey, user.role.name);
     await sharedPreferences.setString(_userTokenKey, user.token);
     
+    if (user.nameEn != null) {
+      await sharedPreferences.setString(_userNameEnKey, user.nameEn!);
+    } else {
+      await sharedPreferences.remove(_userNameEnKey);
+    }
+
     if (user.avatar != null) {
       await sharedPreferences.setString(_userAvatarKey, user.avatar!);
     } else {
@@ -120,6 +129,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   Future<void> clearCache() async {
     await sharedPreferences.remove(_userIdKey);
     await sharedPreferences.remove(_userNameKey);
+    await sharedPreferences.remove(_userNameEnKey);
     await sharedPreferences.remove(_userRoleKey);
     await sharedPreferences.remove(_userTokenKey);
     await sharedPreferences.remove(_userAvatarKey);

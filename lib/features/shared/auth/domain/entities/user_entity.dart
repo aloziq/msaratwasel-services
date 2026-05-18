@@ -29,6 +29,7 @@ enum UserRole {
 class UserEntity extends Equatable {
   final String id;
   final String name;
+  final String? nameEn;
   final UserRole role;
   final String token;
   final String? avatar;
@@ -42,6 +43,7 @@ class UserEntity extends Equatable {
   const UserEntity({
     required this.id,
     required this.name,
+    this.nameEn,
     required this.role,
     required this.token,
     this.avatar,
@@ -53,9 +55,17 @@ class UserEntity extends Equatable {
     this.busDetails,
   });
 
+  String getLocalizedName(String languageCode) {
+    if (languageCode.toLowerCase() == 'en') {
+      return (nameEn != null && nameEn!.trim().isNotEmpty) ? nameEn! : name;
+    }
+    return name;
+  }
+
   UserEntity copyWith({
     String? id,
     String? name,
+    String? nameEn,
     UserRole? role,
     String? token,
     String? avatar,
@@ -69,6 +79,7 @@ class UserEntity extends Equatable {
     return UserEntity(
       id: id ?? this.id,
       name: name ?? this.name,
+      nameEn: nameEn ?? this.nameEn,
       role: role ?? this.role,
       token: token ?? this.token,
       avatar: avatar ?? this.avatar,
@@ -83,5 +94,5 @@ class UserEntity extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, name, role, token, avatar, busId, email, phone, nationalId, schoolName, busDetails];
+      [id, name, nameEn, role, token, avatar, busId, email, phone, nationalId, schoolName, busDetails];
 }

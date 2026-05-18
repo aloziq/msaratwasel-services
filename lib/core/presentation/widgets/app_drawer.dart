@@ -624,7 +624,9 @@ class _AppDrawerState extends State<AppDrawer> {
     bool isDark,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final name = user?.name ?? l10n.home;
+    final name = (user?.role == UserRole.teacher)
+        ? (user?.getLocalizedName('en') ?? l10n.home)
+        : (user?.name ?? l10n.home);
     final roleName = user?.role.getDisplayName(context) ?? '';
 
     return Container(

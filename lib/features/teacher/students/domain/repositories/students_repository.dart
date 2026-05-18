@@ -9,4 +9,7 @@ abstract class StudentsRepository {
     String studentId,
     AttendanceStatus status,
   );
+  Future<Either<String, void>> confirmAttendance(
+    String classId,
+  );
 }

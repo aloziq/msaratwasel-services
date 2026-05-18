@@ -35,14 +35,23 @@ class AttendanceHistoryRecord extends Equatable {
 class AttendanceHistoryEntity extends Equatable {
   final String classId;
   final String className;
+  final String? classNameEn;
   final List<AttendanceHistoryRecord> dailyRecords;
 
   const AttendanceHistoryEntity({
     required this.classId,
     required this.className,
+    this.classNameEn,
     required this.dailyRecords,
   });
 
+  String getLocalizedClassName(String languageCode) {
+    if (languageCode.toLowerCase() == 'en') {
+      return (classNameEn != null && classNameEn!.trim().isNotEmpty) ? classNameEn! : className;
+    }
+    return className;
+  }
+
   @override
-  List<Object?> get props => [classId, className, dailyRecords];
+  List<Object?> get props => [classId, className, classNameEn, dailyRecords];
 }

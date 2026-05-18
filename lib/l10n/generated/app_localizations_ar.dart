@@ -1415,4 +1415,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get todayInspections => 'تفتيشات اليوم';
+
+  @override
+  String get attendanceDays => 'أيام الحضور';
+
+  @override
+  String get absenceDays => 'أيام الغياب';
+
+  @override
+  String get sunday => 'الأحد';
+
+  @override
+  String get monday => 'الاثنين';
+
+  @override
+  String get tuesday => 'الثلاثاء';
+
+  @override
+  String get wednesday => 'الأربعاء';
+
+  @override
+  String get thursday => 'الخميس';
 }

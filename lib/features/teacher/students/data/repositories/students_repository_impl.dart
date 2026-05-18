@@ -39,4 +39,18 @@ class StudentsRepositoryImpl implements StudentsRepository {
       return const Left('فشل تسجيل الحضور');
     }
   }
+
+  @override
+  Future<Either<String, void>> confirmAttendance(
+    String classId,
+  ) async {
+    try {
+      await remoteDataSource.confirmAttendance(classId);
+      return const Right(null);
+    } catch (e, stackTrace) {
+      debugPrint('StudentsRepository.confirmAttendance failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+      return const Left('فشل تأكيد وإرسال التقرير');
+    }
+  }
 }

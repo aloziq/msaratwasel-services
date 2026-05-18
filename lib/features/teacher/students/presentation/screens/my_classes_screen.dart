@@ -91,6 +91,8 @@ class _ClassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final languageCode = Localizations.localeOf(context).languageCode;
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
@@ -114,12 +116,12 @@ class _ClassCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          classroom.name,
+          classroom.getLocalizedName(languageCode),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text('عدد الطلاب: ${classroom.studentCount}'),
+        subtitle: Text('${l10n.studentCount}: ${classroom.studentCount}'),
         trailing: DirectionalIcon(
           Icons.arrow_forward_ios_rounded,
           size: 16,

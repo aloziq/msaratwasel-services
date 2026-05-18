@@ -4,6 +4,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
@@ -54,21 +55,17 @@ class ApiClient {
       ),
     );
 
-    // ── إضافة أداة طباعة فقط في حالة الأخطاء لتجنب الزحمة ──
+    // ── إضافة أداة طباعة وتتبع مفصلة للطلبات في بيئة التطوير ──
     if (kDebugMode) {
       dio.interceptors.add(
-        InterceptorsWrapper(
-          onError: (DioException e, handler) {
-            debugPrint('\n================ [API ERROR] ================');
-            debugPrint(
-              '❌ URI: ${e.requestOptions.method} ${e.requestOptions.uri}',
-            );
-            debugPrint('❌ StatusCode: ${e.response?.statusCode}');
-            debugPrint('❌ Response: ${e.response?.data}');
-            debugPrint('=============================================\n');
-            return handler.next(e);
-          },
-          // تم إخفاء طباعة الطلبات والردود العادية (الناجحة)
+        PrettyDioLogger(
+          requestHeader: true,
+          requestBody: true,
+          responseBody: true,
+          responseHeader: false,
+          error: true,
+          compact: true,
+          maxWidth: 90,
         ),
       );
     }

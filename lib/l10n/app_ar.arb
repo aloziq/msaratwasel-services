@@ -533,5 +533,13 @@
     "activeStatus": "نشط/ة",
     "todayTrips": "رحلات اليوم",
     "todayIncidents": "حوادث اليوم",
-    "todayInspections": "تفتيشات اليوم"
+    "todayInspections": "تفتيشات اليوم",
+    "attendanceDays": "أيام الحضور",
+    "absenceDays": "أيام الغياب",
+    "sunday": "الأحد",
+    "monday": "الاثنين",
+    "tuesday": "الثلاثاء",
+    "wednesday": "الأربعاء",
+    "thursday": "الخميس",
+    "thisMonth": "هذا الشهر"
 }

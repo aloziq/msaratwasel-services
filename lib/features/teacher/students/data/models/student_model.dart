@@ -4,7 +4,9 @@ class StudentModel extends StudentEntity {
   const StudentModel({
     required super.id,
     required super.name,
+    super.nameEn,
     required super.parentName,
+    super.parentNameEn,
     required super.parentPhone,
     super.photoUrl,
     super.parentPhotoUrl,
@@ -16,8 +18,12 @@ class StudentModel extends StudentEntity {
       id: json['id']?.toString() ?? '',
       name:
           json['name_ar'] as String? ?? json['name'] as String? ?? 'غير معروف',
+      nameEn:
+          json['name_en'] as String? ?? json['nameEn'] as String?,
       parentName:
           json['parent_name'] as String? ?? json['parentName'] as String? ?? '',
+      parentNameEn:
+          json['parent_name_en'] as String? ?? json['parentNameEn'] as String?,
       parentPhone:
           json['parent_phone'] as String? ??
           json['parentPhone'] as String? ??
@@ -35,7 +41,9 @@ class StudentModel extends StudentEntity {
     return {
       'id': id,
       'name': name,
+      'nameEn': nameEn,
       'parentName': parentName,
+      'parentNameEn': parentNameEn,
       'parentPhone': parentPhone,
       'photoUrl': photoUrl,
       'parentPhotoUrl': parentPhotoUrl,

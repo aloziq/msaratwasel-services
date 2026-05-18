@@ -67,6 +67,10 @@ dependencies:
   flutter_background_service: ^5.1.0
   device_info_plus: ^12.4.0
   http: ^1.6.0
+  pretty_dio_logger: ^1.4.0
+  firebase_crashlytics: ^5.2.2
+  firebase_analytics: ^12.4.1
+  sentry_flutter: 8.10.0
 
 dev_dependencies:
   flutter_test:

@@ -235,7 +235,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final filteredStudents = students.where((s) {
       if (_searchQuery.isEmpty) return true;
       final query = _searchQuery.toLowerCase();
-      final matchesName = s.name.toLowerCase().contains(query);
+      final matchesName = s.getLocalizedName(Localizations.localeOf(context).languageCode).toLowerCase().contains(query);
       final matchesCivilId = s.civilId?.toLowerCase().contains(query) ?? false;
       return matchesName || matchesCivilId;
     }).toList();
@@ -304,7 +304,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       : null,
                     child: student.photoUrl == null 
                       ? Text(
-                          student.name.substring(0, 1).toUpperCase(),
+                          student.getLocalizedName(Localizations.localeOf(context).languageCode).isNotEmpty
+                              ? student.getLocalizedName(Localizations.localeOf(context).languageCode).substring(0, 1).toUpperCase()
+                              : '?',
                           style: TextStyle(
                             color: isDark
                                 ? Colors.white
@@ -321,7 +323,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          student.name,
+                          student.getLocalizedName(Localizations.localeOf(context).languageCode),
                           style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -606,7 +608,7 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    widget.student.name,
+                    widget.student.getLocalizedName(Localizations.localeOf(context).languageCode),
                     style: GoogleFonts.cairo(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -624,7 +626,7 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
             children: [
               Expanded(
                 child: _ModalSummaryBox(
-                  label: 'أيام الحضور',
+                  label: AppLocalizations.of(context)!.attendanceDays,
                   value: '${widget.student.presentCount}',
                   color: const Color(0xFF10B981),
                   icon: PhosphorIconsFill.checkCircle,
@@ -633,7 +635,7 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
               const SizedBox(width: 12),
               Expanded(
                 child: _ModalSummaryBox(
-                  label: 'أيام الغياب',
+                  label: AppLocalizations.of(context)!.absenceDays,
                   value: '${widget.student.absentCount}',
                   color: const Color(0xFFEF4444),
                   icon: PhosphorIconsFill.xCircle,
@@ -737,7 +739,13 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+          children: [
+            AppLocalizations.of(context)!.sunday,
+            AppLocalizations.of(context)!.monday,
+            AppLocalizations.of(context)!.tuesday,
+            AppLocalizations.of(context)!.wednesday,
+            AppLocalizations.of(context)!.thursday,
+          ]
               .map((day) => Expanded(
                     child: Center(
                       child: Text(

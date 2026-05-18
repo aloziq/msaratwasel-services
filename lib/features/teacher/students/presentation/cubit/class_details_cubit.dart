@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import '../../domain/entities/student_entity.dart';
 import '../../domain/usecases/get_students_usecase.dart';
+import '../../domain/usecases/confirm_attendance_usecase.dart';
 import '../../domain/usecases/mark_attendance_usecase.dart';
 import 'class_details_state.dart';
 
@@ -9,10 +10,12 @@ import 'class_details_state.dart';
 class ClassDetailsCubit extends Cubit<ClassDetailsState> {
   final GetStudentsUseCase getStudentsUseCase;
   final MarkAttendanceUseCase markAttendanceUseCase;
+  final ConfirmAttendanceUseCase confirmAttendanceUseCase;
 
   ClassDetailsCubit({
     required this.getStudentsUseCase,
     required this.markAttendanceUseCase,
+    required this.confirmAttendanceUseCase,
   }) : super(ClassDetailsInitial());
 
   Future<void> loadStudents(String classId) async {
@@ -62,19 +65,29 @@ class ClassDetailsCubit extends Cubit<ClassDetailsState> {
     });
   }
 
-  Future<void> submitDailyReport() async {
-    if (state is! ClassDetailsLoaded) return;
+  Future<bool> submitDailyReport() async {
+    if (state is! ClassDetailsLoaded) return false;
     
     final currentState = state as ClassDetailsLoaded;
-    // Lock all students that have been marked
-    final lockedStudents = currentState.students.map((student) {
-      if (student.status != AttendanceStatus.unknown) {
-        return student.copyWith(isLocked: true);
-      }
-      return student;
-    }).toList();
     
-    emit(ClassDetailsLoaded(lockedStudents, currentState.classId));
-    // Usually here you'd call a usecase to tell the backend the report was sent formally
+    final result = await confirmAttendanceUseCase(currentState.classId);
+    
+    return result.fold(
+      (failure) {
+        return false;
+      },
+      (success) {
+        // Lock all students that have been marked
+        final lockedStudents = currentState.students.map((student) {
+          if (student.status != AttendanceStatus.unknown) {
+            return student.copyWith(isLocked: true);
+          }
+          return student;
+        }).toList();
+        
+        emit(ClassDetailsLoaded(lockedStudents, currentState.classId));
+        return true;
+      },
+    );
   }
 }

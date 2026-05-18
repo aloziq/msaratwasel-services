@@ -77,7 +77,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                   title: selectedRecord != null 
                       ? l10n.students
                       : (selectedClass != null 
-                          ? '${selectedClass!.className} (${intl.DateFormat('yyyy/M/d').format(_selectedDay ?? _focusedDay)})'
+                          ? '${selectedClass!.getLocalizedClassName(Localizations.localeOf(context).languageCode)} (${intl.DateFormat('yyyy/M/d').format(_selectedDay ?? _focusedDay)})'
                           : l10n.attendanceHistory),
                   leading: Material(
                     color: Colors.transparent,
@@ -163,7 +163,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             children: [
               Expanded(
                 child: _HeaderSummaryCard(
-                  label: '${AppLocalizations.of(context)!.present} (هذا الشهر)',
+                  label: '${AppLocalizations.of(context)!.present} (${AppLocalizations.of(context)!.thisMonth})',
                   value: totalPresent.toString(),
                   color: const Color(0xFF10B981),
                   icon: PhosphorIconsFill.checkCircle,
@@ -172,7 +172,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
               SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _HeaderSummaryCard(
-                  label: '${AppLocalizations.of(context)!.absent} (هذا الشهر)',
+                  label: '${AppLocalizations.of(context)!.absent} (${AppLocalizations.of(context)!.thisMonth})',
                   value: totalAbsent.toString(),
                   color: const Color(0xFFEF4444),
                   icon: PhosphorIconsFill.xCircle,
@@ -288,6 +288,11 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
       }
     }
     
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final dayNames = isArabic
+        ? ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس']
+        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
+
     return Column(
       children: [
         // Days of week header
@@ -295,15 +300,17 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس']
+            children: dayNames
                 .map((day) => Expanded(
                       child: Center(
                         child: Text(
                           day,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.cairo(
                             color: const Color(0xFF64748B),
                             fontWeight: FontWeight.w600,
-                            fontSize: 13,
+                            fontSize: 11,
                           ),
                         ),
                       ),
@@ -684,7 +691,7 @@ class _ClassCard extends StatelessWidget {
           child: Icon(PhosphorIconsFill.chalkboardTeacher, color: AppColors.primary),
         ),
         title: Text(
-          classModel.className,
+          classModel.getLocalizedClassName(Localizations.localeOf(context).languageCode),
           style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         subtitle: Text(
@@ -740,7 +747,12 @@ class _StudentHistoryCard extends StatelessWidget {
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   backgroundImage: student.photoUrl != null && student.photoUrl!.isNotEmpty ? NetworkImage(student.photoUrl!) : null,
                   child: student.photoUrl == null || student.photoUrl!.isEmpty
-                      ? Text(student.name.isNotEmpty ? student.name[0] : '?', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: AppColors.primary))
+                      ? Text(
+                          student.getLocalizedName(Localizations.localeOf(context).languageCode).isNotEmpty
+                              ? student.getLocalizedName(Localizations.localeOf(context).languageCode)[0]
+                              : '?',
+                          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: AppColors.primary),
+                        )
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -749,11 +761,11 @@ class _StudentHistoryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        student.name,
+                        student.getLocalizedName(Localizations.localeOf(context).languageCode),
                         style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       Text(
-                        student.parentName,
+                        student.getLocalizedParentName(Localizations.localeOf(context).languageCode),
                         style: GoogleFonts.cairo(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
@@ -836,7 +848,7 @@ class _StudentDetailsModal extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            student.name,
+            student.getLocalizedName(Localizations.localeOf(context).languageCode),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface,
@@ -855,7 +867,7 @@ class _StudentDetailsModal extends StatelessWidget {
             icon: PhosphorIconsDuotone.user,
             imageUrl: student.parentPhotoUrl,
             label: AppLocalizations.of(context)!.parentGuardian,
-            value: student.parentName,
+            value: student.getLocalizedParentName(Localizations.localeOf(context).languageCode),
           ),
           const SizedBox(height: AppSpacing.md),
           _buildInfoRow(

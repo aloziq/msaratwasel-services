@@ -81,6 +81,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return UserModel.fromJson({
         'id': userJson['id'].toString(),
         'name': userJson['name'],
+        'name_en': userJson['name_en'],
         'role': userJson['role'],
         'token': token,
         'avatar': userJson['image_url'] ?? userJson['avatar'],

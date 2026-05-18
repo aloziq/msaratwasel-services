@@ -2201,7 +2201,7 @@ abstract class AppLocalizations {
   /// No description provided for @thisMonth.
   ///
   /// In en, this message translates to:
-  /// **'This Month'**
+  /// **'this month'**
   String get thisMonth;
 
   /// No description provided for @errorOccurred.
@@ -2809,6 +2809,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today\'s Inspections'**
   String get todayInspections;
+
+  /// No description provided for @attendanceDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance Days'**
+  String get attendanceDays;
+
+  /// No description provided for @absenceDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Absence Days'**
+  String get absenceDays;
+
+  /// No description provided for @sunday.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get sunday;
+
+  /// No description provided for @monday.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get monday;
+
+  /// No description provided for @tuesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get tuesday;
+
+  /// No description provided for @wednesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get wednesday;
+
+  /// No description provided for @thursday.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get thursday;
 }
 
 class _AppLocalizationsDelegate

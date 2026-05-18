@@ -94,6 +94,8 @@ import '../../features/teacher/students/data/repositories/students_repository_im
     as _i704;
 import '../../features/teacher/students/domain/repositories/students_repository.dart'
     as _i319;
+import '../../features/teacher/students/domain/usecases/confirm_attendance_usecase.dart'
+    as _i259;
 import '../../features/teacher/students/domain/usecases/get_students_usecase.dart'
     as _i842;
 import '../../features/teacher/students/domain/usecases/mark_attendance_usecase.dart'
@@ -221,6 +223,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i833.GetTeacherClassroomsUseCase>(
       () => _i833.GetTeacherClassroomsUseCase(gh<_i962.TeacherRepository>()),
     );
+    gh.lazySingleton<_i259.ConfirmAttendanceUseCase>(
+      () => _i259.ConfirmAttendanceUseCase(gh<_i319.StudentsRepository>()),
+    );
     gh.lazySingleton<_i842.GetStudentsUseCase>(
       () => _i842.GetStudentsUseCase(gh<_i319.StudentsRepository>()),
     );
@@ -236,6 +241,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i272.ClassDetailsCubit(
         getStudentsUseCase: gh<_i842.GetStudentsUseCase>(),
         markAttendanceUseCase: gh<_i307.MarkAttendanceUseCase>(),
+        confirmAttendanceUseCase: gh<_i259.ConfirmAttendanceUseCase>(),
       ),
     );
     gh.lazySingleton<_i880.AttendanceHistoryRepository>(

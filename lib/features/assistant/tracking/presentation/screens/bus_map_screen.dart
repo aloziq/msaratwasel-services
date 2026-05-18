@@ -202,13 +202,14 @@ class _TrackingMapState extends State<_TrackingMap> {
   }
 
   Future<void> _loadMarkers() async {
+    final langCode = Localizations.localeOf(context).languageCode;
     final newMarkers = <String, BitmapDescriptor>{};
     for (final student in widget.students) {
       try {
         // Using StudentMarkerWidget to generate bitmap
         final marker =
             await StudentMarkerWidget(
-              name: student.name,
+              name: student.getLocalizedName(langCode),
               // Assuming photoUrl is handled inside StudentMarkerWidget or passed
               // color: AppColors.primary // if needed
             ).toBitmapDescriptor(
@@ -297,6 +298,8 @@ class _TrackingMapState extends State<_TrackingMap> {
       ),
     );
 
+    final langCode = Localizations.localeOf(context).languageCode;
+
     // Student Markers
     for (var i = 0; i < widget.students.length; i++) {
       final student = widget.students[i];
@@ -311,7 +314,7 @@ class _TrackingMapState extends State<_TrackingMap> {
         Marker(
           markerId: MarkerId('student_${student.id}'),
           position: position,
-          infoWindow: InfoWindow(title: student.name),
+          infoWindow: InfoWindow(title: student.getLocalizedName(langCode)),
           icon:
               _markers[student.id] ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),

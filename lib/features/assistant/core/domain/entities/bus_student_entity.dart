@@ -30,6 +30,7 @@ class BusStudentEntity extends Equatable {
   final String id;
   final String studentCode;
   final String name;
+  final String? nameEn;
   final String grade;
   final String schoolId;
   final String parentName;
@@ -44,6 +45,7 @@ class BusStudentEntity extends Equatable {
     required this.id,
     required this.studentCode,
     required this.name,
+    this.nameEn,
     required this.grade,
     required this.schoolId,
     required this.parentName,
@@ -55,10 +57,18 @@ class BusStudentEntity extends Equatable {
     this.waitingSince,
   });
 
+  String getLocalizedName(String languageCode) {
+    if (languageCode.toLowerCase() == 'en') {
+      return (nameEn != null && nameEn!.trim().isNotEmpty) ? nameEn! : name;
+    }
+    return name;
+  }
+
   BusStudentEntity copyWith({
     String? id,
     String? studentCode,
     String? name,
+    String? nameEn,
     String? grade,
     String? schoolId,
     String? parentName,
@@ -73,6 +83,7 @@ class BusStudentEntity extends Equatable {
       id: id ?? this.id,
       studentCode: studentCode ?? this.studentCode,
       name: name ?? this.name,
+      nameEn: nameEn ?? this.nameEn,
       grade: grade ?? this.grade,
       schoolId: schoolId ?? this.schoolId,
       parentName: parentName ?? this.parentName,
@@ -90,6 +101,7 @@ class BusStudentEntity extends Equatable {
     id,
     studentCode,
     name,
+    nameEn,
     grade,
     schoolId,
     parentName,

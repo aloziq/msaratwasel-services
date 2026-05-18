@@ -49,7 +49,7 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     final authState = context.watch<AuthCubit>().state;
     final userName = authState is AuthAuthenticated
-        ? authState.user.name
+        ? authState.user.getLocalizedName(Localizations.localeOf(context).languageCode)
         : 'Driver';
     final date = DateFormat.MMMMEEEEd(
       isArabic ? 'ar' : 'en',
@@ -121,6 +121,7 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                       final user = authState is AuthAuthenticated
                           ? authState.user
                           : null;
+                      final name = user?.getLocalizedName(Localizations.localeOf(context).languageCode) ?? userName;
                       return Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
@@ -195,8 +196,8 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                                             },
                                         errorBuilder: (context, error, _) {
                                           final initial =
-                                              (user?.name.isNotEmpty == true)
-                                              ? user!.name[0].toUpperCase()
+                                              name.isNotEmpty
+                                              ? name[0].toUpperCase()
                                               : 'D';
                                           return Container(
                                             color: Colors.white24,
@@ -235,7 +236,7 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        user?.name ?? userName,
+                                        name,
                                         style: theme.textTheme.titleLarge
                                             ?.copyWith(
                                               fontWeight: FontWeight.bold,

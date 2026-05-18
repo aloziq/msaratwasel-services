@@ -7,6 +7,7 @@ import '../models/student_model.dart';
 abstract class StudentsRemoteDataSource {
   Future<List<StudentModel>> getStudentsByClass(String classId);
   Future<void> markAttendance(String studentId, AttendanceStatus status);
+  Future<void> confirmAttendance(String classId);
 }
 
 @LazySingleton(as: StudentsRemoteDataSource)
@@ -40,6 +41,18 @@ class StudentsRemoteDataSourceImpl implements StudentsRemoteDataSource {
       debugPrint('[StudentsRemoteDS] ✅ Marked attendance for student $studentId: ${status.name}');
     } catch (e) {
       debugPrint('[StudentsRemoteDS] ❌ Error marking attendance: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> confirmAttendance(String classId) async {
+    try {
+      final dio = ApiClient.instance;
+      await dio.post('teacher/classes/$classId/confirm-attendance');
+      debugPrint('[StudentsRemoteDS] ✅ Confirmed attendance for class $classId');
+    } catch (e) {
+      debugPrint('[StudentsRemoteDS] ❌ Error confirming attendance for class $classId: $e');
       rethrow;
     }
   }

@@ -7,6 +7,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:msaratwasel_services/core/utils/active_conversation_tracker.dart';
 import 'package:injectable/injectable.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
 import '../../features/shared/auth/presentation/cubit/auth_state.dart';
 import '../../features/shared/auth/domain/entities/user_entity.dart';
@@ -16,6 +19,25 @@ import '../../config/routes/app_routes.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint("Handling a background message: ${message.messageId}");
+
+  try {
+    FirebaseCrashlytics.instance.log('FCM BG: Handling background message ${message.messageId}');
+    FirebaseAnalytics.instance.logEvent(
+      name: 'fcm_bg_received',
+      parameters: {'message_id': message.messageId ?? ''},
+    );
+    Sentry.addBreadcrumb(
+      Breadcrumb(
+        message: 'FCM BG: Handling background message',
+        category: 'fcm.background',
+        level: SentryLevel.info,
+        data: {
+          'message_id': message.messageId ?? 'unknown',
+          'data': message.data,
+        },
+      ),
+    );
+  } catch (_) {}
 
   final data = message.data;
   final String? cid =
@@ -30,6 +52,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       prefs.getStringList('processed_fcm_cids') ?? [];
   if (cid != null && processedCids.contains(cid)) {
     debugPrint('🚫 [FCM BG] Skipping persistent duplicate (CID: $cid)');
+    try {
+      FirebaseCrashlytics.instance.log('FCM BG: Skipping persistent duplicate (CID: $cid)');
+      Sentry.addBreadcrumb(
+        Breadcrumb(
+          message: 'FCM BG: Suppressed persistent duplicate',
+          category: 'fcm.background.suppressed',
+          level: SentryLevel.warning,
+          data: {'correlation_id': cid},
+        ),
+      );
+    } catch (_) {}
     return;
   }
 
@@ -43,6 +76,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // 2. Avoid Double Notification:
   if (message.notification != null) {
     debugPrint('🔔 [FCM BG] OS handles UI. Skipping local show.');
+    try {
+      FirebaseCrashlytics.instance.log('FCM BG: OS handles UI. Skipping local show.');
+      Sentry.addBreadcrumb(
+        Breadcrumb(
+          message: 'FCM BG: Suppressed duplicate UI because OS notification exists',
+          category: 'fcm.background.suppressed',
+          level: SentryLevel.info,
+          data: {'message_id': message.messageId ?? 'unknown'},
+        ),
+      );
+    } catch (_) {}
     return;
   }
 
@@ -79,8 +123,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (title.isNotEmpty || body.isNotEmpty) {
     final FlutterLocalNotificationsPlugin localNotifications =
         FlutterLocalNotificationsPlugin();
+
+    // تصحيح: إزالة البادئة @mipmap/ لتفادي الفشل الصامت
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_launcher');
+
     const InitializationSettings initializationSettings =
         InitializationSettings(
           android: initializationSettingsAndroid,
@@ -88,7 +135,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         );
     await localNotifications.initialize(initializationSettings);
 
-    // التوجيه الذكي للقنوات بناءً على نوع الإشعار في الخلفية
     final type = data['type']?.toString();
     bool isChat =
         (type == 'chat_message' || type == 'chat' || type == 'new_message');
@@ -97,6 +143,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         ? 'chat_messages_v3'
         : 'msarat_wasel_high_importance_v4';
     String channelName = isChat ? 'رسائل المحادثة' : 'إشعارات مسارات';
+
+    try {
+      FirebaseCrashlytics.instance.log('FCM BG: Showing local notification ($channelId)');
+      FirebaseAnalytics.instance.logEvent(
+        name: 'fcm_bg_notification_shown',
+        parameters: {'type': type ?? '', 'channel': channelId},
+      );
+    } catch (_) {}
 
     await localNotifications.show(
       cid.hashCode,
@@ -108,7 +162,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           channelName,
           importance: Importance.max,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: 'ic_launcher', // تصحيح هنا أيضاً
           playSound: true,
           enableVibration: true,
         ),
@@ -154,14 +208,14 @@ class FcmService {
     await requestPermission();
 
     await _messaging.setForegroundNotificationPresentationOptions(
-      alert:
-          false, // نتحكم بالعرض يدوياً عبر الكود لضمان ظهور البانر المنبثق والصوت دائماً
+      alert: false,
       badge: true,
       sound: true,
     );
 
+    // تصحيح هنا أيضاً لتهيئة التطبيق في الواجهة الأمامية
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_launcher');
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
@@ -182,6 +236,7 @@ class FcmService {
             _handleDataTap(data);
           } catch (e) {
             debugPrint('❌ [FCM] Error parsing local notification payload: $e');
+            Sentry.captureException(e);
           }
         }
       },
@@ -193,7 +248,6 @@ class FcmService {
         >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
 
-    // 1. إنشاء قناة الدردشة
     const AndroidNotificationChannel chatChannel = AndroidNotificationChannel(
       'chat_messages_v3',
       'رسائل المحادثة',
@@ -204,7 +258,6 @@ class FcmService {
       showBadge: true,
     );
 
-    // 2. إنشاء القناة العامة للإشعارات الإدارية
     const AndroidNotificationChannel generalChannel =
         AndroidNotificationChannel(
           'msarat_wasel_high_importance_v4',
@@ -224,7 +277,6 @@ class FcmService {
     await plugin?.createNotificationChannel(chatChannel);
     await plugin?.createNotificationChannel(generalChannel);
 
-    // كود الـ iOS الخاص بك (تم استرجاعه كما كان)
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       debugPrint('🍎 [FCM] iOS detected: waiting for APNS token...');
       String? apnsToken;
@@ -248,6 +300,25 @@ class FcmService {
       debugPrint(
         '🔔 [FCM] Message received in foreground: ${message.notification?.title ?? "Data Message"}',
       );
+
+      try {
+        FirebaseCrashlytics.instance.log('FCM FG: Message received foreground ${message.messageId}');
+        FirebaseAnalytics.instance.logEvent(
+          name: 'fcm_fg_received',
+          parameters: {'message_id': message.messageId ?? ''},
+        );
+        Sentry.addBreadcrumb(
+          Breadcrumb(
+            message: 'FCM FG: Message received in foreground',
+            category: 'fcm.foreground',
+            level: SentryLevel.info,
+            data: {
+              'message_id': message.messageId ?? 'unknown',
+              'data': message.data,
+            },
+          ),
+        );
+      } catch (_) {}
 
       final data = message.data;
       final correlationId = _pick([data['correlation_id']]);
@@ -276,6 +347,20 @@ class FcmService {
         debugPrint(
           '⚠️ [FCM] Skipping duplicate message (ID: $notificationId / CID: $correlationId)',
         );
+        try {
+          FirebaseCrashlytics.instance.log('FCM FG: Skipping duplicate message (ID: $notificationId / CID: $correlationId)');
+          Sentry.addBreadcrumb(
+            Breadcrumb(
+              message: 'FCM FG: Suppressed duplicate notification',
+              category: 'fcm.foreground.suppressed',
+              level: SentryLevel.warning,
+              data: {
+                'notification_id': notificationId ?? 'unknown',
+                'correlation_id': correlationId ?? 'unknown',
+              },
+            ),
+          );
+        } catch (_) {}
         return;
       }
 
@@ -329,10 +414,25 @@ class FcmService {
       message.messageId,
     ]);
 
+    try {
+      FirebaseCrashlytics.instance.log('FCM FG: Attempting to show local notification: $cid');
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
     final processedCids = prefs.getStringList('processed_fcm_cids') ?? [];
     if (cid != null && processedCids.contains(cid)) {
       debugPrint('♻️ [FCM FG] Skipping duplicate message (CID: $cid)');
+      try {
+        FirebaseCrashlytics.instance.log('FCM FG: Skipping duplicate message (CID: $cid)');
+        Sentry.addBreadcrumb(
+          Breadcrumb(
+            message: 'FCM FG: Suppressed duplicate local show',
+            category: 'fcm.foreground.suppressed',
+            level: SentryLevel.warning,
+            data: {'correlation_id': cid},
+          ),
+        );
+      } catch (_) {}
       return;
     }
 
@@ -354,6 +454,21 @@ class FcmService {
         debugPrint(
           '🔇 [FCM FG] Suppressing notification - active in conversation $convId',
         );
+        try {
+          FirebaseCrashlytics.instance.log('FCM FG: Suppressing notification - active in conversation $convId');
+          FirebaseAnalytics.instance.logEvent(
+            name: 'fcm_fg_suppressed_active_chat',
+            parameters: {'conversation_id': convId},
+          );
+          Sentry.addBreadcrumb(
+            Breadcrumb(
+              message: 'FCM FG: Suppressed notification because user is actively inside the chat screen',
+              category: 'fcm.foreground.suppressed',
+              level: SentryLevel.info,
+              data: {'conversation_id': convId},
+            ),
+          );
+        } catch (_) {}
         return;
       }
     }
@@ -383,13 +498,20 @@ class FcmService {
 
     final notificationId = cid.hashCode;
 
-    // التوجيه الذكي للقنوات ليطابق السيرفر 100%
     bool isChat =
         (type == 'chat_message' || type == 'chat' || type == 'new_message');
     String channelId = isChat
         ? 'chat_messages_v3'
         : 'msarat_wasel_high_importance_v4';
     String channelName = isChat ? 'رسائل المحادثة' : 'إشعارات مسارات';
+
+    try {
+      FirebaseCrashlytics.instance.log('FCM FG: Showing local notification ($channelId)');
+      FirebaseAnalytics.instance.logEvent(
+        name: 'fcm_fg_notification_shown',
+        parameters: {'type': type ?? '', 'channel': channelId},
+      );
+    } catch (_) {}
 
     await _localNotifications.show(
       notificationId,
@@ -399,13 +521,12 @@ class FcmService {
         android: AndroidNotificationDetails(
           channelId,
           channelName,
-          importance:
-              Importance.max, // تضمن ظهور الإشعار المنبثق كـ Banner علوي
-          priority: Priority.high, // تضمن الأولوية العالية جداً
+          importance: Importance.max,
+          priority: Priority.high,
           ticker: 'ticker',
-          playSound: true, // تشغيل الصوت
+          playSound: true,
           enableVibration: true,
-          icon: '@mipmap/ic_launcher',
+          icon: 'ic_launcher', // تصحيح نهائي هنا لإظهار البانر
           styleInformation: BigTextStyleInformation(body, contentTitle: title),
         ),
         iOS: const DarwinNotificationDetails(
@@ -425,6 +546,25 @@ class FcmService {
   void _handleDataTap(Map<String, dynamic> data) {
     debugPrint('🔔 [FCM] Handling tap for data: $data');
     final type = data['type']?.toString();
+
+    try {
+      FirebaseCrashlytics.instance.log('FCM Tap: Handling notification tap of type: $type');
+      FirebaseAnalytics.instance.logEvent(
+        name: 'fcm_notification_tapped',
+        parameters: {'type': type ?? ''},
+      );
+      Sentry.addBreadcrumb(
+        Breadcrumb(
+          message: 'FCM Tap: Handling notification tap',
+          category: 'fcm.tap',
+          level: SentryLevel.info,
+          data: {
+            'type': type ?? 'unknown',
+            'data': data,
+          },
+        ),
+      );
+    } catch (_) {}
 
     if (type == 'chat' ||
         type == 'new_message' ||

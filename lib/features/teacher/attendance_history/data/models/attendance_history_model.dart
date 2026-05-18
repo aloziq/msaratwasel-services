@@ -34,7 +34,9 @@ class AttendanceHistoryRecordModel extends AttendanceHistoryRecord {
         return StudentModel(
           id: e.id,
           name: e.name,
+          nameEn: e.nameEn,
           parentName: e.parentName,
+          parentNameEn: e.parentNameEn,
           parentPhone: e.parentPhone,
           photoUrl: e.photoUrl,
           status: e.status,
@@ -52,13 +54,15 @@ class AttendanceHistoryModel extends AttendanceHistoryEntity {
   const AttendanceHistoryModel({
     required super.classId,
     required super.className,
+    super.classNameEn,
     required super.dailyRecords,
   });
 
   factory AttendanceHistoryModel.fromJson(Map<String, dynamic> json) {
     return AttendanceHistoryModel(
-      classId: json['classId'] as String,
-      className: json['className'] as String,
+      classId: (json['classId'] ?? json['id'])?.toString() ?? '',
+      className: json['className'] as String? ?? json['class_name'] as String? ?? json['name'] as String? ?? '',
+      classNameEn: json['classNameEn'] as String? ?? json['class_name_en'] as String? ?? json['name_en'] as String?,
       dailyRecords:
           (json['dailyRecords'] as List<dynamic>?)
               ?.map(
@@ -75,6 +79,7 @@ class AttendanceHistoryModel extends AttendanceHistoryEntity {
     return {
       'classId': classId,
       'className': className,
+      'classNameEn': classNameEn,
       'dailyRecords': dailyRecords.map((e) {
         if (e is AttendanceHistoryRecordModel) return e.toJson();
         return AttendanceHistoryRecordModel(

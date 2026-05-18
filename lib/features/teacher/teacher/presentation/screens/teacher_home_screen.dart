@@ -91,7 +91,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
               String teacherName = AppLocalizations.of(context)!.theTeacher;
               String? teacherAvatar;
               if (authState is AuthAuthenticated) {
-                teacherName = authState.user.name;
+                teacherName = authState.user.getLocalizedName('en');
                 teacherAvatar = authState.user.avatar;
               }
               return BlocBuilder<TeacherCubit, TeacherState>(

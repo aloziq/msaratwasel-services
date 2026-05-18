@@ -12,6 +12,7 @@ class ReportEntity extends Equatable {
 
 class StudentReportEntity extends Equatable {
   final String name;
+  final String? nameEn;
   final String? civilId;
   final int presentCount;
   final int absentCount;
@@ -19,14 +20,22 @@ class StudentReportEntity extends Equatable {
 
   const StudentReportEntity({
     required this.name,
+    this.nameEn,
     this.civilId,
     required this.presentCount,
     required this.absentCount,
     this.photoUrl,
   });
 
+  String getLocalizedName(String languageCode) {
+    if (languageCode.toLowerCase() == 'en') {
+      return (nameEn != null && nameEn!.trim().isNotEmpty) ? nameEn! : name;
+    }
+    return name;
+  }
+
   @override
-  List<Object?> get props => [name, civilId, presentCount, absentCount, photoUrl];
+  List<Object?> get props => [name, nameEn, civilId, presentCount, absentCount, photoUrl];
 }
 
 class AttendanceStatsEntity extends Equatable {

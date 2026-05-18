@@ -23,6 +23,7 @@ class ReportModel extends ReportEntity {
 class StudentReportModel extends StudentReportEntity {
   const StudentReportModel({
     required super.name,
+    super.nameEn,
     super.civilId,
     required super.presentCount,
     required super.absentCount,
@@ -31,7 +32,8 @@ class StudentReportModel extends StudentReportEntity {
 
   factory StudentReportModel.fromJson(Map<String, dynamic> json) {
     return StudentReportModel(
-      name: json['name']?.toString() ?? 'غير معروف',
+      name: json['name_ar'] as String? ?? json['name'] as String? ?? 'غير معروف',
+      nameEn: json['name_en'] as String? ?? json['nameEn'] as String?,
       civilId: json['civil_id']?.toString() ?? json['civilId']?.toString(),
       presentCount: (json['presentCount'] as num?)?.toInt() ?? 0,
       absentCount: (json['absentCount'] as num?)?.toInt() ?? 0,
@@ -42,6 +44,7 @@ class StudentReportModel extends StudentReportEntity {
   Map<String, dynamic> toJson() {
     return {
       'name': name,
+      'nameEn': nameEn,
       'civil_id': civilId,
       'presentCount': presentCount,
       'absentCount': absentCount,
@@ -107,6 +110,7 @@ class AttendanceStatsModel extends AttendanceStatsEntity {
         if (e is StudentReportModel) return e.toJson();
         return StudentReportModel(
           name: e.name,
+          nameEn: e.nameEn,
           civilId: e.civilId,
           presentCount: e.presentCount,
           absentCount: e.absentCount,
