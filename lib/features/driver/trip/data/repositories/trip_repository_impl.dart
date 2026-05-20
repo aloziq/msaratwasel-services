@@ -33,14 +33,21 @@ class TripRepositoryImpl implements TripRepository {
       'end_qr_data': endQrData,
     });
 
-    final response = await ApiClient.instance.post(
-      '/bus/$busId/end-trip',
-      data: formData,
-      onSendProgress: onProgress,
-    );
+    try {
+      final response = await ApiClient.instance.post(
+        '/bus/$busId/end-trip',
+        data: formData,
+        onSendProgress: onProgress,
+      );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(response.data['message'] ?? 'Failed to end trip');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(response.data['message'] ?? 'Failed to end trip');
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data != null && e.response!.data is Map) {
+        throw Exception(e.response!.data['message'] ?? 'حدث خطأ أثناء إنهاء الرحلة.');
+      }
+      rethrow;
     }
   }
 

@@ -22,6 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import 'package:msaratwasel_services/config/app_config.dart';
 
 import '../../domain/entities/student_stop.dart';
 
@@ -52,13 +53,14 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Set<Polyline> _polylines = {};
   bool _isArrived = false;
   bool _isActionLoading = false;
+  bool _isSyncingStops = false;
   bool _followMe = true; // Automatically follow the bus
   bool _isFirstLock = true; // Track first GPS lock to center camera
   bool _isProgrammaticMove = false; // Distinguish between manual and automatic camera moves
   bool _hasDepartedSchool = false; // Only used for afternoon trip
   bool _hasNotified = false; // Whether parent has been notified for the current stop
   bool _isMovingToStop = false; // Whether the driver has started moving to the current stop
-  final bool _isFinished = false; // When the trip phase logic finishes
+  bool _isFinished = false; // When the trip phase logic finishes
 
   // Waiting Timer Logic
   Timer? _waitingTimer;
@@ -66,11 +68,15 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   StudentStop? _waitingStudent;
 
   ReverbService? _reverbService;
+  StreamSubscription<Position>? _gpsSubscription;
+  Timer? _statusPollingTimer;
   Timer? _locationTimer;
   LatLng? _currentPosition;
   List<LatLng> _activeRoutePoints = []; // Road-following points
   String _remainingTime = '--';
   String _remainingDistance = '--';
+  bool _isGpsDisabled = false;
+  Timer? _gpsCheckTimer;
 
   @override
   void initState() {
@@ -79,6 +85,35 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     _fetchRouteData();
     _startRealGPS();
     _initReverb();
+    _startStatusPolling();
+    _startGpsCheckTimer();
+  }
+
+  void _startGpsCheckTimer() {
+    _gpsCheckTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      final permission = await Geolocator.checkPermission();
+      final hasPermission = permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+      
+      final disabled = !enabled || !hasPermission;
+      if (disabled != _isGpsDisabled) {
+        if (mounted) {
+          setState(() {
+            _isGpsDisabled = disabled;
+          });
+        }
+      }
+    });
+  }
+
+
+
+  void _startStatusPolling() {
+    _statusPollingTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (mounted) {
+        _fetchRouteData(silent: true);
+      }
+    });
   }
 
   Future<void> _initReverb() async {
@@ -177,13 +212,14 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         );
         _isFirstLock = false;
         
+        _sortPendingStopsByDistance();
         _fetchRoadFollowingRoute();
       }
     } catch (e) {
       debugPrint('GPS: Error getting initial position: $e');
     }
 
-    Geolocator.getPositionStream(
+    _gpsSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 10,
@@ -265,48 +301,56 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       return;
     }
 
-    final key = "AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs";
-    final origin = "${_currentPosition!.latitude},${_currentPosition!.longitude}";
-    final dest = "${target.latitude},${target.longitude}";
+    final originStr = "${_currentPosition!.longitude},${_currentPosition!.latitude}";
+    final destStr = "${target.longitude},${target.latitude}";
 
-    debugPrint("🚀 [Navigation] Requesting Directions: $origin -> $dest");
+    debugPrint("🚀 [Navigation] Requesting OSRM Directions: $originStr -> $destStr");
 
     try {
       final url = Uri.parse(
-        "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$dest&key=$key",
+        "https://router.project-osrm.org/route/v1/driving/$originStr;$destStr?overview=full&geometries=polyline",
       );
-      debugPrint("DEBUG: Fetching Directions from $origin to $dest");
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 8));
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint("DEBUG: Directions API Status: ${data['status']}");
+        debugPrint("DEBUG: OSRM API Status: ${data['code']}");
         
-        if (data['status'] == 'OK') {
+        if (data['code'] == 'Ok' && data['routes'].isNotEmpty) {
           final route = data['routes'][0];
-          final leg = route['legs'][0];
-          final points = PolylinePoints.decodePolyline(route['overview_polyline']['points']);
+          final points = PolylinePoints.decodePolyline(route['geometry']);
           
-          debugPrint("DEBUG: Decoded ${points.length} polyline points");
+          debugPrint("✅ [Navigation] OSRM route decoded: ${points.length} points");
 
-          setState(() {
-            _activeRoutePoints = points.map((p) => LatLng(p.latitude, p.longitude)).toList();
-            _remainingDistance = leg['distance']['text'];
-            _remainingTime = leg['duration']['text'];
-            _lastRouteFetchTime = now;
-            _lastFetchTarget = target;
-          });
-          _updatePolylines();
-        } else {
-          debugPrint("DEBUG: Directions API Error: ${data['error_message'] ?? 'Unknown error'}");
-          _updatePolylines();
+          if (mounted) {
+            setState(() {
+              _activeRoutePoints = points.map((p) => LatLng(p.latitude, p.longitude)).toList();
+              final distInKm = (route['distance'] as num) / 1000;
+              final durInMin = (route['duration'] as num) / 60;
+              _remainingDistance = '${distInKm.toStringAsFixed(1)} كم';
+              _remainingTime = '${durInMin.ceil()} دقيقة';
+              _lastRouteFetchTime = now;
+              _lastFetchTarget = target;
+            });
+            _updatePolylines();
+          }
+          return; // Success
         }
-      } else {
-        debugPrint("DEBUG: Directions HTTP Error: ${response.statusCode}");
+      }
+      
+      // Fallback if OSRM fails
+      debugPrint("❌ [Navigation] OSRM failed. Using straight line fallback.");
+      if (mounted) {
+        setState(() {
+          _activeRoutePoints = []; // Use straight dotted line
+          _lastRouteFetchTime = now;
+          _lastFetchTarget = target;
+        });
         _updatePolylines();
       }
     } catch (e) {
-      debugPrint("DEBUG: Directions Exception: $e");
-      _updatePolylines(); // Fallback to straight line
+      debugPrint("❌ [Navigation] Directions Exception/Timeout: $e");
+      _updatePolylines();
     }
   }
 
@@ -325,6 +369,37 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
       if (!mounted) return;
 
+      final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+      final tripStatus = _routeRepository.currentTripStatus;
+      if (tripStatus != 'in_progress' &&
+          tripStatus != 'awaiting_confirmation' &&
+          tripStatus != 'awaiting_video') {
+        debugPrint('⚠️ [Navigation] Trip status is $tripStatus.');
+        
+        // We don't automatically push to EndTrip if the trip is already completely finished.
+        // It will just show the snackbar below and close the navigation screen.
+        
+        // Don't pop if we're already navigating away
+        if (_isFinished) return;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isArabic 
+              ? '✅ لا توجد رحلة نشطة حالياً. تم إغلاق صفحة الملاحة.' 
+              : '✅ No active trip. Navigation screen closed.'
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(AppRoutes.driverHome);
+        }
+        return;
+      }
+
       final isMorning = _routeRepository.currentTripType == 'morning';
       int initialIndex = 0;
 
@@ -332,7 +407,15 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         initialIndex = stops.indexWhere((s) => !s.isBoarded && !s.isAbsent);
       } else {
         initialIndex = stops.indexWhere((s) => !s.isDroppedOff && !s.isAbsent);
+        // Auto-detect if school departure already happened:
+        // If any student is boarded (still on bus) OR already dropped off at home,
+        // the bus has clearly already left the school.
+        if (!_hasDepartedSchool && stops.any((s) => s.isBoarded || s.isDroppedOff)) {
+          _hasDepartedSchool = true;
+        }
       }
+
+      final previousStopIndex = _currentStopIndex;
 
       setState(() {
         _stops = stops;
@@ -342,6 +425,45 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         _initMapData();
       });
 
+      // If all students are resolved in afternoon trip, go to end trip
+      if (!isMorning && _hasDepartedSchool && _currentStopIndex >= _stops.length && !_isFinished) {
+        _isFinished = true;
+        _statusPollingTimer?.cancel();
+        if (mounted) context.push(AppRoutes.driverEndTrip);
+        return;
+      }
+
+      // Auto-advance: if the current student changed (e.g. marked boarded from supervisor screen),
+      // reset navigation state so the UI smoothly transitions to the new target.
+      if (silent && previousStopIndex != _currentStopIndex && _currentStopIndex < _stops.length) {
+        debugPrint('🔄 [Navigation] Auto-advancing from stop $previousStopIndex to $_currentStopIndex');
+        setState(() {
+          _hasNotified = false;
+          _isMovingToStop = false;
+          _isArrived = false;
+        });
+      }
+
+      _sortPendingStopsByDistance();
+
+      // Restore active timer state if the student is currently waiting in morning trip
+      if (isMorning && _currentStopIndex < _stops.length) {
+        final currentStop = _stops[_currentStopIndex];
+        debugPrint(
+          '⏱️ [SCREEN] currentStop: ${currentStop.nameAr}, isWaiting: ${currentStop.isWaiting}, '
+          'waitingElapsedSeconds: ${currentStop.waitingElapsedSeconds}',
+        );
+        if (currentStop.isWaiting) {
+          _hasNotified = true;
+          _isMovingToStop = true;
+          if (_waitingStudent?.id != currentStop.id || _waitingTimer == null || !_waitingTimer!.isActive) {
+            final elapsed = currentStop.waitingElapsedSeconds;
+            debugPrint('⏱️ [SCREEN] Restoring timer for student ${currentStop.nameAr} with elapsed: $elapsed');
+            _restoreWaitingTimer(currentStop, elapsed);
+          }
+        }
+      }
+      
       // Log coordinates for debugging
       if (_stops.isNotEmpty && _currentStopIndex < _stops.length) {
         final target = _stops[_currentStopIndex].location;
@@ -361,11 +483,57 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     }
   }
 
+  void _sortPendingStopsByDistance() {
+    if (_currentPosition == null || _stops.isEmpty) return;
+
+    final isMorning = _routeRepository.currentTripType == 'morning';
+    
+    List<StudentStop> processed = [];
+    List<StudentStop> pending = [];
+    
+    for (var stop in _stops) {
+      bool isResolved = isMorning 
+        ? (stop.isBoarded || stop.isAbsent)
+        : (stop.isDroppedOff || stop.isAbsent);
+        
+      if (isResolved) {
+        processed.add(stop);
+      } else {
+        pending.add(stop);
+      }
+    }
+    
+    // Sort pending by distance from current location, prioritizing waiting students
+    pending.sort((a, b) {
+      if (a.isWaiting && !b.isWaiting) return -1;
+      if (!a.isWaiting && b.isWaiting) return 1;
+
+      double distA = Geolocator.distanceBetween(
+        _currentPosition!.latitude, _currentPosition!.longitude,
+        a.location.latitude, a.location.longitude
+      );
+      double distB = Geolocator.distanceBetween(
+        _currentPosition!.latitude, _currentPosition!.longitude,
+        b.location.latitude, b.location.longitude
+      );
+      return distA.compareTo(distB);
+    });
+    
+    setState(() {
+      _stops = [...processed, ...pending];
+      _currentStopIndex = processed.length;
+      _initMapData();
+    });
+  }
+
   @override
   void dispose() {
+    _statusPollingTimer?.cancel();
+    _gpsSubscription?.cancel();
     _reverbService?.dispose();
     _locationTimer?.cancel();
     _waitingTimer?.cancel();
+    _gpsCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -449,7 +617,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         Polyline(
           polylineId: const PolylineId('route_line'),
           points: [LatLng(_currentPosition!.latitude, _currentPosition!.longitude), target],
-          color: Colors.blue.withOpacity(0.8),
+          color: Colors.blue.withValues(alpha: 0.8),
           width: 6,
           jointType: JointType.round,
           patterns: [PatternItem.dash(20), PatternItem.gap(10)], // Dotted line for fallback
@@ -472,6 +640,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     if (_currentStopIndex >= _stops.length) return;
 
     final currentStudent = _stops[_currentStopIndex];
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     setState(() {
       _isActionLoading = true;
@@ -481,8 +650,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       // 1. Notify Parent
       await _routeRepository.notifyParentNearHouse(studentId: currentStudent.id);
 
-      // 2. Start Timer
-      _startWaitingTimer(currentStudent);
+      // 2. Start Timer (only in morning trip)
+      final isMorning = _routeRepository.currentTripType == 'morning';
+      if (isMorning) {
+        _startWaitingTimer(currentStudent);
+      }
 
       // 3. Mark as notified to change button to "Next Destination"
       setState(() {
@@ -494,9 +666,40 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       setState(() {
         _isActionLoading = false;
       });
+
+      // Show user-friendly error message
+      String errorMsg = e.toString().replaceFirst('Exception: ', '');
+      if (errorMsg.contains('Too Many Attempts') || errorMsg.contains('429')) {
+        errorMsg = isArabic
+            ? 'تم إرسال التنبيه مسبقاً. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.'
+            : 'Notification already sent. Please wait a moment before trying again.';
+      } else if (errorMsg.contains('فشل إرسال الإشعار')) {
+        errorMsg = isArabic
+            ? 'تعذر إرسال التنبيه لولي الأمر. تحقق من الاتصال وحاول مجدداً.'
+            : 'Could not notify the parent. Check your connection and try again.';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('فشل التنبيه: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(PhosphorIconsFill.warningCircle, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(child: Text(errorMsg, style: const TextStyle(fontSize: 13))),
+            ],
+          ),
+          backgroundColor: Colors.orange[800],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          duration: const Duration(seconds: 4),
+        ),
       );
+
+      // Even if notification fails, allow driver to continue (mark as notified)
+      setState(() {
+        _hasNotified = true;
+      });
     }
   }
 
@@ -508,20 +711,129 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     });
 
     _waitingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsRemaining > 0) {
-        setState(() {
-          _secondsRemaining--;
-        });
-      } else {
-        timer.cancel();
-        // Timer finished - UI will show "Time's up"
-      }
+      setState(() {
+        _secondsRemaining--;
+      });
+    });
+  }
+
+  void _restoreWaitingTimer(StudentStop student, int elapsedSeconds) {
+    _waitingTimer?.cancel();
+    setState(() {
+      _waitingStudent = student;
+      _secondsRemaining = 120 - elapsedSeconds;
+    });
+
+    _waitingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _secondsRemaining--;
+      });
     });
   }
 
   Future<void> _advanceToNextStop() async {
+    _waitingTimer?.cancel();
+    _waitingTimer = null;
+    _waitingStudent = null;
     final isMorning = _routeRepository.currentTripType == 'morning';
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
+    debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    debugPrint('🔄 [ADVANCE] ▶ _advanceToNextStop() called');
+    debugPrint('🔄 [ADVANCE] Trip type: ${isMorning ? "MORNING" : "AFTERNOON"}');
+    debugPrint('🔄 [ADVANCE] _currentStopIndex: $_currentStopIndex / ${_stops.length}');
+    debugPrint('🔄 [ADVANCE] _hasNotified: $_hasNotified, _hasDepartedSchool: $_hasDepartedSchool');
+
+    // Validation: Prevent skipping a student whose status is undetermined.
+    // First, refresh data to get latest status from server
+    if (_currentStopIndex < _stops.length) {
+      debugPrint('🔄 [ADVANCE] Refreshing data before validation...');
+      await _fetchRouteData(silent: true);
+      debugPrint('🔄 [ADVANCE] After refresh: _currentStopIndex: $_currentStopIndex / ${_stops.length}');
+    }
+
+    if (_currentStopIndex < _stops.length) {
+      final currentStudent = _stops[_currentStopIndex];
+      bool isResolved = false;
+
+      debugPrint('🔄 [ADVANCE] Current student: ${currentStudent.nameAr} (id: ${currentStudent.id})');
+      debugPrint('🔄 [ADVANCE]   isBoarded: ${currentStudent.isBoarded}');
+      debugPrint('🔄 [ADVANCE]   isDroppedOff: ${currentStudent.isDroppedOff}');
+      debugPrint('🔄 [ADVANCE]   isAbsent: ${currentStudent.isAbsent}');
+
+      if (isMorning) {
+        // In morning: boarded, absent, or waiting (parent notified, driver can proceed)
+        // The supervisor handles marking boarding separately.
+        isResolved = currentStudent.isBoarded || currentStudent.isAbsent;
+        debugPrint('🔄 [ADVANCE] Morning validation: isBoarded=${currentStudent.isBoarded} || isAbsent=${currentStudent.isAbsent} → isResolved=$isResolved');
+
+        // If the driver already notified the parent (student is 'waiting'),
+        // they can advance — the boarding will be confirmed by supervisor.
+        if (!isResolved && _hasNotified) {
+          isResolved = true;
+          debugPrint('🔄 [ADVANCE] ✅ Allowing advance because _hasNotified=true');
+        }
+      } else {
+        // In afternoon, they start at school, so we skip validation if they haven't departed school yet.
+        if (!_hasDepartedSchool) {
+          isResolved = true;
+          debugPrint('🔄 [ADVANCE] Afternoon: not departed school yet, skipping validation');
+        } else {
+          // In afternoon: boarded (still on bus or waiting) means we can drop them off.
+          // droppedOff or absent means already resolved.
+          isResolved = currentStudent.isDroppedOff || currentStudent.isAbsent || currentStudent.isBoarded;
+          debugPrint('🔄 [ADVANCE] Afternoon validation: droppedOff=${currentStudent.isDroppedOff} || absent=${currentStudent.isAbsent} || boarded=${currentStudent.isBoarded} → isResolved=$isResolved');
+        }
+      }
+
+      debugPrint('🔄 [ADVANCE] Final isResolved: $isResolved');
+
+      if (!isResolved) {
+        debugPrint('❌ [ADVANCE] BLOCKED! Student not resolved. Showing error snackbar.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  PhosphorIconsFill.warningCircle,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    isArabic 
+                      ? 'لا يمكن الانتقال! يرجى تحديد حالة الطالب (${currentStudent.nameAr}) أولاً من صفحة "طلابي" أو من المشرفة.' 
+                      : 'Cannot advance! Please determine status for ${currentStudent.nameEn} first from "My Students" or the supervisor.',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: isArabic ? 'تحديث' : 'Refresh',
+              textColor: Colors.white,
+              onPressed: () async {
+                try {
+                  await _fetchRouteData(silent: true);
+                } catch (_) {}
+              },
+            ),
+          ),
+        );
+        return;
+      }
+    }
 
     setState(() {
       _isActionLoading = true;
@@ -530,16 +842,16 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     try {
       if (isMorning) {
         if (_currentStopIndex < _stops.length) {
+          debugPrint('✅ [ADVANCE] Morning: Advancing to next stop. Sorting and routing...');
           setState(() {
-            _currentStopIndex++;
             _hasNotified = false;
             _isMovingToStop = false;
             _activeRoutePoints = [];
             _isArrived = false;
             _isActionLoading = false;
-            _initMapData();
-            _fetchRoadFollowingRoute();
           });
+          _sortPendingStopsByDistance();
+          _fetchRoadFollowingRoute();
         } else {
           setState(() { _isActionLoading = false; });
           final confirmed = await showDialog<bool>(
@@ -566,20 +878,39 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
             _hasDepartedSchool = true;
             _activeRoutePoints = [];
             _isActionLoading = false;
-            _initMapData();
-            _fetchRoadFollowingRoute();
           });
+          _sortPendingStopsByDistance();
+          _fetchRoadFollowingRoute();
         } else if (_currentStopIndex < _stops.length) {
+          // Mark the current student as dropped off before advancing
+          final studentToDrop = _stops[_currentStopIndex];
+          if (!studentToDrop.isDroppedOff && !studentToDrop.isAbsent) {
+            try {
+              await _routeRepository.markStudentDropped(studentId: studentToDrop.id);
+              debugPrint('✅ [Navigation] Auto-marked student ${studentToDrop.nameAr} as dropped off');
+            } catch (e) {
+              debugPrint('⚠️ [Navigation] Failed to mark student dropped: $e');
+            }
+          }
           setState(() {
-            _currentStopIndex++;
             _hasNotified = false;
             _isMovingToStop = false;
             _activeRoutePoints = [];
             _isActionLoading = false;
-            _initMapData();
-            _fetchRoadFollowingRoute();
           });
+          await _fetchRouteData(silent: true);
+          // Check if all students are now dropped off — if so, end the trip
+          if (_currentStopIndex >= _stops.length && !_isFinished) {
+            _isFinished = true;
+            _statusPollingTimer?.cancel();
+            if (mounted) context.push(AppRoutes.driverEndTrip);
+            return;
+          }
+          _sortPendingStopsByDistance();
+          _fetchRoadFollowingRoute();
         } else {
+          _isFinished = true;
+          _statusPollingTimer?.cancel();
           context.push(AppRoutes.driverEndTrip);
         }
       }
@@ -602,8 +933,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         (!isMorning && !_hasDepartedSchool);
 
     return Scaffold(
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+      body: Stack(
+        children: [
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(
               child: Column(
@@ -618,6 +951,80 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                     child: const Text('إعادة المحاولة'),
                   ),
                 ],
+              ),
+            )
+          : (_routeRepository.currentTripStatus != 'in_progress' &&
+             _routeRepository.currentTripStatus != 'awaiting_confirmation' &&
+             _routeRepository.currentTripStatus != 'awaiting_video')
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: GlassCard(
+                  borderRadius: 28,
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          PhosphorIconsBold.bus,
+                          size: 48,
+                          color: Colors.blue[400],
+                        ),
+                      ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+                       .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 1200.ms),
+                      const SizedBox(height: 24),
+                      Text(
+                        isArabic ? 'لا توجد رحلة نشطة' : 'No Active Trip',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        isArabic 
+                            ? 'لا توجد رحلة قيد التشغيل في الوقت الحالي. يرجى بدء الرحلة من الشاشة الرئيسية أولاً.'
+                            : 'There is no active trip at the moment. Please start a trip from the home screen first.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      PremiumButton(
+                        height: 55,
+                        borderRadius: 18,
+                        text: isArabic ? 'العودة للرئيسية' : 'Back to Home',
+                        icon: PhosphorIconsBold.house,
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(AppRoutes.driverHome);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton.icon(
+                        onPressed: () => _fetchRouteData(),
+                        icon: Icon(PhosphorIconsBold.arrowsClockwise, size: 18, color: Colors.blue[400]),
+                        label: Text(
+                          isArabic ? 'تحديث الحالة' : 'Refresh Status',
+                          style: TextStyle(color: Colors.blue[400], fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             )
           : _stops.isEmpty
@@ -670,7 +1077,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                         child: _NextStopCard(
                           isArabic: isArabic,
                           stop: currentStop,
-                          secondsRemaining: _waitingStudent != null ? _secondsRemaining : null,
+                          secondsRemaining: (_waitingStudent?.id == currentStop.id) ? _secondsRemaining : null,
                         ),
                       ),
                     ),
@@ -734,6 +1141,22 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                   bottom: 240, // Adjusted to be above the bottom panel
                   child: Column(
                     children: [
+                      FloatingActionButton(
+                        heroTag: 'qr_scanner',
+                        mini: true,
+                        backgroundColor: const Color(0xFF10B981), // Emerald/Green for smart scanner
+                        foregroundColor: Colors.white,
+                        onPressed: () {
+                          context.push(
+                            AppRoutes.qrScan,
+                            extra: {'isTripMode': true},
+                          );
+                        },
+                        child: const Icon(
+                          PhosphorIconsBold.qrCode,
+                        ),
+                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
+                      const SizedBox(height: 12),
                       FloatingActionButton(
                         heroTag: 'recenter',
                         mini: true,
@@ -888,8 +1311,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                           const SizedBox(height: 4),
                                           Text(
                                             isArabic
-                                                ? 'الطالب ${currentStop.nameAr} مسجل كغائب اليوم.'
-                                                : '${currentStop.nameEn} is marked absent today.',
+                                                ? 'الطالب  مسجل كغائب اليوم.'
+                                                : ' is marked absent today.',
                                             style: TextStyle(
                                               color: Colors.white.withValues(alpha: 0.9),
                                               fontSize: 12,
@@ -1010,6 +1433,79 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                 ),
               ],
             ),
+          if (_isGpsDisabled)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  color: Colors.black.withOpacity(0.65),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Center(
+                    child: GlassCard(
+                      borderRadius: 24,
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.gps_off_rounded,
+                              size: 54,
+                              color: Colors.redAccent,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            isArabic ? 'تتبع الرحلة متوقف!' : 'Trip Tracking Paused!',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            isArabic
+                                ? 'لقد قمت بإيقاف تشغيل خدمة الموقع (GPS). لسلامة الطلاب ومتابعة الرحلة، لا يمكنك إكمال الرحلة أو القيام بأي إجراء حتى تقوم بتفعيل خدمة الموقع مرة أخرى.'
+                                : 'You have disabled GPS/Location services. For student safety and trip progress, you cannot continue or perform any actions until location services are enabled again.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.8),
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            icon: const Icon(Icons.settings, size: 20),
+                            label: Text(
+                              isArabic ? 'تفعيل خدمة الموقع (GPS)' : 'Enable Location (GPS)',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            onPressed: () async {
+                              await Geolocator.openLocationSettings();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -1024,17 +1520,25 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       return isArabic ? 'تخطي الطالب (غائب)' : 'Skip Student (Absent)';
     }
     if (isSchoolState) {
-      if (isMorning) return isArabic ? '🏢 الوصول إلى المدرسة' : '🏢 Arrive at School';
+      if (isMorning) return isArabic ? '🏫 الوصول إلى المدرسة' : '🏫 Arrive at School';
       return isArabic ? '🚀 مغادرة المدرسة' : '🚀 Depart School';
     }
 
     if (_hasNotified) {
       final baseText = isArabic ? 'الانتقال للوجهة التالية' : 'Next Destination';
-      if (_waitingStudent?.id == currentStop?.id && _secondsRemaining > 0) {
-        final minutes = _secondsRemaining ~/ 60;
-        final seconds = _secondsRemaining % 60;
-        final timerText = '(${minutes}:${seconds.toString().padLeft(2, '0')})';
-        return '$baseText $timerText';
+      if (_waitingStudent?.id == currentStop?.id && _waitingTimer?.isActive == true) {
+        if (_secondsRemaining > 0) {
+          final minutes = _secondsRemaining ~/ 60;
+          final seconds = _secondsRemaining % 60;
+          final timerText = '(${minutes}:${seconds.toString().padLeft(2, '0')})';
+          return '$baseText $timerText';
+        } else {
+          final extraSeconds = _secondsRemaining.abs();
+          final minutes = extraSeconds ~/ 60;
+          final seconds = extraSeconds % 60;
+          final timerText = '(+${minutes}:${seconds.toString().padLeft(2, '0')})';
+          return '$baseText $timerText';
+        }
       }
       return baseText;
     }
@@ -1214,7 +1718,7 @@ class _NextStopCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    "${(secondsRemaining! ~/ 60)}:${(secondsRemaining! % 60).toString().padLeft(2, '0')}",
+                    secondsRemaining! > 0 ? "${(secondsRemaining! ~/ 60)}:${(secondsRemaining! % 60).toString().padLeft(2, '0')}" : "+${(secondsRemaining!.abs() ~/ 60)}:${(secondsRemaining!.abs() % 60).toString().padLeft(2, '0')}",
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w900,

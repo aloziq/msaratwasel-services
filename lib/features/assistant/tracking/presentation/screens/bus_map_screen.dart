@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:widget_to_marker/widget_to_marker.dart';
+import 'dart:async';
+import 'package:go_router/go_router.dart';
 
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
+import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:msaratwasel_services/features/teacher/students/domain/entities/student_entity.dart';
@@ -12,6 +15,11 @@ import '../cubit/bus_tracking_cubit.dart';
 import '../../domain/entities/bus_position.dart';
 import '../widgets/student_marker_widget.dart';
 import 'package:msaratwasel_services/core/utils/location_utils.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/core/services/reverb_service.dart';
+import 'package:msaratwasel_services/core/network/api_client.dart';
+import 'package:msaratwasel_services/features/assistant/core/presentation/cubit/bus_trip_cubit.dart';
 
 class BusMapScreen extends StatefulWidget {
   const BusMapScreen({super.key});
@@ -22,18 +30,100 @@ class BusMapScreen extends StatefulWidget {
 
 class _BusMapScreenState extends State<BusMapScreen> {
   bool _isDetailsExpanded = true;
+  Timer? _pollingTimer;
+  ReverbService? _reverbService;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPolling();
+    _initReverb();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (mounted) {
+        final cubit = context.read<BusTripCubit>();
+        if (cubit.state is BusTripLoaded) {
+          final trip = (cubit.state as BusTripLoaded).trip;
+          if (trip.tripStatus == 'in_progress' ||
+              trip.tripStatus == 'awaiting_video' ||
+              trip.tripStatus == 'awaiting_confirmation') {
+            cubit.loadTrip(silent: true);
+          }
+        }
+      }
+    });
+  }
+
+  void _initReverb() async {
+    final authCubit = context.read<AuthCubit>();
+    final authState = authCubit.state;
+    
+    if (authState is AuthAuthenticated) {
+      final user = authState.user;
+      final busId = user.busId;
+      
+      if (busId != null) {
+        _reverbService = ReverbService(
+          userId: int.tryParse(user.id) ?? 0,
+          dio: ApiClient.instance,
+          onMessageReceived: (data) {
+            debugPrint('🔄 Trip status updated via Reverb inside BusMapScreen: $data');
+            if (mounted) {
+              context.read<BusTripCubit>().loadTrip(silent: true);
+            }
+          },
+        );
+        
+        await _reverbService!.connect();
+        await _reverbService!.subscribe('private-bus.$busId');
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    _reverbService?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return BlocProvider(
-      create: (context) => BusTrackingCubit()..startTracking(),
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            body: BlocBuilder<BusTrackingCubit, BusTrackingState>(
-              builder: (context, state) {
+    return BlocListener<BusTripCubit, BusTripState>(
+      listener: (context, state) {
+        if (state is BusTripLoaded) {
+          if (state.trip.tripStatus == 'finished' || state.trip.tripStatus == 'idle' || state.trip.tripStatus == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ لقد أنهى السائق الرحلة بنجاح. سيتم إعادتك للرئيسية.'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            context.go(AppRoutes.assistantHome);
+          }
+        } else if (state is BusTripError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ تم إنهاء الرحلة أو حدث خطأ: ${state.message}'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          context.go(AppRoutes.assistantHome);
+        }
+      },
+      child: BlocProvider(
+        create: (context) => BusTrackingCubit()..startTracking(),
+        child: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: BlocBuilder<BusTrackingCubit, BusTrackingState>(
+                builder: (context, state) {
                 // Error state
                 if (state is BusTrackingError) {
                   return Center(
@@ -164,7 +254,8 @@ class _BusMapScreenState extends State<BusMapScreen> {
           );
         },
       ),
-    );
+    ),
+  );
   }
 }
 

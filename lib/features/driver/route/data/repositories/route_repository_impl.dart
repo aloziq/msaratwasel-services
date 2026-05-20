@@ -14,10 +14,14 @@ class RouteRepositoryImpl implements RouteRepository {
   RouteRepositoryImpl() : _dio = ApiClient.instance;
 
   String _currentTripType = 'morning';
+  String _currentTripStatus = 'idle';
   LatLng? _schoolLocation;
 
   @override
   String get currentTripType => _currentTripType;
+
+  @override
+  String get currentTripStatus => _currentTripStatus;
 
   @override
   LatLng? get schoolLocation => _schoolLocation;
@@ -44,7 +48,9 @@ class RouteRepositoryImpl implements RouteRepository {
       final response = await _dio.get('bus/$busId/passengers');
 
       final busInfo = response.data['bus'] ?? {};
-      _currentTripType = busInfo['trip_type'] ?? 'morning';
+      final String rawTripType = busInfo['trip_type'] ?? 'morning';
+      _currentTripType = (rawTripType == 'forth' || rawTripType == 'morning') ? 'morning' : 'afternoon';
+      _currentTripStatus = busInfo['trip_status'] ?? 'idle';
 
       // Parse school coordinates
       final sLat = double.tryParse(busInfo['school_lat']?.toString() ?? '0.0') ?? 0.0;
@@ -58,9 +64,23 @@ class RouteRepositoryImpl implements RouteRepository {
 
       return passengersJson.map((json) {
         final isOnBus = json['isOnBus'] == true;
+        final isWaiting = json['isWaiting'] == true;
         final lastEvent = json['lastEvent'];
-        final isDroppedOff =
-            lastEvent != null && lastEvent['type'] == 'alighting';
+        
+        final isMorning = _currentTripType == 'morning';
+        final expectedDirection = isMorning ? 'to_school' : 'to_home';
+        final isDroppedOff = lastEvent != null &&
+            lastEvent['type'] == 'alighting' &&
+            lastEvent['direction'] == expectedDirection;
+
+        // In afternoon trips, 'waiting' means the student is still on the bus
+        // (driver pressed "near house" but student hasn't gotten off yet)
+        final effectivelyBoarded = isOnBus || (!isMorning && isWaiting && !isDroppedOff);
+
+        debugPrint(
+          '👤 [REPO] Passenger: ${json['name']}, status: ${json['status']}, '
+          'isWaiting: ${json['isWaiting']}, waitingSince: ${json['waitingSince']}, waitingElapsedSeconds: ${json['waitingElapsedSeconds']}',
+        );
 
         return StudentStopModel(
           id: json['id'].toString(),
@@ -73,9 +93,12 @@ class RouteRepositoryImpl implements RouteRepository {
           photoUrl:
               json['photoUrl'] ??
               'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['name'] ?? 'User')}&background=random',
-          isBoarded: isOnBus,
+          isBoarded: effectivelyBoarded,
           isDroppedOff: isDroppedOff,
           isAbsent: json['isAbsent'] == true || json['status'] == 'absent',
+          isWaiting: isWaiting,
+          waitingSince: json['waitingSince']?.toString(),
+          waitingElapsedSeconds: int.tryParse(json['waitingElapsedSeconds']?.toString() ?? '0') ?? 0,
         );
       }).toList();
     } on DioException catch (e) {
@@ -150,6 +173,28 @@ class RouteRepositoryImpl implements RouteRepository {
       throw Exception('فشل تسجيل نزول الطالب: $message');
     } catch (e) {
       throw Exception('فشل تسجيل نزول الطالب');
+    }
+  }
+
+  @override
+  Future<void> markStudentAbsent({required String studentId}) async {
+    try {
+      if (_cachedBusId == null) {
+        final userResponse = await _dio.get('auth/user');
+        final data = userResponse.data['data'] ?? userResponse.data['user'];
+        _cachedBusId = data['bus_id'] ?? data['has_bus'];
+      }
+
+      await _dio.post(
+        'bus/$_cachedBusId/mark-absent',
+        data: {'student_id': studentId},
+      );
+    } on DioException catch (e) {
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
+      throw Exception('فشل تسجيل غياب الطالب: $message');
+    } catch (e) {
+      throw Exception('فشل تسجيل غياب الطالب');
     }
   }
 

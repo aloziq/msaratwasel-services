@@ -12,9 +12,15 @@ import '../../../core/presentation/cubit/bus_trip_cubit.dart';
 import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
 
 import 'package:url_launcher/url_launcher.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../../core/network/api_config.dart';
 import 'dart:async';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
+import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
+import 'package:msaratwasel_services/core/services/reverb_service.dart';
+import 'package:msaratwasel_services/core/network/api_client.dart';
+
+
 
 class BusStudentsScreen extends StatefulWidget {
   const BusStudentsScreen({super.key});
@@ -29,11 +35,39 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
   final Set<String> _selectedStudentIds = {};
   bool _isSelectionMode = false;
   Timer? _pollingTimer;
+  ReverbService? _reverbService;
 
   @override
   void initState() {
     super.initState();
     _startPolling();
+    _initReverb();
+  }
+
+  void _initReverb() async {
+    final authCubit = context.read<AuthCubit>();
+    final authState = authCubit.state;
+    
+    if (authState is AuthAuthenticated) {
+      final user = authState.user;
+      final busId = user.busId;
+      
+      if (busId != null) {
+        _reverbService = ReverbService(
+          userId: int.tryParse(user.id) ?? 0,
+          dio: ApiClient.instance,
+          onMessageReceived: (data) {
+            debugPrint('🔄 Trip status updated via Reverb inside StudentsScreen: $data');
+            if (mounted) {
+              context.read<BusTripCubit>().loadTrip(silent: true);
+            }
+          },
+        );
+        
+        await _reverbService!.connect();
+        await _reverbService!.subscribe('private-bus.$busId');
+      }
+    }
   }
 
   void _startPolling() {
@@ -42,7 +76,9 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
         final cubit = context.read<BusTripCubit>();
         if (cubit.state is BusTripLoaded) {
           final trip = (cubit.state as BusTripLoaded).trip;
-          if (trip.tripStatus == 'in_progress') {
+          if (trip.tripStatus == 'in_progress' ||
+              trip.tripStatus == 'awaiting_video' ||
+              trip.tripStatus == 'awaiting_confirmation') {
             cubit.loadTrip(silent: true);
           }
         }
@@ -53,6 +89,7 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _reverbService?.dispose();
     super.dispose();
   }
 
@@ -69,40 +106,18 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
     }
   }
 
+
   void _openQrScanner(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _QrScannerModal(
-        onScan: (code) {
-          final cubit = context.read<BusTripCubit>();
-          final state = cubit.state;
-          if (state is BusTripLoaded) {
-            final student = state.trip.students.where((s) => s.studentCode == code).firstOrNull;
-            if (student != null) {
-              // Decide next status: if atHome -> onBus, if onBus -> depends on suggestedDirection
-              BusStudentStatus nextStatus;
-              if (student.status == BusStudentStatus.atHome) {
-                nextStatus = BusStudentStatus.onBus;
-              } else if (student.status == BusStudentStatus.onBus) {
-                nextStatus = state.trip.suggestedDirection == 'to_school' 
-                  ? BusStudentStatus.atSchool 
-                  : BusStudentStatus.atHome;
-              } else {
-                return; // Already arrived or absent
-              }
-              cubit.updateStudentStatus(student.id, nextStatus);
-              Navigator.pop(context);
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('طالب غير معروف')),
-              );
-            }
-          }
-        },
-      ),
-    );
+    // ✅ استخدام شاشة المسح الذكي المتصلة بالـ API بدلاً من المنطق المحلي
+    context.push(
+      AppRoutes.qrScan,
+      extra: {'isTripMode': true},
+    ).then((_) {
+      // تحديث البيانات بعد العودة من شاشة المسح
+      if (context.mounted) {
+        context.read<BusTripCubit>().loadTrip(silent: true);
+      }
+    });
   }
 
   @override
@@ -110,6 +125,8 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
+    final authState = context.read<AuthCubit>().state;
+    final isDriver = authState is AuthAuthenticated && authState.user.role == UserRole.driver;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -131,7 +148,10 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
         ),
         child: BlocConsumer<BusTripCubit, BusTripState>(
           listenWhen: (previous, current) => 
-              current is BusTripUpdateSuccess || current is BusTripUpdateError,
+              current is BusTripUpdateSuccess || 
+              current is BusTripUpdateError || 
+              current is BusTripLoaded || 
+              current is BusTripError,
           listener: (context, state) {
             if (state is BusTripUpdateSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -147,6 +167,17 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                   backgroundColor: Colors.red,
                 ),
               );
+            } else if (state is BusTripLoaded) {
+              if (state.trip.tripStatus == 'finished' || state.trip.tripStatus == 'idle' || state.trip.tripStatus == null) {
+                // Remove the forced navigation to assistantHome so the supervisor can view the students list even if the trip is closed.
+                // ScaffoldMessenger.of(context).showSnackBar(
+                //   const SnackBar(
+                //     content: Text('✅ تم إنهاء الرحلة من قبل السائق. يتم الآن عرض الحالة النهائية للطلاب.'),
+                //     backgroundColor: Colors.blueGrey,
+                //     duration: Duration(seconds: 3),
+                //   ),
+                // );
+              }
             }
           },
           buildWhen: (previous, current) => 
@@ -201,6 +232,11 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                           ),
                         ),
                     actions: [
+                      if (!_isSelectionMode && state is BusTripLoaded && state.trip.tripStatus == 'in_progress' && isDriver)
+                        IconButton(
+                          icon: const Icon(Icons.stop_circle_outlined, color: Colors.redAccent),
+                          onPressed: () => context.push(AppRoutes.driverEndTrip),
+                        ),
                       if (!_isSelectionMode)
                         IconButton(
                           icon: const Icon(PhosphorIconsRegular.qrCode),
@@ -671,7 +707,10 @@ class _StudentCard extends StatelessWidget {
                         if (student.status == BusStudentStatus.waiting)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: _WaitingTimer(since: student.waitingSince),
+                            child: _WaitingTimer(
+                              since: student.waitingSince,
+                              elapsed: student.waitingElapsedSeconds,
+                            ),
                           ),
                       ],
                     ),
@@ -998,7 +1037,8 @@ class _StatusBadge extends StatelessWidget {
 
 class _WaitingTimer extends StatefulWidget {
   final DateTime? since;
-  const _WaitingTimer({required this.since});
+  final int elapsed;
+  const _WaitingTimer({required this.since, required this.elapsed});
 
   @override
   State<_WaitingTimer> createState() => _WaitingTimerState();
@@ -1006,29 +1046,29 @@ class _WaitingTimer extends StatefulWidget {
 
 class _WaitingTimerState extends State<_WaitingTimer> {
   Timer? _timer;
-  int _secondsRemaining = 120;
+  late int _secondsRemaining;
 
   @override
   void initState() {
     super.initState();
-    _calculateRemaining();
+    _secondsRemaining = 120 - widget.elapsed;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
-          _calculateRemaining();
+          _secondsRemaining--;
         });
       }
     });
   }
 
-  void _calculateRemaining() {
-    if (widget.since == null) {
-      _secondsRemaining = 0;
-      return;
+  @override
+  void didUpdateWidget(covariant _WaitingTimer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.elapsed != widget.elapsed) {
+      setState(() {
+        _secondsRemaining = 120 - widget.elapsed;
+      });
     }
-    final diff = DateTime.now().difference(widget.since!);
-    _secondsRemaining = 120 - diff.inSeconds;
-    if (_secondsRemaining < 0) _secondsRemaining = 0;
   }
 
   @override
@@ -1039,114 +1079,43 @@ class _WaitingTimerState extends State<_WaitingTimer> {
 
   @override
   Widget build(BuildContext context) {
-    if (_secondsRemaining <= 0) return const SizedBox.shrink();
-    
-    final minutes = _secondsRemaining ~/ 60;
-    final seconds = _secondsRemaining % 60;
+    final isOvertime = _secondsRemaining < 0;
+    final displaySeconds = _secondsRemaining.abs();
+    final minutes = displaySeconds ~/ 60;
+    final seconds = displaySeconds % 60;
     final timeStr = '$minutes:${seconds.toString().padLeft(2, '0')}';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.purple.withValues(alpha: 0.1),
+        color: isOvertime 
+            ? Colors.red.withValues(alpha: 0.1) 
+            : Colors.purple.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isOvertime 
+              ? Colors.red.withValues(alpha: 0.3) 
+              : Colors.purple.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(PhosphorIconsFill.timer, size: 12, color: Colors.purple),
+          Icon(
+            PhosphorIconsFill.timer, 
+            size: 12, 
+            color: isOvertime ? Colors.red : Colors.purple,
+          ),
           const SizedBox(width: 4),
           Text(
-            'متبقي $timeStr',
-            style: const TextStyle(
-              color: Colors.purple,
+            isOvertime ? 'انتظار إضافي +$timeStr' : 'متبقي $timeStr',
+            style: TextStyle(
+              color: isOvertime ? Colors.red : Colors.purple,
               fontSize: 11,
               fontWeight: FontWeight.bold,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QrScannerModal extends StatelessWidget {
-  final Function(String) onScan;
-
-  const _QrScannerModal({required this.onScan});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'مسح رمز الطالب',
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Stack(
-                  children: [
-                    MobileScanner(
-                      onDetect: (capture) {
-                        final List<Barcode> barcodes = capture.barcodes;
-                        for (final barcode in barcodes) {
-                          if (barcode.rawValue != null) {
-                            onScan(barcode.rawValue!);
-                            break;
-                          }
-                        }
-                      },
-                    ),
-                    Center(
-                      child: Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: theme.colorScheme.primary, width: 4),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Text(
-              'وجه الكاميرا نحو الرمز الموجود على بطاقة الطالب ليتم تسجيل حالته تلقائياً',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.textTheme.bodySmall?.color,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
         ],
       ),
     );

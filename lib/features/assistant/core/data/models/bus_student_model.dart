@@ -15,6 +15,7 @@ class BusStudentModel extends BusStudentEntity {
     super.status = BusStudentStatus.unknown,
     super.behavioralNote,
     super.waitingSince,
+    super.waitingElapsedSeconds = 0,
   });
 
   factory BusStudentModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +38,7 @@ class BusStudentModel extends BusStudentEntity {
       waitingSince: json['waitingSince'] != null 
           ? DateTime.tryParse(json['waitingSince'].toString()) 
           : null,
+      waitingElapsedSeconds: int.tryParse(json['waitingElapsedSeconds']?.toString() ?? '0') ?? 0,
     );
   }
 
@@ -54,6 +56,8 @@ class BusStudentModel extends BusStudentEntity {
       'photoUrl': photoUrl,
       'status': status.name,
       'behavioralNote': behavioralNote,
+      'waitingSince': waitingSince?.toIso8601String(),
+      'waitingElapsedSeconds': waitingElapsedSeconds,
     };
   }
 }

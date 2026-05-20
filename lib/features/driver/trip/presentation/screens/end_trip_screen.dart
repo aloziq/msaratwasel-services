@@ -113,13 +113,15 @@ class _EndTripContentState extends State<_EndTripContent> {
         debugPrint('Valid Front QR found!');
         HapticFeedback.heavyImpact();
         cubit.scanFrontQr(code);
-        try {
-          if (_cameraState != null && _cameraState is VideoCameraState) {
-            await (_cameraState as VideoCameraState).startRecording();
+        Future.delayed(const Duration(milliseconds: 50), () async {
+          try {
+            if (_cameraState != null && _cameraState is VideoCameraState) {
+              await (_cameraState as VideoCameraState).startRecording();
+            }
+          } catch (e) {
+            debugPrint('Start Video Error: $e');
           }
-        } catch (e) {
-          debugPrint('Start Video Error: $e');
-        }
+        });
       } else {
         debugPrint('Invalid QR for start: $code');
         _showFlashMessage("هذا ليس الكود الأمامي! يرجى مسح كود مقدمة الحافلة.");
@@ -132,40 +134,41 @@ class _EndTripContentState extends State<_EndTripContent> {
         debugPrint('Valid Back QR found! Stopping stream and recording...');
         HapticFeedback.heavyImpact();
         
-        try {
-          if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
-             await (_cameraState as VideoRecordingCameraState).stopRecording();
-             
-             // ✅ FIX: Wait for the OS to finish writing the file to disk
-             // MPEG4Writer needs time to flush and close properly
-             await Future.delayed(const Duration(milliseconds: 800));
-             
-             final String videoPath = _currentVideoPath ?? '';
-             
-             // ✅ FIX: Validate the file exists and has actual content
-             if (videoPath.isEmpty) {
-               debugPrint('Error: video path is empty');
-               _isStopping = false;
-               _showFlashMessage('خطأ: لم يتم حفظ الفيديو بشكل صحيح.');
-               return;
-             }
-             
-             final file = File(videoPath);
-             if (!await file.exists() || await file.length() < 1024) {
-               debugPrint('Error: video file is missing or too small (${await file.length()} bytes)');
-               _isStopping = false;
-               _showFlashMessage('خطأ في الفيديو. يرجى المحاولة مجدداً.');
-               return;
-             }
-             
-             debugPrint('Video file ready: $videoPath (${await file.length()} bytes)');
-             cubit.scanBackQr(code, videoPath);
-             _startCompressionAndUpload(videoPath, cubit);
+        // Schedule outside of the analysis callback to prevent deadlock
+        Future.delayed(const Duration(milliseconds: 100), () async {
+          try {
+            if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
+               await (_cameraState as VideoRecordingCameraState).stopRecording();
+               
+               // Wait for the OS to finish writing the file to disk
+               await Future.delayed(const Duration(milliseconds: 800));
+               
+               final String videoPath = _currentVideoPath ?? '';
+               
+               if (videoPath.isEmpty) {
+                 debugPrint('Error: video path is empty');
+                 _isStopping = false;
+                 _showFlashMessage('خطأ: لم يتم حفظ الفيديو بشكل صحيح.');
+                 return;
+               }
+               
+               final file = File(videoPath);
+               if (!await file.exists() || await file.length() < 1024) {
+                 debugPrint('Error: video file is missing or too small');
+                 _isStopping = false;
+                 _showFlashMessage('خطأ في الفيديو. يرجى المحاولة مجدداً.');
+                 return;
+               }
+               
+               debugPrint('Video file ready: $videoPath');
+               cubit.scanBackQr(code, videoPath);
+               _startCompressionAndUpload(videoPath, cubit);
+            }
+          } catch (e) {
+            debugPrint('Error stopping recording: $e');
+            _isStopping = false;
           }
-        } catch (e) {
-          debugPrint('Error stopping recording: $e');
-          _isStopping = false;
-        }
+        });
       } else {
         debugPrint('Invalid QR for end: $code');
         _showFlashMessage("هذا ليس الكود الخلفي! يرجى مسح كود مؤخرة الحافلة.");
@@ -355,7 +358,7 @@ class _EndTripContentState extends State<_EndTripContent> {
           decoration: BoxDecoration(
             color: Colors.black87,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -403,7 +406,7 @@ class _EndTripContentState extends State<_EndTripContent> {
               Text(
                 desc,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,

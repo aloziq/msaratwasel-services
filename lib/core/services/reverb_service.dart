@@ -33,6 +33,7 @@ class ReverbService {
 
   final Set<String> _subscribedChannels = {};
   final List<String> _pendingSubscriptions = [];
+  final Set<String> _desiredChannels = {};
 
   ReverbService({
     required int userId,
@@ -177,6 +178,12 @@ class ReverbService {
               subscribe(ch, socketId);
             }
           }
+
+          // Resubscribe to all desired channels upon reconnect
+          final resubscribeList = _desiredChannels.where((ch) => ch != 'private-App.Models.User.$_userId').toList();
+          for (final ch in resubscribeList) {
+            subscribe(ch, socketId);
+          }
           break;
 
         case 'pusher_internal:subscription_succeeded':
@@ -260,6 +267,7 @@ class ReverbService {
   }
 
   Future<void> subscribe(String channelName, [String? socketId]) async {
+    _desiredChannels.add(channelName);
     if (_subscribedChannels.contains(channelName)) return;
 
     if (!_isConnected || _channel == null) {

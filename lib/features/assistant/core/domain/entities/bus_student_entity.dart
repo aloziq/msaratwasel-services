@@ -40,6 +40,7 @@ class BusStudentEntity extends Equatable {
   final BusStudentStatus status;
   final String? behavioralNote;
   final DateTime? waitingSince;
+  final int waitingElapsedSeconds;
 
   const BusStudentEntity({
     required this.id,
@@ -55,6 +56,7 @@ class BusStudentEntity extends Equatable {
     this.status = BusStudentStatus.unknown,
     this.behavioralNote,
     this.waitingSince,
+    this.waitingElapsedSeconds = 0,
   });
 
   String getLocalizedName(String languageCode) {
@@ -78,6 +80,7 @@ class BusStudentEntity extends Equatable {
     BusStudentStatus? status,
     String? behavioralNote,
     DateTime? waitingSince,
+    int? waitingElapsedSeconds,
   }) {
     return BusStudentEntity(
       id: id ?? this.id,
@@ -93,6 +96,7 @@ class BusStudentEntity extends Equatable {
       status: status ?? this.status,
       behavioralNote: behavioralNote ?? this.behavioralNote,
       waitingSince: waitingSince ?? this.waitingSince,
+      waitingElapsedSeconds: waitingElapsedSeconds ?? this.waitingElapsedSeconds,
     );
   }
 
@@ -111,5 +115,6 @@ class BusStudentEntity extends Equatable {
     status,
     behavioralNote,
     waitingSince,
+    waitingElapsedSeconds,
   ];
 }

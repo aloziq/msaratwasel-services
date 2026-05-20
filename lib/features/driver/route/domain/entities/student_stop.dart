@@ -12,6 +12,9 @@ class StudentStop {
   final bool isAbsent;
   final bool isBoarded;
   final bool isDroppedOff;
+  final bool isWaiting;
+  final String? waitingSince;
+  final int waitingElapsedSeconds;
 
   const StudentStop({
     required this.id,
@@ -25,9 +28,19 @@ class StudentStop {
     this.isAbsent = false,
     this.isBoarded = false,
     this.isDroppedOff = false,
+    this.isWaiting = false,
+    this.waitingSince,
+    this.waitingElapsedSeconds = 0,
   });
 
-  StudentStop copyWith({bool? isAbsent, bool? isBoarded, bool? isDroppedOff}) {
+  StudentStop copyWith({
+    bool? isAbsent,
+    bool? isBoarded,
+    bool? isDroppedOff,
+    bool? isWaiting,
+    String? waitingSince,
+    int? waitingElapsedSeconds,
+  }) {
     return StudentStop(
       id: id,
       nameAr: nameAr,
@@ -36,9 +49,13 @@ class StudentStop {
       parentEn: parentEn,
       location: location,
       photoUrl: photoUrl,
+      parentUserId: parentUserId,
       isAbsent: isAbsent ?? this.isAbsent,
       isBoarded: isBoarded ?? this.isBoarded,
       isDroppedOff: isDroppedOff ?? this.isDroppedOff,
+      isWaiting: isWaiting ?? this.isWaiting,
+      waitingSince: waitingSince ?? this.waitingSince,
+      waitingElapsedSeconds: waitingElapsedSeconds ?? this.waitingElapsedSeconds,
     );
   }
 }

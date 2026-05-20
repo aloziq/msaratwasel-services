@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import 'package:msaratwasel_services/core/utils/gps_security_helper.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
@@ -334,9 +335,13 @@ class _AppDrawerState extends State<AppDrawer> {
           icon: PhosphorIconsRegular.mapTrifold,
           isSelected: currentLocation == AppRoutes.driverRoute,
           isDark: isDark,
-          onTap: () {
-            Navigator.pop(context);
-            context.push(AppRoutes.driverRoute);
+          onTap: () async {
+            final hasGps = await GpsSecurityHelper.checkLocationServices(context);
+            if (!hasGps) return;
+            if (context.mounted) {
+              Navigator.pop(context);
+              context.push(AppRoutes.driverRoute);
+            }
           },
         ),
       );

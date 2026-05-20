@@ -123,20 +123,13 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
                               color: theme.colorScheme.onSurface,
                             ),
                             onPressed: () async {
-                              final result = await context.push<String>(
+                              // ✅ استخدام شاشة المسح الذكي المتصلة بالـ API
+                              await context.push(
                                 AppRoutes.qrScan,
+                                extra: {'isTripMode': true},
                               );
-                              if (result != null && context.mounted) {
-                                context.read<BusTripCubit>().updateStudentStatus(
-                                  result,
-                                  BusStudentStatus.unknown,
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('تم مسح حالة الطالب بنجاح'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
+                              if (context.mounted) {
+                                context.read<BusTripCubit>().loadTrip(silent: true);
                               }
                             },
                           ),

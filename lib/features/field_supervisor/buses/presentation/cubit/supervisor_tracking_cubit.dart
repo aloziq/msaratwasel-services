@@ -87,18 +87,24 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       }
 
       final busInfo = response.data['bus'] ?? {};
-      final String tripType = busInfo['trip_type'] ?? 'morning';
+      final String rawTripType = busInfo['trip_type'] ?? 'morning';
+      final String tripType = (rawTripType == 'forth' || rawTripType == 'morning') ? 'morning' : 'afternoon';
       final String busNumber = busInfo['bus_number'] ?? '#$busId';
       
       final List passengersJson = response.data['passengers'] ?? [];
       final stops = passengersJson.map((json) {
         final isOnBus = json['isOnBus'] == true;
         final lastEvent = json['lastEvent'];
-        final isDroppedOff = lastEvent != null && lastEvent['type'] == 'alighting';
+        
+        final isMorning = tripType == 'morning';
+        final expectedDirection = isMorning ? 'to_school' : 'to_home';
+        final isDroppedOff = lastEvent != null &&
+            lastEvent['type'] == 'alighting' &&
+            lastEvent['direction'] == expectedDirection;
+            
         final isAbsent = json['isAbsent'] == true || json['status'] == 'absent';
 
         // Student location logic based on trip type
-        final isMorning = tripType == 'morning';
         var lat = isMorning ? json['forth_latitude'] : json['back_latitude'];
         var lng = isMorning ? json['forth_longitude'] : json['back_longitude'];
 

@@ -20,6 +20,9 @@ import 'package:intl/intl.dart';
 import 'package:msaratwasel_services/features/driver/home/domain/entities/trip_status.dart';
 import 'package:msaratwasel_services/features/shared/auth/domain/entities/user_entity.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:msaratwasel_services/core/utils/gps_security_helper.dart';
 
 class DriverHomeScreen extends StatelessWidget {
   const DriverHomeScreen({super.key});
@@ -41,6 +44,128 @@ class _DriverHomeContent extends StatefulWidget {
 }
 
 class _DriverHomeContentState extends State<_DriverHomeContent> {
+  Future<bool> _checkLocationServices(BuildContext context) async {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    
+    // 1. Check if location services are enabled
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (!context.mounted) return false;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.gps_off_rounded, color: Colors.red, size: 28),
+              const SizedBox(width: 8),
+              Text(
+                isArabic ? 'خدمة الموقع مغلقة' : 'GPS Service Disabled',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Text(
+            isArabic
+                ? 'يرجى تشغيل خدمة الموقع (GPS) في هاتفك للتمكن من بدء الرحلة وتتبع خط سير الحافلة.'
+                : 'Please enable GPS/Location services on your device to be able to start the trip and track the bus.',
+            style: const TextStyle(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await Geolocator.openLocationSettings();
+              },
+              child: Text(isArabic ? 'فتح الإعدادات' : 'Open Settings'),
+            ),
+          ],
+        ),
+      );
+      return false;
+    }
+
+    // 2. Check location permissions
+    var status = await Permission.location.status;
+    if (status.isDenied) {
+      status = await Permission.location.request();
+    }
+
+    if (status.isPermanentlyDenied) {
+      if (!context.mounted) return false;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.security_rounded, color: Colors.orange, size: 28),
+              const SizedBox(width: 8),
+              Text(
+                isArabic ? 'إذن الموقع مطلوب' : 'Location Permission Required',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Text(
+            isArabic
+                ? 'إذن الوصول إلى الموقع تم رفضه نهائياً. يرجى تفعيله يدوياً من إعدادات التطبيق لكي تتمكن من بدء الرحلة.'
+                : 'Location permission is permanently denied. Please enable it from app settings to start the trip.',
+            style: const TextStyle(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await openAppSettings();
+              },
+              child: Text(isArabic ? 'فتح الإعدادات' : 'Open Settings'),
+            ),
+          ],
+        ),
+      );
+      return false;
+    }
+
+    if (!status.isGranted) {
+      if (!context.mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isArabic
+              ? 'يجب منح إذن الوصول إلى الموقع لبدء الرحلة.'
+              : 'Location permission must be granted to start the trip.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    // Request background location permission in background as well (optional but recommended)
+    await Permission.locationAlways.request();
+
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -66,7 +191,11 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
               duration: const Duration(seconds: 2),
             ),
           );
-          context.push('/driver/route');
+          GpsSecurityHelper.checkLocationServices(context).then((hasGps) {
+            if (hasGps && context.mounted) {
+              context.push('/driver/route');
+            }
+          });
         }
       },
       child: Scaffold(
@@ -333,12 +462,20 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                               onTripAction: (trip) async {
                                 final cubit = context.read<DriverHomeCubit>();
                                 if (trip.status == 'in_progress') {
-                                  await context.push('/driver/route');
+                                  final hasGps = await GpsSecurityHelper.checkLocationServices(context);
+                                  if (!hasGps) return;
                                   if (context.mounted) {
-                                    cubit.loadDashboard();
+                                    await context.push('/driver/route');
+                                    if (context.mounted) {
+                                      cubit.loadDashboard();
+                                    }
                                   }
                                   return;
                                 }
+
+                                // ─── GPS/Location Checks ───
+                                final hasLocation = await _checkLocationServices(context);
+                                if (!hasLocation) return;
 
                                 await cubit.startTrip(trip.id.toString());
 

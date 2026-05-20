@@ -37,13 +37,27 @@ class DailyTripsList extends StatelessWidget {
       );
     }
 
+    // Sort trips: 
+    // 1. Active (non-completed) trips first.
+    // 2. Morning ('forth') before Afternoon ('back').
+    final sortedTrips = List<TripStatus>.from(trips)..sort((a, b) {
+      if (a.isCompleted && !b.isCompleted) return 1;
+      if (!a.isCompleted && b.isCompleted) return -1;
+      
+      // If both have the same completion status, 'forth' comes before 'back'
+      if (a.type == 'forth' && b.type != 'forth') return -1;
+      if (a.type != 'forth' && b.type == 'forth') return 1;
+      
+      return 0; // maintain original order otherwise
+    });
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: trips.length,
+      itemCount: sortedTrips.length,
       separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
       itemBuilder: (context, index) {
-        final trip = trips[index];
+        final trip = sortedTrips[index];
         return _TripListItem(
           trip: trip,
           isArabic: isArabic,

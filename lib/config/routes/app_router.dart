@@ -174,8 +174,16 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.qrScan,
             name: 'qrScan',
-            builder: (context, state) =>
-                QRScanScreen(classId: state.extra as String?),
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is Map<String, dynamic>) {
+                return QRScanScreen(
+                  classId: extra['classId'] as String?,
+                  isTripMode: extra['isTripMode'] as bool? ?? false,
+                );
+              }
+              return QRScanScreen(classId: extra as String?);
+            },
           ),
           GoRoute(
             path: AppRoutes.reports,
@@ -215,11 +223,6 @@ class AppRouter {
             ),
           ),
           GoRoute(
-            path: AppRoutes.assistantEndTrip,
-            name: 'assistantEndTrip',
-            builder: (context, state) => const EndTripScreen(),
-          ),
-          GoRoute(
             path: AppRoutes.dailyChecklist,
             name: 'dailyChecklist',
             builder: (context, state) => const DailyChecklistScreen(),
@@ -232,7 +235,12 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.busMap,
             name: 'busMap',
-            builder: (context, state) => const BusMapScreen(),
+            builder: (context, state) => BlocProvider(
+              create: (context) =>
+                  BusTripCubit(repository: AssistantRepositoryImpl())
+                    ..loadTrip(),
+              child: const BusMapScreen(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.messages,

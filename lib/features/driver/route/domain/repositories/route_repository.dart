@@ -3,12 +3,14 @@ import '../entities/student_stop.dart';
 
 abstract class RouteRepository {
   String get currentTripType;
+  String get currentTripStatus;
   LatLng? get schoolLocation;
   Future<List<StudentStop>> getTripStops();
   Future<List<LatLng>> getRoutePoints();
   Future<void> markStudentBoarded({required String studentId});
   Future<void> groupBoard({required List<String> studentIds});
   Future<void> markStudentDropped({required String studentId});
+  Future<void> markStudentAbsent({required String studentId});
   Future<void> notifyParentNearHouse({required String studentId});
   Future<void> updateLocation({
     required double latitude,
