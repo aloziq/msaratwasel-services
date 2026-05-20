@@ -32,4 +32,8 @@ abstract class AuthRepository {
 
   Future<Either<Failure, void>> updateLanguage(String languageCode);
   Future<Either<Failure, void>> updateFcmToken(String fcmToken);
+
+  /// Re-fetches user profile from the server and updates the local cache.
+  /// Call this after a language change so the cached `name` reflects the new locale.
+  Future<Either<Failure, UserEntity>> refreshUserProfile();
 }

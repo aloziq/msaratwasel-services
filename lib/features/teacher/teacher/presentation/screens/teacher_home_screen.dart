@@ -91,7 +91,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
               String teacherName = AppLocalizations.of(context)!.theTeacher;
               String? teacherAvatar;
               if (authState is AuthAuthenticated) {
-                teacherName = authState.user.getLocalizedName('en');
+                teacherName = authState.user.getLocalizedName(Localizations.localeOf(context).languageCode);
                 teacherAvatar = authState.user.avatar;
               }
               return BlocBuilder<TeacherCubit, TeacherState>(
@@ -445,7 +445,13 @@ class _QuickActionsGrid extends StatelessWidget {
           label: l10n.scanAttendance, // "مسح الحضور"
           color: AppColors.accent, // Changed from slateGray to Amber/Yellow
           onTap: () async {
-            await context.push(AppRoutes.qrScan);
+            // Get classId from the teacher's loaded classroom
+            final teacherState = context.read<TeacherCubit>().state;
+            String? classId;
+            if (teacherState is TeacherClassLoaded) {
+              classId = teacherState.classroom.id;
+            }
+            await context.push(AppRoutes.qrScan, extra: classId);
             if (context.mounted) {
               context.read<TeacherCubit>().loadClassroom();
               context.read<ReportsCubit>().loadReports();

@@ -688,7 +688,7 @@ class _StudentCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              student.grade,
+                              student.getLocalizedGrade(Localizations.localeOf(context).languageCode),
                               style: theme.textTheme.bodySmall,
                             ),
                             const SizedBox(width: 8),

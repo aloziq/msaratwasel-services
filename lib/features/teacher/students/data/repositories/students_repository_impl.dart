@@ -28,10 +28,11 @@ class StudentsRepositoryImpl implements StudentsRepository {
   @override
   Future<Either<String, void>> markAttendance(
     String studentId,
-    AttendanceStatus status,
-  ) async {
+    AttendanceStatus status, {
+    bool viaQr = false,
+  }) async {
     try {
-      await remoteDataSource.markAttendance(studentId, status);
+      await remoteDataSource.markAttendance(studentId, status, viaQr: viaQr);
       return const Right(null);
     } catch (e, stackTrace) {
       debugPrint('StudentsRepository.markAttendance failed: $e');

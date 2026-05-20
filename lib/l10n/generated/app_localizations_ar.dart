@@ -822,7 +822,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get registerNewDelay => 'تسجيل تأخير جديد';
 
   @override
-  String get student => 'طالب';
+  String get student => 'الطالب';
 
   @override
   String get selectStudent => 'اختر الطالب';
@@ -1436,4 +1436,46 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get thursday => 'الخميس';
+
+  @override
+  String get processingVideoTitle => 'جاري معالجة الفيديو...';
+
+  @override
+  String get processingVideoDesc =>
+      'يرجى الانتظار، نقوم بضغط الفيديو لتقليل الحجم';
+
+  @override
+  String get uploadingVerificationTitle => 'جاري رفع التوثيق...';
+
+  @override
+  String get uploadingVerificationDesc => 'نقوم الآن بنقل العمل للوحة التحكم';
+
+  @override
+  String get stopRecordingManual => 'إيقاف التسجيل (يدوي)';
+
+  @override
+  String get verificationSafetySystem => 'نظام التحقق والأمان';
+
+  @override
+  String get invalidFrontQr =>
+      'هذا ليس الكود الأمامي! يرجى مسح كود مقدمة الحافلة.';
+
+  @override
+  String get invalidBackQr =>
+      'هذا ليس الكود الخلفي! يرجى مسح كود مؤخرة الحافلة.';
+
+  @override
+  String get videoSavedError => 'خطأ: لم يتم حفظ الفيديو بشكل صحيح.';
+
+  @override
+  String get videoFileInvalidError => 'خطأ في الفيديو. يرجى المحاولة مجدداً.';
+
+  @override
+  String get startConversation => 'بدء محادثة';
+
+  @override
+  String get guardian => 'ولي أمر';
+
+  @override
+  String get systemUser => 'مستخدم النظام';
 }

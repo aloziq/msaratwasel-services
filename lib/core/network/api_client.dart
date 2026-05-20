@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:ui' as ui;
 import 'api_config.dart';
 
 class ApiClient {
@@ -30,6 +31,21 @@ class ApiClient {
         onRequest: (options, handler) {
           try {
             final prefs = GetIt.instance<SharedPreferences>();
+
+            // Add Accept-Language header dynamically based on app settings
+            final appLocale = prefs.getString('app_locale');
+            String lang = 'ar';
+            if (appLocale != null && appLocale != 'system') {
+              lang = appLocale;
+            } else {
+              try {
+                lang = ui.PlatformDispatcher.instance.locale.languageCode;
+              } catch (_) {
+                lang = 'ar';
+              }
+            }
+            options.headers['Accept-Language'] = lang;
+
             final token = prefs.getString('USER_TOKEN');
             if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';

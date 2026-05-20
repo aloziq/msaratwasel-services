@@ -11,6 +11,7 @@ class StudentModel extends StudentEntity {
     super.photoUrl,
     super.parentPhotoUrl,
     super.status = AttendanceStatus.unknown,
+    super.isLocked = false,
   });
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +35,7 @@ class StudentModel extends StudentEntity {
         (e) => e.name == json['status'],
         orElse: () => AttendanceStatus.unknown,
       ),
+      isLocked: json['isLocked'] as bool? ?? json['is_locked'] as bool? ?? false,
     );
   }
 

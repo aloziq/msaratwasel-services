@@ -541,5 +541,20 @@
     "tuesday": "الثلاثاء",
     "wednesday": "الأربعاء",
     "thursday": "الخميس",
-    "thisMonth": "هذا الشهر"
+    "thisMonth": "هذا الشهر",
+    "processingVideoTitle": "جاري معالجة الفيديو...",
+    "processingVideoDesc": "يرجى الانتظار، نقوم بضغط الفيديو لتقليل الحجم",
+    "uploadingVerificationTitle": "جاري رفع التوثيق...",
+    "uploadingVerificationDesc": "نقوم الآن بنقل العمل للوحة التحكم",
+    "retry": "إعادة المحاولة",
+    "stopRecordingManual": "إيقاف التسجيل (يدوي)",
+    "verificationSafetySystem": "نظام التحقق والأمان",
+    "invalidFrontQr": "هذا ليس الكود الأمامي! يرجى مسح كود مقدمة الحافلة.",
+    "invalidBackQr": "هذا ليس الكود الخلفي! يرجى مسح كود مؤخرة الحافلة.",
+    "videoSavedError": "خطأ: لم يتم حفظ الفيديو بشكل صحيح.",
+    "videoFileInvalidError": "خطأ في الفيديو. يرجى المحاولة مجدداً.",
+    "startConversation": "بدء محادثة",
+    "guardian": "ولي أمر",
+    "student": "الطالب",
+    "systemUser": "مستخدم النظام"
 }

@@ -157,6 +157,23 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, UserEntity>> refreshUserProfile() async {
+    try {
+      // Fetch fresh profile from server (name is returned in Accept-Language locale)
+      final freshProfile = await remoteDataSource.fetchUserProfile();
+
+      // The /auth/user endpoint doesn't return a token, so keep the cached one
+      final cachedUser = await localDataSource.getCachedUser();
+      final updatedUser = freshProfile.copyWith(token: cachedUser.token);
+
+      await localDataSource.cacheUser(updatedUser);
+      return Right(updatedUser);
+    } catch (e) {
+      return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> updateFcmToken(String fcmToken) async {
     try {
       await remoteDataSource.updateFcmToken(fcmToken);

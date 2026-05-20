@@ -264,6 +264,7 @@ extension GetItInjectableX on _i174.GetIt {
         changePasswordUseCase: gh<_i315.ChangePasswordUseCase>(),
         updateAvatarUseCase: gh<_i389.UpdateAvatarUseCase>(),
         updateFcmTokenUseCase: gh<_i405.UpdateFcmTokenUseCase>(),
+        authRepository: gh<_i61.AuthRepository>(),
       ),
     );
     gh.lazySingleton<_i571.GetAttendanceHistoryUseCase>(

@@ -1445,4 +1445,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thursday => 'Thursday';
+
+  @override
+  String get processingVideoTitle => 'Processing video...';
+
+  @override
+  String get processingVideoDesc =>
+      'Please wait, we are compressing the video to reduce size';
+
+  @override
+  String get uploadingVerificationTitle => 'Uploading verification...';
+
+  @override
+  String get uploadingVerificationDesc =>
+      'We are now uploading the verification to the dashboard';
+
+  @override
+  String get stopRecordingManual => 'Stop Recording (Manual)';
+
+  @override
+  String get verificationSafetySystem => 'Verification & Safety System';
+
+  @override
+  String get invalidFrontQr =>
+      'This is not the Front QR! Please scan the QR at the front of the bus.';
+
+  @override
+  String get invalidBackQr =>
+      'This is not the Back QR! Please scan the QR at the back of the bus.';
+
+  @override
+  String get videoSavedError => 'Error: Video was not saved correctly.';
+
+  @override
+  String get videoFileInvalidError => 'Video error. Please try again.';
+
+  @override
+  String get startConversation => 'Start conversation';
+
+  @override
+  String get guardian => 'Guardian';
+
+  @override
+  String get systemUser => 'System User';
 }

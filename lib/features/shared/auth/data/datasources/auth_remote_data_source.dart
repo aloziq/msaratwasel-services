@@ -34,6 +34,7 @@ abstract class AuthRemoteDataSource {
   Future<String> updateAvatar({required String imagePath});
 
   Future<void> updateLanguage(String languageCode);
+  Future<UserModel> fetchUserProfile();
   Future<void> updateFcmToken(String fcmToken);
 }
 
@@ -176,6 +177,32 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await _dio.post('/auth/profile/language', data: {'language': languageCode});
     } on DioException catch (e) {
       throw Exception(e.response?.data?['message'] ?? 'فشل تحديث اللغة');
+    }
+  }
+
+  @override
+  Future<UserModel> fetchUserProfile() async {
+    try {
+      final response = await _dio.get('/auth/user');
+      final data = response.data;
+      final userJson = data['data'] ?? data['user'] ?? data;
+      // Preserve the token from local cache since /auth/user doesn't return a new token
+      return UserModel.fromJson({
+        'id': userJson['id']?.toString() ?? '',
+        'name': userJson['name'],
+        'name_en': userJson['name_en'],
+        'role': userJson['role'],
+        'token': '', // will be filled from cached token
+        'avatar': userJson['image_url'] ?? userJson['avatar'],
+        'bus_id': userJson['bus_id'],
+        'email': userJson['email'],
+        'phone': userJson['phone'],
+        'national_id': userJson['national_id'],
+        'school_name': userJson['school_name'],
+        'bus': userJson['bus'],
+      });
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['message'] ?? 'فشل جلب بيانات المستخدم');
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:msaratwasel_services/features/teacher/students/domain/entities/student_entity.dart';
@@ -20,15 +21,29 @@ class QRScanCubit extends Cubit<QRScanState> {
   }
 
   Future<void> markAttendanceViaQr(String studentId, String classId) async {
+    debugPrint('[QRScanCubit] 🔄 markAttendanceViaQr called with studentId: $studentId, classId: $classId');
     emit(QRScanLoading());
-    final result = await _markAttendanceUseCase(
-      studentId,
-      AttendanceStatus.present,
-    );
-    result.fold(
-      (l) => emit(QRScanError(l)),
-      (r) => emit(QRScanAttendanceSuccess(studentId)),
-    );
+    try {
+      final result = await _markAttendanceUseCase(
+        studentId,
+        AttendanceStatus.present,
+        viaQr: true,
+      );
+      result.fold(
+        (l) {
+          debugPrint('[QRScanCubit] ❌ markAttendanceViaQr error: $l');
+          emit(QRScanError(l));
+        },
+        (r) {
+          debugPrint('[QRScanCubit] ✅ markAttendanceViaQr success for: $studentId');
+          emit(QRScanAttendanceSuccess(studentId));
+        },
+      );
+    } catch (e, stack) {
+      debugPrint('[QRScanCubit] 💥 markAttendanceViaQr EXCEPTION: $e');
+      debugPrint('[QRScanCubit] 💥 Stack: $stack');
+      emit(QRScanError('خطأ غير متوقع: $e'));
+    }
   }
 
   Future<void> markSmartTripAttendanceViaQr(String code) async {

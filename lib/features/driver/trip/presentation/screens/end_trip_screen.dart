@@ -104,7 +104,7 @@ class _EndTripContentState extends State<_EndTripContent> {
     }
   }
 
-  Future<void> _handleBarcodeDetection(String code, EndTripCubit cubit) async {
+  Future<void> _handleBarcodeDetection(String code, EndTripCubit cubit, AppLocalizations l10n) async {
     final upperCode = code.toUpperCase();
     debugPrint('QR Detected: $code');
 
@@ -124,7 +124,7 @@ class _EndTripContentState extends State<_EndTripContent> {
         });
       } else {
         debugPrint('Invalid QR for start: $code');
-        _showFlashMessage("هذا ليس الكود الأمامي! يرجى مسح كود مقدمة الحافلة.");
+        _showFlashMessage(l10n.invalidFrontQr);
       }
     } else if (cubit.state is EndTripRecording) {
       if (upperCode.contains('BACK')) {
@@ -148,7 +148,7 @@ class _EndTripContentState extends State<_EndTripContent> {
                if (videoPath.isEmpty) {
                  debugPrint('Error: video path is empty');
                  _isStopping = false;
-                 _showFlashMessage('خطأ: لم يتم حفظ الفيديو بشكل صحيح.');
+                 _showFlashMessage(l10n.videoSavedError);
                  return;
                }
                
@@ -156,7 +156,7 @@ class _EndTripContentState extends State<_EndTripContent> {
                if (!await file.exists() || await file.length() < 1024) {
                  debugPrint('Error: video file is missing or too small');
                  _isStopping = false;
-                 _showFlashMessage('خطأ في الفيديو. يرجى المحاولة مجدداً.');
+                 _showFlashMessage(l10n.videoFileInvalidError);
                  return;
                }
                
@@ -171,7 +171,7 @@ class _EndTripContentState extends State<_EndTripContent> {
         });
       } else {
         debugPrint('Invalid QR for end: $code');
-        _showFlashMessage("هذا ليس الكود الخلفي! يرجى مسح كود مؤخرة الحافلة.");
+        _showFlashMessage(l10n.invalidBackQr);
       }
     }
   }
@@ -264,7 +264,7 @@ class _EndTripContentState extends State<_EndTripContent> {
                       if (barcodes.isNotEmpty && mounted) {
                         final String? code = barcodes.first.rawValue;
                         if (code != null) {
-                          await _handleBarcodeDetection(code, cubit);
+                          await _handleBarcodeDetection(code, cubit, l10n);
                         }
                       }
                     }
@@ -300,18 +300,18 @@ class _EndTripContentState extends State<_EndTripContent> {
     EndTripState state,
     AppLocalizations l10n,
   ) {
-    String title = "مسح رمز (QR Code) الأمامي";
-    String desc = "ابدأ بمسح رمز الـ QR الموجود في بداية الحافلة";
+    String title = l10n.scanFrontCode;
+    String desc = l10n.scanFrontDesc;
     
     if (state is EndTripRecording) {
-      title = "تصوير فيديو التحقق";
-      desc = "قم بتصوير الحافلة بالكامل للتأكد من خلوها من الطلاب، ثم امسح رمز الـ QR الأخير في نهاية الحافلة";
+      title = l10n.recordVideo;
+      desc = l10n.recordVideoDesc;
     } else if (state is EndTripCompressing) {
-      title = "جاري معالجة الفديو...";
-      desc = "يرجى الانتظار، نقوم بضغط الفديو لتقليل الحجم";
+      title = l10n.processingVideoTitle;
+      desc = l10n.processingVideoDesc;
     } else if (state is EndTripUploading) {
-      title = "جاري رفع التوثيق...";
-      desc = "نقوم الآن بنقل العمل للوحة التحكم";
+      title = l10n.uploadingVerificationTitle;
+      desc = l10n.uploadingVerificationDesc;
     }
 
     return Column(
@@ -333,13 +333,13 @@ class _EndTripContentState extends State<_EndTripContent> {
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.verified_user, color: Colors.green, size: 16),
-                      SizedBox(width: 6),
+                      const Icon(Icons.verified_user, color: Colors.green, size: 16),
+                      const SizedBox(width: 6),
                       Text(
-                        "نظام التحقق والأمان",
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        l10n.verificationSafetySystem,
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ],
                   ),
@@ -415,14 +415,14 @@ class _EndTripContentState extends State<_EndTripContent> {
 
               if (state is EndTripError)
                 PremiumButton(
-                  text: "إعادة المحاولة",
+                  text: l10n.retry,
                   onTap: () => context.read<EndTripCubit>().restart(),
                 ),
                 
               if (state is EndTripRecording) ...[
                 const SizedBox(height: 10),
                 PremiumButton(
-                  text: "إيقاف التسجيل (يدوي)",
+                  text: l10n.stopRecordingManual,
                   onTap: () async {
                     HapticFeedback.heavyImpact();
                     try {
@@ -436,12 +436,12 @@ class _EndTripContentState extends State<_EndTripContent> {
                         
                         // ✅ FIX: Validate file before upload
                         if (videoPath.isEmpty) {
-                          _showFlashMessage('خطأ: لم يتم حفظ الفيديو.');
+                          _showFlashMessage(l10n.videoSavedError);
                           return;
                         }
                         final file = File(videoPath);
                         if (!await file.exists() || await file.length() < 1024) {
-                          _showFlashMessage('الفيديو غير صالح. يرجى المحاولة مجدداً.');
+                          _showFlashMessage(l10n.videoFileInvalidError);
                           return;
                         }
 
@@ -509,7 +509,6 @@ class _EndTripContentState extends State<_EndTripContent> {
     // Stop background location service as trip is finished
     LocationService.stop();
     
-    final cubit = context.read<EndTripCubit>();
     // Note: We can assume trip type based on context or state if stored
     // For now, a generic but professional message covers both as requested
     ScaffoldMessenger.of(context).showSnackBar(

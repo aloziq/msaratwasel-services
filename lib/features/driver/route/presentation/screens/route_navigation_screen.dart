@@ -49,7 +49,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   final RouteRepository _routeRepository = GetIt.instance<RouteRepository>();
 
   int _currentStopIndex = 0;
-  Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
   bool _isArrived = false;
   bool _isActionLoading = false;
@@ -73,8 +72,21 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Timer? _locationTimer;
   LatLng? _currentPosition;
   List<LatLng> _activeRoutePoints = []; // Road-following points
-  String _remainingTime = '--';
-  String _remainingDistance = '--';
+  double? _remainingDistanceKm;
+  int? _remainingTimeMin;
+
+  String get _remainingTime {
+    if (_remainingTimeMin == null) return '--';
+    final isArabic = mounted ? (Localizations.localeOf(context).languageCode == 'ar') : true;
+    return '$_remainingTimeMin ${isArabic ? 'دقيقة' : 'min'}';
+  }
+
+  String get _remainingDistance {
+    if (_remainingDistanceKm == null) return '--';
+    final isArabic = mounted ? (Localizations.localeOf(context).languageCode == 'ar') : true;
+    return '${_remainingDistanceKm!.toStringAsFixed(1)} ${isArabic ? 'كم' : 'km'}';
+  }
+
   bool _isGpsDisabled = false;
   Timer? _gpsCheckTimer;
 
@@ -327,8 +339,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               _activeRoutePoints = points.map((p) => LatLng(p.latitude, p.longitude)).toList();
               final distInKm = (route['distance'] as num) / 1000;
               final durInMin = (route['duration'] as num) / 60;
-              _remainingDistance = '${distInKm.toStringAsFixed(1)} كم';
-              _remainingTime = '${durInMin.ceil()} دقيقة';
+              _remainingDistanceKm = distInKm;
+              _remainingTimeMin = durInMin.ceil();
               _lastRouteFetchTime = now;
               _lastFetchTarget = target;
             });
@@ -553,7 +565,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   }
 
   void _initMapData() {
-    _markers = _stops.asMap().entries.where((entry) => entry.key >= _currentStopIndex).map((entry) {
+    _updatePolylines();
+  }
+
+  Set<Marker> _buildMarkers(bool isArabic) {
+    final markers = _stops.asMap().entries.where((entry) => entry.key >= _currentStopIndex).map((entry) {
       final index = entry.key;
       final stop = entry.value;
       final isNext = index == _currentStopIndex;
@@ -565,8 +581,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           isNext ? BitmapDescriptor.hueRed : BitmapDescriptor.hueAzure,
         ),
         infoWindow: InfoWindow(
-          title: stop.nameAr,
-          snippet: isNext ? 'الوجهة الحالية' : 'محطة ${index + 1}',
+          title: isArabic ? stop.nameAr : stop.nameEn,
+          snippet: isNext 
+              ? (isArabic ? 'الوجهة الحالية' : 'Current Destination') 
+              : '${isArabic ? 'محطة' : 'Station'} ${index + 1}',
         ),
       );
     }).toSet();
@@ -575,18 +593,21 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     final showSchool = isMorning || (!isMorning && !_hasDepartedSchool);
 
     if (showSchool) {
-      _markers.add(
+      markers.add(
         Marker(
           markerId: const MarkerId('school_stop'),
           position: _routeRepository.schoolLocation ?? const LatLng(23.6080, 58.4500),
           icon: BitmapDescriptor.defaultMarkerWithHue(
             BitmapDescriptor.hueOrange,
           ),
-          infoWindow: const InfoWindow(title: 'المدرسة', snippet: 'الوجهة'),
+          infoWindow: InfoWindow(
+            title: isArabic ? 'المدرسة' : 'School',
+            snippet: isArabic ? 'الوجهة' : 'Destination',
+          ),
         ),
       );
     }
-    _updatePolylines();
+    return markers;
   }
 
   void _updatePolylines() {
@@ -1035,7 +1056,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                 GoogleMap(
                   mapType: MapType.normal,
                   initialCameraPosition: _kInitialPosition,
-                  markers: _markers,
+                  markers: _buildMarkers(isArabic),
                   polylines: _polylines,
                   myLocationEnabled: true,
                   myLocationButtonEnabled: false, // Using custom button

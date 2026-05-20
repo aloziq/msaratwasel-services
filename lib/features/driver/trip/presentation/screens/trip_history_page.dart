@@ -305,7 +305,7 @@ class _TripHistoryCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      trip.typeLabel,
+                      isArabic ? trip.typeLabel : (trip.type == 'forth' || trip.typeLabel == 'ذهاب' ? 'Go' : 'Return'),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -322,7 +322,14 @@ class _TripHistoryCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                trip.route?.name ?? 'بدون مسار',
+                trip.route?.name != null
+                    ? (isArabic
+                        ? trip.route!.name
+                        : trip.route!.name
+                            .replaceAll('المسار رقم', 'Route No.')
+                            .replaceAll('مسار رقم', 'Route No.')
+                            .replaceAll('مسار', 'Route'))
+                    : (isArabic ? 'بدون مسار' : 'No Route'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

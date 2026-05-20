@@ -541,5 +541,20 @@
     "tuesday": "Tuesday",
     "wednesday": "Wednesday",
     "thursday": "Thursday",
-    "thisMonth": "this month"
+    "thisMonth": "this month",
+    "processingVideoTitle": "Processing video...",
+    "processingVideoDesc": "Please wait, we are compressing the video to reduce size",
+    "uploadingVerificationTitle": "Uploading verification...",
+    "uploadingVerificationDesc": "We are now uploading the verification to the dashboard",
+    "retry": "Retry",
+    "stopRecordingManual": "Stop Recording (Manual)",
+    "verificationSafetySystem": "Verification & Safety System",
+    "invalidFrontQr": "This is not the Front QR! Please scan the QR at the front of the bus.",
+    "invalidBackQr": "This is not the Back QR! Please scan the QR at the back of the bus.",
+    "videoSavedError": "Error: Video was not saved correctly.",
+    "videoFileInvalidError": "Video error. Please try again.",
+    "startConversation": "Start conversation",
+    "guardian": "Guardian",
+    "student": "Student",
+    "systemUser": "System User"
 }

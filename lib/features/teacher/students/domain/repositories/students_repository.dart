@@ -7,8 +7,9 @@ abstract class StudentsRepository {
   );
   Future<Either<String, void>> markAttendance(
     String studentId,
-    AttendanceStatus status,
-  );
+    AttendanceStatus status, {
+    bool viaQr = false,
+  });
   Future<Either<String, void>> confirmAttendance(
     String classId,
   );

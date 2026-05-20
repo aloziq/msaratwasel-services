@@ -6,7 +6,7 @@ import '../models/student_model.dart';
 
 abstract class StudentsRemoteDataSource {
   Future<List<StudentModel>> getStudentsByClass(String classId);
-  Future<void> markAttendance(String studentId, AttendanceStatus status);
+  Future<void> markAttendance(String studentId, AttendanceStatus status, {bool viaQr = false});
   Future<void> confirmAttendance(String classId);
 }
 
@@ -31,14 +31,17 @@ class StudentsRemoteDataSourceImpl implements StudentsRemoteDataSource {
   }
 
   @override
-  Future<void> markAttendance(String studentId, AttendanceStatus status) async {
+  Future<void> markAttendance(String studentId, AttendanceStatus status, {bool viaQr = false}) async {
     try {
       final dio = ApiClient.instance;
       await dio.put(
         'teacher/students/$studentId/attendance',
-        data: {'status': status.name},
+        data: {
+          'status': status.name,
+          'via_qr': viaQr,
+        },
       );
-      debugPrint('[StudentsRemoteDS] ✅ Marked attendance for student $studentId: ${status.name}');
+      debugPrint('[StudentsRemoteDS] ✅ Marked attendance for student $studentId: ${status.name} (viaQr: $viaQr)');
     } catch (e) {
       debugPrint('[StudentsRemoteDS] ❌ Error marking attendance: $e');
       rethrow;

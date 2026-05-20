@@ -254,7 +254,6 @@ class _StaffCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       width: 8,
@@ -267,19 +266,22 @@ class _StaffCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      person.name,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : AppColors.primary,
+                    Expanded(
+                      child: Text(
+                        person.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.primary,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       PhosphorIcons.bus(PhosphorIconsStyle.duotone),
@@ -287,14 +289,18 @@ class _StaffCard extends StatelessWidget {
                       color: AppColors.primary,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      '${l10n.bus} ${person.busId}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? Colors.white60
-                            : const Color(0xFF64748B),
+                    Expanded(
+                      child: Text(
+                        '${l10n.bus} ${person.busId}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isDark
+                              ? Colors.white60
+                              : const Color(0xFF64748B),
+                        ),
                       ),
                     ),
                   ],

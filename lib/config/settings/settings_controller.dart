@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/di/injection.dart';
 import '../../features/shared/auth/domain/repositories/auth_repository.dart';
+import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
 
 class SettingsController extends ChangeNotifier {
   static const _localeKey = 'app_locale';
@@ -54,6 +55,10 @@ class SettingsController extends ChangeNotifier {
       final langCode = resolvedLocale.languageCode == 'ar' ? 'ar' : 'en';
 
       await getIt<AuthRepository>().updateLanguage(langCode);
+
+      // Re-fetch the user profile with the new Accept-Language header so the
+      // cached `name` reflects the updated locale in both home screen & drawer.
+      await getIt<AuthCubit>().refreshUserProfile();
     } catch (_) {
       // Silent failure for UI responsiveness
     }
@@ -70,6 +75,7 @@ class SettingsController extends ChangeNotifier {
     await prefs.setDouble(_fontScaleKey, clamped);
   }
 }
+
 
 class SettingsProvider extends InheritedNotifier<SettingsController> {
   const SettingsProvider({

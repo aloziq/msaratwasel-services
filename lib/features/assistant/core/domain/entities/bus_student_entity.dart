@@ -66,6 +66,90 @@ class BusStudentEntity extends Equatable {
     return name;
   }
 
+  String getLocalizedGrade(String languageCode) {
+    if (languageCode.toLowerCase() == 'en') {
+      final input = grade.trim();
+      if (input.isEmpty || input == 'غير محدد') {
+        return 'Not Specified';
+      }
+
+      // Check for exact matches of simple stages
+      switch (input) {
+        case 'حضانة':
+        case 'الحضانة':
+        case 'حضانه':
+          return 'Nursery';
+        case 'روضة':
+        case 'الروضة':
+          return 'Kindergarten';
+        case 'تمهيدي':
+        case 'التمهيدي':
+          return 'Preschool';
+        case 'ابتدائي':
+        case 'الابتدائي':
+        case 'الابتدائية':
+          return 'Primary';
+        case 'متوسط':
+        case 'المتوسط':
+        case 'المتوسطة':
+          return 'Intermediate';
+        case 'ثانوي':
+        case 'الثانوي':
+        case 'الثانوية':
+          return 'Secondary';
+      }
+
+      // Normalized version to handle different forms of arabic letters
+      String normalized = input
+          .replaceAll('أ', 'ا')
+          .replaceAll('إ', 'ا')
+          .replaceAll('آ', 'ا')
+          .replaceAll('ة', 'ه')
+          .replaceAll('ى', 'ي');
+      
+      String ordinal = '';
+      if (normalized.contains('اول') || normalized.contains('1')) {
+        ordinal = '1st';
+      } else if (normalized.contains('ثاني') || normalized.contains('2')) {
+        ordinal = '2nd';
+      } else if (normalized.contains('ثالث') || normalized.contains('3')) {
+        ordinal = '3rd';
+      } else if (normalized.contains('رابع') || normalized.contains('4')) {
+        ordinal = '4th';
+      } else if (normalized.contains('خامس') || normalized.contains('5')) {
+        ordinal = '5th';
+      } else if (normalized.contains('سادس') || normalized.contains('6')) {
+        ordinal = '6th';
+      }
+
+      String stage = '';
+      if (normalized.contains('حضانه') || normalized.contains('حضانة')) {
+        stage = 'Nursery';
+      } else if (normalized.contains('روضه') || normalized.contains('روضة')) {
+        stage = 'Kindergarten';
+      } else if (normalized.contains('تمهيدي')) {
+        stage = 'Preschool';
+      } else if (normalized.contains('ابتدائي') || normalized.contains('ابتدائيه')) {
+        stage = 'Primary';
+      } else if (normalized.contains('متوسط')) {
+        stage = 'Intermediate';
+      } else if (normalized.contains('ثانوي') || normalized.contains('ثانويه')) {
+        stage = 'Secondary';
+      }
+
+      if (ordinal.isNotEmpty && stage.isNotEmpty) {
+        return '$ordinal $stage';
+      } else if (ordinal.isNotEmpty) {
+        return '$ordinal Grade';
+      } else if (stage.isNotEmpty) {
+        return stage;
+      }
+
+      return input;
+    }
+    return grade;
+  }
+
   BusStudentEntity copyWith({
     String? id,
     String? studentCode,

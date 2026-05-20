@@ -183,7 +183,7 @@ class _TripListItem extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '${trip.typeLabel} #${trip.id}',
+                      '${isArabic ? trip.typeLabel : (trip.type == 'forth' || trip.typeLabel == 'ذهاب' ? 'Go' : 'Return')} #${trip.id}',
                       style: TextStyle(
                         color: isDark ? Colors.white70 : Colors.black54,
                         fontWeight: FontWeight.bold,
@@ -232,7 +232,12 @@ class _TripListItem extends StatelessWidget {
                   Icon(PhosphorIconsRegular.mapPin, size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
                   Text(
-                    trip.routeName!,
+                    isArabic
+                        ? trip.routeName!
+                        : trip.routeName!
+                            .replaceAll('المسار رقم', 'Route No.')
+                            .replaceAll('مسار رقم', 'Route No.')
+                            .replaceAll('مسار', 'Route'),
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? Colors.white70 : Colors.black87,

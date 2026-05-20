@@ -2851,6 +2851,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Thursday'**
   String get thursday;
+
+  /// No description provided for @processingVideoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing video...'**
+  String get processingVideoTitle;
+
+  /// No description provided for @processingVideoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait, we are compressing the video to reduce size'**
+  String get processingVideoDesc;
+
+  /// No description provided for @uploadingVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading verification...'**
+  String get uploadingVerificationTitle;
+
+  /// No description provided for @uploadingVerificationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We are now uploading the verification to the dashboard'**
+  String get uploadingVerificationDesc;
+
+  /// No description provided for @stopRecordingManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Recording (Manual)'**
+  String get stopRecordingManual;
+
+  /// No description provided for @verificationSafetySystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification & Safety System'**
+  String get verificationSafetySystem;
+
+  /// No description provided for @invalidFrontQr.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not the Front QR! Please scan the QR at the front of the bus.'**
+  String get invalidFrontQr;
+
+  /// No description provided for @invalidBackQr.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not the Back QR! Please scan the QR at the back of the bus.'**
+  String get invalidBackQr;
+
+  /// No description provided for @videoSavedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: Video was not saved correctly.'**
+  String get videoSavedError;
+
+  /// No description provided for @videoFileInvalidError.
+  ///
+  /// In en, this message translates to:
+  /// **'Video error. Please try again.'**
+  String get videoFileInvalidError;
+
+  /// No description provided for @startConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start conversation'**
+  String get startConversation;
+
+  /// No description provided for @guardian.
+  ///
+  /// In en, this message translates to:
+  /// **'Guardian'**
+  String get guardian;
+
+  /// No description provided for @systemUser.
+  ///
+  /// In en, this message translates to:
+  /// **'System User'**
+  String get systemUser;
 }
 
 class _AppLocalizationsDelegate

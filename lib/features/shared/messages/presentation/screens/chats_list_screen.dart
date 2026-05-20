@@ -385,7 +385,9 @@ class _ConversationTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            conversation.lastMessage,
+                            (conversation.lastMessage == 'بدء محادثة' || conversation.lastMessage == 'Start conversation')
+                                ? AppLocalizations.of(context)!.startConversation
+                                : conversation.lastMessage,
                             style: TextStyle(
                               fontSize: 14,
                               color: hasUnread

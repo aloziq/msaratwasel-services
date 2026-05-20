@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../../core/usecases/usecase.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
@@ -24,6 +25,7 @@ class AuthCubit extends Cubit<AuthState> {
   final ChangePasswordUseCase changePasswordUseCase;
   final UpdateAvatarUseCase updateAvatarUseCase;
   final UpdateFcmTokenUseCase updateFcmTokenUseCase;
+  final AuthRepository authRepository;
 
   ReverbService? _reverbService;
   ReverbService? get reverbService => _reverbService;
@@ -36,6 +38,7 @@ class AuthCubit extends Cubit<AuthState> {
     required this.changePasswordUseCase,
     required this.updateAvatarUseCase,
     required this.updateFcmTokenUseCase,
+    required this.authRepository,
   }) : super(AuthInitial());
 
   Future<void> checkAuthStatus() async {
@@ -45,6 +48,10 @@ class AuthCubit extends Cubit<AuthState> {
       (user) {
         emit(AuthAuthenticated(user));
         _initReverbAndFcm(user);
+        // Re-fetch the user profile in the background so the cached `name`
+        // always matches the current Accept-Language locale (e.g., if user
+        // logged in under English but the app is now set to Arabic).
+        refreshUserProfile();
       },
     );
   }
@@ -144,4 +151,19 @@ class AuthCubit extends Cubit<AuthState> {
       (_) => true,
     );
   }
+
+  /// Re-fetches the user profile from the server using the current Accept-Language header.
+  /// Call this after changing the app language so the cached name updates to the new locale.
+  Future<void> refreshUserProfile() async {
+    final result = await authRepository.refreshUserProfile();
+    result.fold(
+      (_) {/* silently ignore failures — UI will still work with cached data */},
+      (updatedUser) {
+        if (state is AuthAuthenticated) {
+          emit(AuthAuthenticated(updatedUser));
+        }
+      },
+    );
+  }
 }
+

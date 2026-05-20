@@ -97,22 +97,37 @@ class _QRScanScreenState extends State<QRScanScreen> {
               });
             }
           } else if (state is QRScanAttendanceSuccess) {
-            isProcessing = false;
+            isProcessing = true; // Pause scanning
+            controller.stop(); // ⏸ إيقاف الكاميرا مؤقتاً
             _playSuccessSound();
+            HapticFeedback.heavyImpact();
             _showOverlayColor(const Color(0xFF10B981).withValues(alpha: 0.6));
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '${l10n.attendanceMarked}: ${state.studentId}',
-                  style: GoogleFonts.cairo(),
+                  '✅ ${l10n.attendanceMarked}: ${state.studentId}',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
                 ),
                 backgroundColor: const Color(0xFF10B981),
-                duration: const Duration(seconds: 3),
+                duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             );
+            final cubit = context.read<QRScanCubit>();
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                setState(() {
+                  isProcessing = false;
+                  lastScannedCode = '';
+                });
+                cubit.reset();
+                controller.start(); // ▶ إعادة تشغيل الكاميرا
+              }
+            });
           } else if (state is QRScanTripSuccess) {
-            isProcessing = false;
+            isProcessing = true; // Pause scanning
             _playSuccessSound();
             HapticFeedback.heavyImpact();
             _showOverlayColor(const Color(0xFF10B981).withValues(alpha: 0.7));
@@ -123,12 +138,22 @@ class _QRScanScreenState extends State<QRScanScreen> {
                   style: GoogleFonts.cairo(),
                 ),
                 backgroundColor: const Color(0xFF10B981),
-                duration: const Duration(seconds: 4),
+                duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
             );
+            final cubit = context.read<QRScanCubit>();
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                setState(() {
+                  isProcessing = false;
+                  lastScannedCode = '';
+                });
+                cubit.reset();
+              }
+            });
           } else if (state is QRScanTripError) {
-            isProcessing = false;
+            isProcessing = true; // Pause scanning
             _playErrorSound();
             HapticFeedback.vibrate();
             _showOverlayColor(Colors.red.withValues(alpha: 0.7));
@@ -136,22 +161,42 @@ class _QRScanScreenState extends State<QRScanScreen> {
               SnackBar(
                 content: Text(state.message, style: GoogleFonts.cairo()),
                 backgroundColor: Colors.red,
-                duration: const Duration(seconds: 4),
+                duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
             );
+            final cubit = context.read<QRScanCubit>();
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                setState(() {
+                  isProcessing = false;
+                  lastScannedCode = '';
+                });
+                cubit.reset();
+              }
+            });
           } else if (state is QRScanError) {
-            isProcessing = false;
+            isProcessing = true; // Pause scanning
             _playErrorSound();
             _showOverlayColor(Colors.red.withValues(alpha: 0.7));
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message, style: GoogleFonts.cairo()),
                 backgroundColor: Colors.red,
-                duration: const Duration(seconds: 4),
+                duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
             );
+            final cubit = context.read<QRScanCubit>();
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                setState(() {
+                  isProcessing = false;
+                  lastScannedCode = '';
+                });
+                cubit.reset();
+              }
+            });
           }
         },
         child: Builder(
@@ -188,6 +233,8 @@ class _QRScanScreenState extends State<QRScanScreen> {
 
                           HapticFeedback.mediumImpact();
 
+                          debugPrint('[QRScan] 📷 Code scanned: "$code" | classId: ${widget.classId} | isTripMode: ${widget.isTripMode}');
+
                           if (widget.isTripMode) {
                             // فلترة أكواد الحافلة (FRONT/BACK) — هذه خاصة بإنهاء الرحلة فقط
                             final upperCode = code.toUpperCase();
@@ -210,6 +257,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
                             }
                             context.read<QRScanCubit>().markSmartTripAttendanceViaQr(code);
                           } else if (widget.classId != null) {
+                            debugPrint('[QRScan] 🚀 Calling markAttendanceViaQr with code: $code, classId: ${widget.classId}');
                             context.read<QRScanCubit>().markAttendanceViaQr(
                                   code,
                                   widget.classId ?? '',

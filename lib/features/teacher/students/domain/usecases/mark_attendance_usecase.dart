@@ -10,7 +10,7 @@ class MarkAttendanceUseCase {
 
   MarkAttendanceUseCase(this.repository);
 
-  Future<Either<String, void>> call(String studentId, AttendanceStatus status) {
-    return repository.markAttendance(studentId, status);
+  Future<Either<String, void>> call(String studentId, AttendanceStatus status, {bool viaQr = false}) {
+    return repository.markAttendance(studentId, status, viaQr: viaQr);
   }
 }
