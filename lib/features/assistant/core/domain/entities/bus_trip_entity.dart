@@ -5,6 +5,8 @@ class BusTripEntity extends Equatable {
   final String id;
   final String busNumber;
   final String driverName;
+  final String driverPhone;
+  final String? driverPhoto;
   final String assistantName;
   final List<BusStudentEntity> students;
   final DateTime startTime;
@@ -18,6 +20,8 @@ class BusTripEntity extends Equatable {
     required this.id,
     required this.busNumber,
     required this.driverName,
+    this.driverPhone = '-',
+    this.driverPhoto,
     required this.assistantName,
     required this.students,
     required this.startTime,
@@ -32,6 +36,8 @@ class BusTripEntity extends Equatable {
     String? id,
     String? busNumber,
     String? driverName,
+    String? driverPhone,
+    String? driverPhoto,
     String? assistantName,
     List<BusStudentEntity>? students,
     DateTime? startTime,
@@ -45,6 +51,8 @@ class BusTripEntity extends Equatable {
       id: id ?? this.id,
       busNumber: busNumber ?? this.busNumber,
       driverName: driverName ?? this.driverName,
+      driverPhone: driverPhone ?? this.driverPhone,
+      driverPhoto: driverPhoto ?? this.driverPhoto,
       assistantName: assistantName ?? this.assistantName,
       students: students ?? this.students,
       startTime: startTime ?? this.startTime,
@@ -61,6 +69,8 @@ class BusTripEntity extends Equatable {
     id,
     busNumber,
     driverName,
+    driverPhone,
+    driverPhoto,
     assistantName,
     students,
     startTime,

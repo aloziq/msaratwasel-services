@@ -3,13 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:widget_to_marker/widget_to_marker.dart';
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
-import 'package:msaratwasel_services/features/teacher/students/domain/entities/student_entity.dart';
+import 'package:msaratwasel_services/features/assistant/core/domain/entities/bus_student_entity.dart';
+import 'package:msaratwasel_services/config/app_config.dart';
 
 import '../cubit/bus_tracking_cubit.dart';
 import '../../domain/entities/bus_position.dart';
@@ -236,14 +238,22 @@ class _BusMapScreenState extends State<BusMapScreen> {
                           AppSpacing.xl,
                           AppSpacing.xl,
                         ),
-                        child: _BottomDetailsCard(
-                          position: tracking,
-                          students: students,
-                          l10n: l10n,
-                          isOpen: _isDetailsExpanded,
-                          onToggle: () => setState(
-                            () => _isDetailsExpanded = !_isDetailsExpanded,
-                          ),
+                        child: BlocBuilder<BusTripCubit, BusTripState>(
+                          builder: (context, tripState) {
+                            final trip = tripState is BusTripLoaded ? tripState.trip : null;
+                            return _BottomDetailsCard(
+                              position: tracking,
+                              students: students,
+                              l10n: l10n,
+                              isOpen: _isDetailsExpanded,
+                              onToggle: () => setState(
+                                () => _isDetailsExpanded = !_isDetailsExpanded,
+                              ),
+                              driverName: trip?.driverName ?? '-',
+                              driverPhone: trip?.driverPhone ?? '-',
+                              driverPhoto: trip?.driverPhoto,
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -261,7 +271,7 @@ class _BusMapScreenState extends State<BusMapScreen> {
 
 class _TrackingMap extends StatefulWidget {
   final BusPosition busPosition;
-  final List<StudentEntity> students;
+  final List<BusStudentEntity> students;
 
   const _TrackingMap({required this.busPosition, required this.students});
 
@@ -272,11 +282,15 @@ class _TrackingMap extends StatefulWidget {
 class _TrackingMapState extends State<_TrackingMap> {
   final Map<String, BitmapDescriptor> _markers = {};
   GoogleMapController? _mapController;
+  String? _lastRouteKey;
+  List<LatLng> _routePoints = [];
+  bool _isFetchingRoute = false;
 
   @override
   void initState() {
     super.initState();
     _loadMarkers();
+    _fetchRouteIfNeeded();
   }
 
   @override
@@ -285,11 +299,137 @@ class _TrackingMapState extends State<_TrackingMap> {
     if (oldWidget.students != widget.students) {
       _loadMarkers();
     }
-    // Auto-center/fit bounds if position updates?
-    if (oldWidget.busPosition != widget.busPosition) {
-      // Optional: animate to new bounds
-      // _fitBounds();
+    _fetchRouteIfNeeded();
+  }
+
+  String _generateRouteKey() {
+    final busLat = widget.busPosition.lat.toStringAsFixed(4);
+    final busLng = widget.busPosition.lng.toStringAsFixed(4);
+    final studentIds = widget.students
+        .map((s) => '${s.id}_${s.status.name}_${s.latitude ?? 0}_${s.longitude ?? 0}')
+        .join(',');
+    return '$busLat,$busLng|$studentIds';
+  }
+
+  void _fetchRouteIfNeeded() {
+    final newKey = _generateRouteKey();
+    if (newKey == _lastRouteKey) return;
+    _lastRouteKey = newKey;
+    _fetchRoute();
+  }
+
+  Future<void> _fetchRoute() async {
+    if (_isFetchingRoute) return;
+    _isFetchingRoute = true;
+
+    final activeStudents = widget.students.where((student) {
+      if (student.status == BusStudentStatus.absent) return false;
+      final double lat = student.latitude ?? student.forthLatitude ?? student.backLatitude ?? 0.0;
+      final double lng = student.longitude ?? student.forthLongitude ?? student.backLongitude ?? 0.0;
+      return lat != 0.0 && lng != 0.0;
+    }).toList();
+
+    if (activeStudents.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _routePoints = [
+            LatLng(widget.busPosition.lat, widget.busPosition.lng),
+          ];
+        });
+      }
+      _isFetchingRoute = false;
+      return;
     }
+
+    try {
+      final origin = LatLng(widget.busPosition.lat, widget.busPosition.lng);
+      final destination = LatLng(
+        activeStudents.last.latitude ?? activeStudents.last.forthLatitude ?? activeStudents.last.backLatitude!,
+        activeStudents.last.longitude ?? activeStudents.last.forthLongitude ?? activeStudents.last.backLongitude!,
+      );
+
+      List<String> waypointStrings = [];
+      for (int i = 0; i < activeStudents.length - 1; i++) {
+        final s = activeStudents[i];
+        final double lat = s.latitude ?? s.forthLatitude ?? s.backLatitude ?? 0.0;
+        final double lng = s.longitude ?? s.forthLongitude ?? s.backLongitude ?? 0.0;
+        waypointStrings.add('$lat,$lng');
+      }
+
+      String url = 'https://maps.googleapis.com/maps/api/directions/json'
+          '?origin=${origin.latitude},${origin.longitude}'
+          '&destination=${destination.latitude},${destination.longitude}'
+          '&key=${AppConfig.googleMapsApiKey}';
+
+      if (waypointStrings.isNotEmpty) {
+        url += '&waypoints=optimize:true|${waypointStrings.join('|')}';
+      }
+
+      final dio = Dio();
+      final response = await dio.get(url);
+
+      if (response.statusCode == 200 && response.data['status'] == 'OK') {
+        final route = response.data['routes'][0];
+        final points = _decodePolyline(route['overview_polyline']['points']);
+        if (mounted) {
+          setState(() {
+            _routePoints = points;
+          });
+        }
+      } else {
+        debugPrint('⚠️ [Directions API] Error status: ${response.data['status']}');
+        _setFallbackRoute(origin, activeStudents);
+      }
+    } catch (e) {
+      debugPrint('⚠️ [Directions API] Exception: $e');
+      final origin = LatLng(widget.busPosition.lat, widget.busPosition.lng);
+      _setFallbackRoute(origin, activeStudents);
+    } finally {
+      _isFetchingRoute = false;
+    }
+  }
+
+  void _setFallbackRoute(LatLng origin, List<BusStudentEntity> activeStudents) {
+    if (!mounted) return;
+    final List<LatLng> points = [origin];
+    for (final s in activeStudents) {
+      final double lat = s.latitude ?? s.forthLatitude ?? s.backLatitude ?? 0.0;
+      final double lng = s.longitude ?? s.forthLongitude ?? s.backLongitude ?? 0.0;
+      points.add(LatLng(lat, lng));
+    }
+    setState(() {
+      _routePoints = points;
+    });
+  }
+
+  List<LatLng> _decodePolyline(String encoded) {
+    List<LatLng> points = [];
+    int index = 0, len = encoded.length;
+    int lat = 0, lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      points.add(LatLng(lat / 1E5, lng / 1E5));
+    }
+    return points;
   }
 
   Future<void> _loadMarkers() async {
@@ -297,16 +437,12 @@ class _TrackingMapState extends State<_TrackingMap> {
     final newMarkers = <String, BitmapDescriptor>{};
     for (final student in widget.students) {
       try {
-        // Using StudentMarkerWidget to generate bitmap
-        final marker =
-            await StudentMarkerWidget(
-              name: student.getLocalizedName(langCode),
-              // Assuming photoUrl is handled inside StudentMarkerWidget or passed
-              // color: AppColors.primary // if needed
-            ).toBitmapDescriptor(
-              logicalSize: const Size(100, 100),
-              imageSize: const Size(200, 200),
-            );
+        final marker = await StudentMarkerWidget(
+          name: student.getLocalizedName(langCode),
+        ).toBitmapDescriptor(
+          logicalSize: const Size(100, 100),
+          imageSize: const Size(200, 200),
+        );
         newMarkers[student.id] = marker;
       } catch (e) {
         newMarkers[student.id] = BitmapDescriptor.defaultMarkerWithHue(
@@ -315,7 +451,6 @@ class _TrackingMapState extends State<_TrackingMap> {
       }
     }
 
-    // Also load Bus Icon if needed, or use default
     if (mounted) {
       setState(() {
         _markers.clear();
@@ -327,25 +462,13 @@ class _TrackingMapState extends State<_TrackingMap> {
             newMarkers.keys.map((id) => Marker(markerId: MarkerId(id))).toSet(),
           );
         }
-        // Note: The above mock call is just to silence the warning and hint usage.
-        // Proper usage is in build method or ensuring mapController is ready.
-        // Actually, let's just make _fitBounds used or remove it.
-        // The request said "also functionality", implying auto-zoom is nice.
-        // I'll call it in build's onMapCreated or just remove if I can't pass markers easily.
-        // Better: Let's remove it if it's complicated to wire up without re-triggering builds,
-        // OR, actually use it.
-        // Let's remove it for now to pass analysis cleanly as minimal scope,
-        // unless user insists on auto-zoom. The reference HAD it.
-        // I'll keep it but make it public or used.
       });
     }
   }
 
-  // Making it private but used
   void _fitBounds(Set<Marker> markers) {
     if (markers.isEmpty || _mapController == null) return;
 
-    // Bounds calculation logic
     double? minLat, maxLat, minLng, maxLng;
     for (final m in markers) {
       if (minLat == null || m.position.latitude < minLat) {
@@ -369,7 +492,7 @@ class _TrackingMapState extends State<_TrackingMap> {
             southwest: LatLng(minLat, minLng!),
             northeast: LatLng(maxLat!, maxLng!),
           ),
-          100, // padding
+          100,
         ),
       );
     }
@@ -378,8 +501,8 @@ class _TrackingMapState extends State<_TrackingMap> {
   @override
   Widget build(BuildContext context) {
     final markers = <Marker>{};
+    final polylines = <Polyline>{};
 
-    // Bus Marker
     markers.add(
       Marker(
         markerId: const MarkerId('bus_current'),
@@ -391,24 +514,47 @@ class _TrackingMapState extends State<_TrackingMap> {
 
     final langCode = Localizations.localeOf(context).languageCode;
 
-    // Student Markers
     for (var i = 0; i < widget.students.length; i++) {
       final student = widget.students[i];
-      // Offset logic from reference
-      final double offset = (i % 2 == 0 ? 1 : -1) * (i * 0.00005);
-      final position = LatLng(
-        widget.busPosition.lat + offset,
-        widget.busPosition.lng + offset,
-      );
+
+      double lat = student.latitude ??
+          student.forthLatitude ??
+          student.backLatitude ??
+          0.0;
+      double lng = student.longitude ??
+          student.forthLongitude ??
+          student.backLongitude ??
+          0.0;
+
+      if (lat == 0.0 || lng == 0.0) {
+        final double offset = (i % 2 == 0 ? 1 : -1) * (i * 0.00005);
+        lat = widget.busPosition.lat + offset;
+        lng = widget.busPosition.lng + offset;
+      }
+
+      final position = LatLng(lat, lng);
 
       markers.add(
         Marker(
           markerId: MarkerId('student_${student.id}'),
           position: position,
           infoWindow: InfoWindow(title: student.getLocalizedName(langCode)),
-          icon:
-              _markers[student.id] ??
+          icon: _markers[student.id] ??
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      );
+    }
+
+    if (_routePoints.length > 1) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId('blue_route'),
+          points: _routePoints,
+          color: const Color(0xFF1A73E8),
+          width: 5,
+          jointType: JointType.round,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
         ),
       );
     }
@@ -419,12 +565,12 @@ class _TrackingMapState extends State<_TrackingMap> {
         zoom: 14,
       ),
       markers: markers,
+      polylines: polylines,
       myLocationEnabled: true,
       zoomControlsEnabled: false,
       mapToolbarEnabled: false,
       onMapCreated: (controller) {
         _mapController = controller;
-        // _fitBounds(markers); // Optional: fit on load
       },
     );
   }
@@ -432,10 +578,13 @@ class _TrackingMapState extends State<_TrackingMap> {
 
 class _BottomDetailsCard extends StatelessWidget {
   final BusPosition position;
-  final List<StudentEntity> students;
+  final List<BusStudentEntity> students;
   final AppLocalizations l10n;
   final bool isOpen;
   final VoidCallback onToggle;
+  final String driverName;
+  final String driverPhone;
+  final String? driverPhoto;
 
   const _BottomDetailsCard({
     required this.position,
@@ -443,7 +592,21 @@ class _BottomDetailsCard extends StatelessWidget {
     required this.l10n,
     required this.isOpen,
     required this.onToggle,
+    this.driverName = '-',
+    this.driverPhone = '-',
+    this.driverPhoto,
   });
+
+  static String _formatUpdatedAt(DateTime updatedAt) {
+    final diff = DateTime.now().difference(updatedAt);
+    if (diff.inSeconds < 60) {
+      return 'الآن';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes} دقيقة';
+    } else {
+      return '${diff.inHours} ساعة';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -453,7 +616,7 @@ class _BottomDetailsCard extends StatelessWidget {
 
     final int totalStudents = students.length;
     final int absentCount = students
-        .where((s) => s.status == AttendanceStatus.absent)
+        .where((s) => s.status == BusStudentStatus.absent)
         .length;
     // Assuming remaining are those not absent and not on board yet?
     // Or just Total - Absent - OnBoard.
@@ -511,11 +674,14 @@ class _BottomDetailsCard extends StatelessWidget {
                       color: isDark ? Colors.white24 : Colors.transparent,
                     ),
                   ),
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     radius: 24,
-                    backgroundImage: NetworkImage(
-                      'https://i.pravatar.cc/150?u=driver',
-                    ),
+                    backgroundImage: driverPhoto != null
+                        ? NetworkImage(driverPhoto!)
+                        : null,
+                    child: driverPhoto == null
+                        ? const Icon(Icons.person_rounded, size: 24)
+                        : null,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -524,15 +690,16 @@ class _BottomDetailsCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'محمد عبدالله', // Driver Name Localized?
+                        driverName,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: theme.colorScheme.onSurface,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '0551234567',
+                        driverPhone,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
@@ -611,7 +778,7 @@ class _BottomDetailsCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${l10n.updated} 2 دقيقة',
+                        '${l10n.updated} ${_formatUpdatedAt(position.updatedAt)}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

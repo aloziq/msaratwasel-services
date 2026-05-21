@@ -4,10 +4,10 @@ import 'package:equatable/equatable.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/bus_position.dart';
-import 'package:msaratwasel_services/features/teacher/students/domain/entities/student_entity.dart';
 import '../../../../../core/services/reverb_service.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../../core/data/repositories/assistant_repository_impl.dart';
+import '../../../core/domain/entities/bus_student_entity.dart';
 
 abstract class BusTrackingState extends Equatable {
   const BusTrackingState();
@@ -21,7 +21,7 @@ class BusTrackingLoading extends BusTrackingState {}
 
 class BusTrackingLoaded extends BusTrackingState {
   final BusPosition? position;
-  final List<StudentEntity> students;
+  final List<BusStudentEntity> students;
   const BusTrackingLoaded(this.position, this.students);
   @override
   List<Object?> get props => [position, students];
@@ -45,21 +45,15 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
 
     try {
       final tripResult = await _repository.getActiveTrip();
-      List<StudentEntity> students = [];
+      List<BusStudentEntity> students = [];
       String busId = '';
       
       tripResult.fold(
         (l) => emit(BusTrackingError(l)),
         (trip) {
           busId = GetIt.instance<SharedPreferences>().getString('USER_BUS_ID') ?? '';
-          students = trip.students.map((e) => StudentEntity(
-            id: e.id,
-            name: e.name,
-            nameEn: e.nameEn,
-            parentName: e.parentName,
-            parentPhone: e.parentPhone,
-            status: _mapStatus(e.status.name),
-          )).toList();
+          // Use BusStudentEntity directly — preserves GPS coordinates
+          students = List<BusStudentEntity>.from(trip.students);
         }
       );
 
@@ -146,15 +140,6 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
     } catch (e) {
       emit(BusTrackingError('حدث خطأ: $e'));
     }
-  }
-
-  AttendanceStatus _mapStatus(String statusStr) {
-    if (statusStr.contains('on_bus') || statusStr.contains('present')) {
-      return AttendanceStatus.present;
-    } else if (statusStr.contains('absent')) {
-      return AttendanceStatus.absent;
-    }
-    return AttendanceStatus.present;
   }
 
   @override

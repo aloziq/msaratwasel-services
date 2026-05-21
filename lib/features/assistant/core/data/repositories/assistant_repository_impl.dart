@@ -34,13 +34,16 @@ class AssistantRepositoryImpl implements AssistantRepository {
             .toList();
             
         final busData = data['bus'];
+        final driverData = data['driver'] as Map<String, dynamic>?;
         
         return Right(
           BusTripModel(
             id: busData['trip_id']?.toString() ?? 'trip-$busId',
             busNumber: busData['bus_number']?.toString() ?? '-',
-            driverName: '-', // Needs to come from user profile if needed
-            assistantName: '-', // Needs to come from user profile
+            driverName: driverData?['name']?.toString() ?? '-',
+            driverPhone: driverData?['phone']?.toString() ?? '-',
+            driverPhoto: driverData?['photo']?.toString(),
+            assistantName: '-',
             students: passengers,
             startTime: DateTime.now(), 
             suggestedDirection: busData['suggested_direction']?.toString(),

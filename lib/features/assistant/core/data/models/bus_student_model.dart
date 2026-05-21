@@ -16,6 +16,12 @@ class BusStudentModel extends BusStudentEntity {
     super.behavioralNote,
     super.waitingSince,
     super.waitingElapsedSeconds = 0,
+    super.forthLatitude,
+    super.forthLongitude,
+    super.backLatitude,
+    super.backLongitude,
+    super.latitude,
+    super.longitude,
   });
 
   factory BusStudentModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +45,13 @@ class BusStudentModel extends BusStudentEntity {
           ? DateTime.tryParse(json['waitingSince'].toString()) 
           : null,
       waitingElapsedSeconds: int.tryParse(json['waitingElapsedSeconds']?.toString() ?? '0') ?? 0,
+      // Real GPS coordinates
+      forthLatitude:  double.tryParse(json['forth_latitude']?.toString() ?? ''),
+      forthLongitude: double.tryParse(json['forth_longitude']?.toString() ?? ''),
+      backLatitude:   double.tryParse(json['back_latitude']?.toString() ?? ''),
+      backLongitude:  double.tryParse(json['back_longitude']?.toString() ?? ''),
+      latitude:       double.tryParse(json['latitude']?.toString() ?? ''),
+      longitude:      double.tryParse(json['longitude']?.toString() ?? ''),
     );
   }
 
@@ -58,6 +71,8 @@ class BusStudentModel extends BusStudentEntity {
       'behavioralNote': behavioralNote,
       'waitingSince': waitingSince?.toIso8601String(),
       'waitingElapsedSeconds': waitingElapsedSeconds,
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 }

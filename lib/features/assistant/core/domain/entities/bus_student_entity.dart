@@ -41,6 +41,13 @@ class BusStudentEntity extends Equatable {
   final String? behavioralNote;
   final DateTime? waitingSince;
   final int waitingElapsedSeconds;
+  // Real GPS coordinates from API
+  final double? forthLatitude;
+  final double? forthLongitude;
+  final double? backLatitude;
+  final double? backLongitude;
+  final double? latitude;
+  final double? longitude;
 
   const BusStudentEntity({
     required this.id,
@@ -57,6 +64,12 @@ class BusStudentEntity extends Equatable {
     this.behavioralNote,
     this.waitingSince,
     this.waitingElapsedSeconds = 0,
+    this.forthLatitude,
+    this.forthLongitude,
+    this.backLatitude,
+    this.backLongitude,
+    this.latitude,
+    this.longitude,
   });
 
   String getLocalizedName(String languageCode) {
@@ -165,6 +178,12 @@ class BusStudentEntity extends Equatable {
     String? behavioralNote,
     DateTime? waitingSince,
     int? waitingElapsedSeconds,
+    double? forthLatitude,
+    double? forthLongitude,
+    double? backLatitude,
+    double? backLongitude,
+    double? latitude,
+    double? longitude,
   }) {
     return BusStudentEntity(
       id: id ?? this.id,
@@ -181,6 +200,12 @@ class BusStudentEntity extends Equatable {
       behavioralNote: behavioralNote ?? this.behavioralNote,
       waitingSince: waitingSince ?? this.waitingSince,
       waitingElapsedSeconds: waitingElapsedSeconds ?? this.waitingElapsedSeconds,
+      forthLatitude: forthLatitude ?? this.forthLatitude,
+      forthLongitude: forthLongitude ?? this.forthLongitude,
+      backLatitude: backLatitude ?? this.backLatitude,
+      backLongitude: backLongitude ?? this.backLongitude,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 
@@ -200,5 +225,11 @@ class BusStudentEntity extends Equatable {
     behavioralNote,
     waitingSince,
     waitingElapsedSeconds,
+    forthLatitude,
+    forthLongitude,
+    backLatitude,
+    backLongitude,
+    latitude,
+    longitude,
   ];
 }

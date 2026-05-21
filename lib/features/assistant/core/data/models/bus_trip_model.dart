@@ -7,6 +7,8 @@ class BusTripModel extends BusTripEntity {
     required super.id,
     required super.busNumber,
     required super.driverName,
+    super.driverPhone = '-',
+    super.driverPhoto,
     required super.assistantName,
     required super.students,
     required super.startTime,
@@ -22,6 +24,8 @@ class BusTripModel extends BusTripEntity {
       id: json['id'] as String,
       busNumber: json['busNumber'] as String,
       driverName: json['driverName'] as String,
+      driverPhone: json['driverPhone']?.toString() ?? '-',
+      driverPhoto: json['driverPhoto']?.toString(),
       assistantName: json['assistantName'] as String,
       students:
           (json['students'] as List<dynamic>?)
@@ -44,6 +48,8 @@ class BusTripModel extends BusTripEntity {
       'id': id,
       'busNumber': busNumber,
       'driverName': driverName,
+      'driverPhone': driverPhone,
+      'driverPhoto': driverPhoto,
       'assistantName': assistantName,
       'students': students.map((e) {
         if (e is BusStudentModel) return e.toJson();
