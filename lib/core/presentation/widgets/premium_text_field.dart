@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../config/theme/app_spacing.dart';
 
-class PremiumTextField extends StatelessWidget {
+class PremiumTextField extends StatefulWidget {
   const PremiumTextField({
     super.key,
     required this.controller,
@@ -45,28 +46,41 @@ class PremiumTextField extends StatelessWidget {
   final bool? alignLabelWithHint;
 
   @override
+  State<PremiumTextField> createState() => _PremiumTextFieldState();
+}
+
+class _PremiumTextFieldState extends State<PremiumTextField> {
+  late bool _obscureText;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscureText = widget.isPassword;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final effectiveTextColor = textColor ?? theme.colorScheme.onSurface;
+    final effectiveTextColor = widget.textColor ?? theme.colorScheme.onSurface;
     final effectiveIconColor =
-        iconColor ?? theme.colorScheme.onSurface.withValues(alpha: 0.7);
+        widget.iconColor ?? theme.colorScheme.onSurface.withValues(alpha: 0.7);
 
     return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: isPassword,
-      validator: validator,
-      textAlign: textAlign,
-      maxLines: maxLines ?? 1,
-      minLines: minLines,
-      textInputAction: textInputAction,
+      controller: widget.controller,
+      keyboardType: widget.keyboardType,
+      obscureText: _obscureText,
+      validator: widget.validator,
+      textAlign: widget.textAlign,
+      maxLines: widget.maxLines ?? 1,
+      minLines: widget.minLines,
+      textInputAction: widget.textInputAction,
       style: theme.textTheme.bodyMedium?.copyWith(
         fontWeight: FontWeight.w600,
         color: effectiveTextColor,
       ),
       decoration: InputDecoration(
-        labelText: label,
-        alignLabelWithHint: alignLabelWithHint,
+        labelText: widget.label,
+        alignLabelWithHint: widget.alignLabelWithHint,
         labelStyle: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
         ),
@@ -74,15 +88,29 @@ class PremiumTextField extends StatelessWidget {
           color: effectiveTextColor,
           fontWeight: FontWeight.bold,
         ),
-        prefixIcon: prefixWidget != null
-            ? Padding(padding: const EdgeInsets.all(12), child: prefixWidget)
-            : (icon != null ? Icon(icon, color: effectiveIconColor) : null),
-        suffixIcon: suffixWidget != null
-            ? Padding(padding: const EdgeInsets.all(12), child: suffixWidget)
-            : null,
+        prefixIcon: widget.prefixWidget != null
+            ? Padding(padding: const EdgeInsets.all(12), child: widget.prefixWidget)
+            : (widget.icon != null ? Icon(widget.icon, color: effectiveIconColor) : null),
+        suffixIcon: widget.suffixWidget != null
+            ? Padding(padding: const EdgeInsets.all(12), child: widget.suffixWidget)
+            : (widget.isPassword
+                ? IconButton(
+                    icon: Icon(
+                      _obscureText
+                          ? PhosphorIcons.eye(PhosphorIconsStyle.regular)
+                          : PhosphorIcons.eyeSlash(PhosphorIconsStyle.regular),
+                      color: effectiveIconColor,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText;
+                      });
+                    },
+                  )
+                : null),
         filled: true,
         fillColor:
-            fillColor ?? theme.colorScheme.onSurface.withValues(alpha: 0.08),
+            widget.fillColor ?? theme.colorScheme.onSurface.withValues(alpha: 0.08),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 20,

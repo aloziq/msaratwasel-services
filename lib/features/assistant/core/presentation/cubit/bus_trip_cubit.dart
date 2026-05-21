@@ -39,6 +39,12 @@ class BusTripCubit extends Cubit<BusTripState> {
     }
   }
 
+  bool _isTripActive(BusTripEntity trip) {
+    return trip.tripStatus == 'in_progress' ||
+        trip.tripStatus == 'awaiting_video' ||
+        trip.tripStatus == 'awaiting_confirmation';
+  }
+
   Future<void> updateStudentStatus(
     String studentId,
     BusStudentStatus status, {
@@ -46,6 +52,12 @@ class BusTripCubit extends Cubit<BusTripState> {
   }) async {
     if (state is BusTripLoaded) {
       final currentTrip = (state as BusTripLoaded).trip;
+      
+      if (!_isTripActive(currentTrip)) {
+        emit(const BusTripUpdateError('لا يمكن تعديل حالة الطلاب لعدم وجود رحلة نشطة حالياً.'));
+        return;
+      }
+
       final finalDirection = direction ?? currentTrip.suggestedDirection;
 
       final updatedStudents = currentTrip.students.map((student) {
@@ -73,6 +85,11 @@ class BusTripCubit extends Cubit<BusTripState> {
     if (state is BusTripLoaded) {
       final currentTrip = (state as BusTripLoaded).trip;
       
+      if (!_isTripActive(currentTrip)) {
+        emit(const BusTripUpdateError('لا يمكن تعديل حالة الطلاب لعدم وجود رحلة نشطة حالياً.'));
+        return;
+      }
+
       emit(BusTripLoading()); // Indicate work in progress for batch action
       
       final result = await repository.groupAlight(
@@ -97,6 +114,11 @@ class BusTripCubit extends Cubit<BusTripState> {
     if (state is BusTripLoaded) {
       final currentTrip = (state as BusTripLoaded).trip;
       
+      if (!_isTripActive(currentTrip)) {
+        emit(const BusTripUpdateError('لا يمكن تعديل حالة الطلاب لعدم وجود رحلة نشطة حالياً.'));
+        return;
+      }
+
       emit(BusTripLoading());
       
       final result = await repository.groupBoard(

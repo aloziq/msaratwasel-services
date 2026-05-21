@@ -4,8 +4,6 @@ plugins {
     id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.firebase.crashlytics")
-    id("io.sentry.android.gradle") version "4.14.0"
 }
 
 android {
@@ -50,14 +48,6 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
-
-    // Add the dependency for the Firebase Analytics library
-    // When using the BoM, you don't specify versions in Firebase library dependencies
-    implementation("com.google.firebase:firebase-analytics")
 }
 
-sentry {
-    // Disables automatic upload of debug symbols for debug builds to speed up compilation
-    uploadNativeSymbols.set(false)
-    includeProguardMapping.set(true)
-}
+

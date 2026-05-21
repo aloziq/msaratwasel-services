@@ -192,7 +192,11 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
             }
 
             if (state is BusTripLoaded) {
-              final filteredStudents = state.trip.students.where((student) {
+              final trip = state.trip;
+              final isTripActive = trip.tripStatus == 'in_progress' ||
+                  trip.tripStatus == 'awaiting_video' ||
+                  trip.tripStatus == 'awaiting_confirmation';
+              final filteredStudents = trip.students.where((student) {
                 final matchesSearch =
                     student.name.toLowerCase().contains(
                       _searchQuery.toLowerCase(),
@@ -232,7 +236,7 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                           ),
                         ),
                     actions: [
-                      if (!_isSelectionMode && state is BusTripLoaded && state.trip.tripStatus == 'in_progress' && isDriver)
+                      if (!_isSelectionMode && isTripActive && trip.tripStatus == 'in_progress' && isDriver)
                         IconButton(
                           icon: const Icon(Icons.stop_circle_outlined, color: Colors.redAccent),
                           onPressed: () => context.push(AppRoutes.driverEndTrip),
@@ -247,7 +251,7 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                           icon: const Icon(Icons.select_all_rounded),
                           onPressed: () {
                             setState(() {
-                              final allIds = state.trip.students.map((e) => e.id).toSet();
+                              final allIds = trip.students.map((e) => e.id).toSet();
                               if (_selectedStudentIds.length == allIds.length) {
                                 _selectedStudentIds.clear();
                                 _isSelectionMode = false;
@@ -262,9 +266,9 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                     stretch: true,
                   ),
                   SliverToBoxAdapter(
-                    child: _buildTripSummary(context, state.trip),
+                    child: _buildTripSummary(context, trip),
                   ),
-                  if (_isSelectionMode)
+                  if (_isSelectionMode && isTripActive)
                    SliverToBoxAdapter(
                      child: Padding(
                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
@@ -276,7 +280,7 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                                  if (_selectedStudentIds.isNotEmpty) {
                                    context.read<BusTripCubit>().groupBoard(
                                      _selectedStudentIds.toList(),
-                                     state.trip.suggestedDirection ?? 'to_school',
+                                     trip.suggestedDirection ?? 'to_school',
                                    );
                                    setState(() {
                                      _isSelectionMode = false;
@@ -301,7 +305,7 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                                  if (_selectedStudentIds.isNotEmpty) {
                                    context.read<BusTripCubit>().groupAlight(
                                      _selectedStudentIds.toList(),
-                                     state.trip.suggestedDirection ?? 'to_school',
+                                     trip.suggestedDirection ?? 'to_school',
                                    );
                                    setState(() {
                                      _isSelectionMode = false;
@@ -342,15 +346,25 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                           return _StudentCard(
                                 student: student,
                                 isSelected: isSelected,
-                                isSelectionMode: _isSelectionMode,
+                                isSelectionMode: _isSelectionMode && isTripActive,
+                                isTripActive: isTripActive,
                                 onLongPress: () {
+                                  if (!isTripActive) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('لا يمكن تعديل حالة الطلاب لعدم وجود رحلة نشطة حالياً.'),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   setState(() {
                                     _isSelectionMode = true;
                                     _selectedStudentIds.add(student.id);
                                   });
                                 },
                                 onTap: () {
-                                  if (_isSelectionMode) {
+                                  if (_isSelectionMode && isTripActive) {
                                     setState(() {
                                       if (isSelected) {
                                         _selectedStudentIds.remove(student.id);
@@ -602,6 +616,7 @@ class _StudentCard extends StatelessWidget {
   final bool isSelectionMode;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final bool isTripActive;
 
   const _StudentCard({
     required this.student,
@@ -610,6 +625,7 @@ class _StudentCard extends StatelessWidget {
     this.isSelectionMode = false,
     this.onTap,
     this.onLongPress,
+    required this.isTripActive,
   });
 
   @override
@@ -819,6 +835,16 @@ class _StudentCard extends StatelessWidget {
   }
 
   Widget _buildActionButton(BuildContext context) {
+    if (!isTripActive) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text(
+          student.status.labelAr,
+          style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+      );
+    }
+
     final l10n = AppLocalizations.of(context)!;
     final cubitState = context.read<BusTripCubit>().state;
     final direction = (cubitState is BusTripLoaded)
@@ -907,6 +933,9 @@ class _StudentCard extends StatelessWidget {
   }
 
   Widget _buildMoreButton(BuildContext context) {
+    if (!isTripActive) {
+      return const SizedBox.shrink();
+    }
     final l10n = AppLocalizations.of(context)!;
     final cubitState = context.read<BusTripCubit>().state;
     final direction = (cubitState is BusTripLoaded)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:ui';
 
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -14,14 +15,9 @@ import 'package:msaratwasel_services/features/teacher/students/presentation/cubi
 import 'package:msaratwasel_services/features/teacher/teacher/presentation/cubit/teacher_cubit.dart';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:msaratwasel_services/core/services/fcm_service.dart';
-import 'package:msaratwasel_services/core/services/location_service.dart';
 
 import 'dart:developer' as developer;
-import 'package:flutter/foundation.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class AppBlocObserver extends BlocObserver {
   @override
@@ -40,70 +36,75 @@ class AppBlocObserver extends BlocObserver {
   }
 }
 
-void main() async {
+Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = 'https://8adfbcae8fb55fae2f47c92b23a9d4a8@o4507028168212480.ingest.us.sentry.io/4507038161747968';
-      options.tracesSampleRate = 1.0;
-      options.attachScreenshot = true;
-      options.attachThreads = true;
-    },
-    appRunner: () async {
-      FlutterError.onError = (details) {
-        FlutterError.presentError(details);
-        developer.log(
-          'Flutter Error: ${details.exception}',
-          stackTrace: details.stack,
-        );
-        // Send report to Firebase Crashlytics & Sentry
-        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-        Sentry.captureException(details.exception, stackTrace: details.stack);
-      };
+  // Hide system UI (back/home/recents) after the app starts
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-      // Handle platform/asynchronous errors
-      PlatformDispatcher.instance.onError = (error, stack) {
-        developer.log('Unhandled Async Error: $error', stackTrace: stack);
-        // Send report to Firebase Crashlytics & Sentry
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        Sentry.captureException(error, stackTrace: stack);
-        return true; // Prevent app from crashing
-      };
+  // 1. Initialize Firebase first (Ensure notification services initialize AFTER Firebase)
+  try {
+    debugPrint('🚀 [Main] Initializing Firebase...');
+    await Firebase.initializeApp();
+    debugPrint('✅ [Main] Firebase Initialized');
+  } catch (e, stack) {
+    developer.log('Firebase Initialization Error: $e', stackTrace: stack);
+    debugPrint('❌ [Main] Firebase Initialization Error: $e');
+  }
 
-      Bloc.observer = AppBlocObserver();
+  // 2. Set up global Flutter error logging
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    developer.log(
+      'Flutter Error: ${details.exception}',
+      stackTrace: details.stack,
+    );
+  };
 
-      try {
-        debugPrint('🚀 [Main] Initializing Firebase...');
-        await Firebase.initializeApp();
-        debugPrint('✅ [Main] Firebase Initialized');
+  // 3. Set up Platform Dispatcher async error handling (Async Zone Protection)
+  PlatformDispatcher.instance.onError = (error, stack) {
+    developer.log('Unhandled Async Error: $error', stackTrace: stack);
+    return true; // Prevent app from crashing
+  };
 
-        // Initialize Controllers without blocking main
-        final themeController = ThemeController();
-        final settingsController = SettingsController();
+  Bloc.observer = AppBlocObserver();
 
-        debugPrint('🚀 [Main] Configuring Dependencies...');
-        await configureDependencies();
-        debugPrint('✅ [Main] Dependencies Configured');
+  // Initialize Controllers and dependencies
+  late final ThemeController themeController;
+  late final SettingsController settingsController;
+  try {
+    // Initialize Controllers without blocking main
+    themeController = ThemeController();
+    settingsController = SettingsController();
 
-        runApp(
-          MainApp(
-            themeController: themeController,
-            settingsController: settingsController,
-          ),
-        );
+    debugPrint('🚀 [Main] Configuring Dependencies...');
+    await configureDependencies();
+    debugPrint('✅ [Main] Dependencies Configured');
+  } catch (e, stack) {
+    developer.log('Dependency Configuration Error: $e', stackTrace: stack);
+    debugPrint('❌ [Main] Dependency Configuration Error: $e');
+  }
 
-        // ─── Post-startup Sequence ───
-        // We use a progressive sequence to avoid overwhelming the CPU/Memory
-        _runPostStartupTasks();
-        
-      } catch (e, stack) {
-        developer.log('Initialization Error: $e', stackTrace: stack);
-        debugPrint('❌ [Main] Critical Initialization Error: $e');
-        Sentry.captureException(e, stackTrace: stack);
-      }
-    },
-  );
+  // Helper function to run the application
+  void runApplication() {
+    runApp(
+      MainApp(
+        themeController: themeController,
+        settingsController: settingsController,
+      ),
+    );
+
+    // ─── Post-startup Sequence ───
+    _runPostStartupTasks();
+  }
+
+  // 4. Run the app
+  debugPrint('🚀 [Main] Calling runApp...');
+  runApplication();
+}
+
+void main() async {
+  await bootstrap();
 }
 
 void _runPostStartupTasks() async {

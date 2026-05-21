@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 
@@ -48,6 +49,7 @@ class _TripHistoryViewState extends State<TripHistoryView> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.trips),
+        leading: const CustomMenuButton(),
         actions: [
           IconButton(
             icon: const Icon(PhosphorIconsRegular.funnel),
@@ -259,6 +261,39 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
+String getLocalizedType(String type, String typeLabel, bool isArabic) {
+  if (isArabic) {
+    if (type == 'forth' || typeLabel == 'ذهاب' || typeLabel.toLowerCase() == 'go' || typeLabel.toLowerCase() == 'forth') {
+      return 'ذهاب';
+    } else {
+      return 'إياب';
+    }
+  } else {
+    if (type == 'forth' || typeLabel == 'ذهاب' || typeLabel.toLowerCase() == 'go' || typeLabel.toLowerCase() == 'forth') {
+      return 'Go';
+    } else {
+      return 'Return';
+    }
+  }
+}
+
+String getLocalizedRouteName(String? name, bool isArabic) {
+  if (name == null) {
+    return isArabic ? 'بدون مسار' : 'No Route';
+  }
+  if (isArabic) {
+    return name
+        .replaceAll(RegExp(r'Route\s+No\.?\s*', caseSensitive: false), 'المسار رقم ')
+        .replaceAll(RegExp(r'Route\s*', caseSensitive: false), 'مسار ')
+        .replaceAll(RegExp(r'No\.?\s*', caseSensitive: false), 'رقم ');
+  } else {
+    return name
+        .replaceAll('المسار رقم', 'Route No.')
+        .replaceAll('مسار رقم', 'Route No.')
+        .replaceAll('مسار', 'Route');
+  }
+}
+
 class _TripHistoryCard extends StatelessWidget {
   final TripHistoryModel trip;
 
@@ -267,129 +302,234 @@ class _TripHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final isCompleted = trip.status == 'completed' || trip.status == 'finished';
+    final statusColor = isCompleted ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
 
-    return InkWell(
-      onTap: () {
-        // TODO: Implement trip details navigation
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isArabic ? 'سيتم إضافة التفاصيل قريباً' : 'Details coming soon',
-            ),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: theme.colorScheme.outlineVariant),
+    final typeLabelText = getLocalizedType(trip.type, trip.typeLabel, isArabic);
+    final isGo = trip.type == 'forth' || trip.typeLabel == 'ذهاب' || trip.typeLabel.toLowerCase() == 'go' || trip.typeLabel.toLowerCase() == 'forth';
+    final typeColor = isGo ? const Color(0xFF2563EB) : const Color(0xFF8B5CF6);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            isDark ? const Color(0xFF1E293B) : Colors.white,
+            isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+          ],
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isArabic ? 'سيتم إضافة التفاصيل قريباً' : 'Details coming soon',
+                  ),
+                ),
+              );
+            },
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Side status indicator strip
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      isArabic ? trip.typeLabel : (trip.type == 'forth' || trip.typeLabel == 'ذهاب' ? 'Go' : 'Return'),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    width: 6,
+                    color: statusColor,
                   ),
-                  Text(
-                    trip.tripDate,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header: Type Badge & Date
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Type Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: typeColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: typeColor.withValues(alpha: 0.2),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isGo ? PhosphorIconsFill.student : PhosphorIconsFill.houseLine,
+                                      size: 14,
+                                      color: typeColor,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      typeLabelText,
+                                      style: theme.textTheme.labelMedium?.copyWith(
+                                        color: typeColor,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Date
+                              Row(
+                                children: [
+                                  Icon(
+                                    PhosphorIconsRegular.calendarBlank,
+                                    size: 14,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    trip.tripDate,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.outline,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          // Route Name
+                          Text(
+                            getLocalizedRouteName(trip.route?.name, isArabic),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: isDark ? Colors.white : const Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          // Students & Status Badge
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      PhosphorIconsRegular.users,
+                                      size: 14,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      "${trip.totalStudents} ${AppLocalizations.of(context)!.totalStudents}",
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Spacer(),
+                              _StatusBadge(status: trip.status),
+                            ],
+                          ),
+                          if (trip.departureTime != null || trip.arrivalTime != null) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            // Modern clean divider
+                            Divider(
+                              height: 1,
+                              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Row(
+                              children: [
+                                if (trip.departureTime != null)
+                                  Expanded(
+                                    child: _TimeInfo(
+                                      label: isArabic ? 'وقت الانطلاق' : 'Departure',
+                                      time: _formatTime(trip.departureTime!, isArabic),
+                                    ),
+                                  ),
+                                if (trip.departureTime != null && trip.arrivalTime != null)
+                                  const SizedBox(width: AppSpacing.md),
+                                if (trip.arrivalTime != null)
+                                  Expanded(
+                                    child: _TimeInfo(
+                                      label: isArabic ? 'وقت الوصول' : 'Arrival',
+                                      time: _formatTime(trip.arrivalTime!, isArabic),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                trip.route?.name != null
-                    ? (isArabic
-                        ? trip.route!.name
-                        : trip.route!.name
-                            .replaceAll('المسار رقم', 'Route No.')
-                            .replaceAll('مسار رقم', 'Route No.')
-                            .replaceAll('مسار', 'Route'))
-                    : (isArabic ? 'بدون مسار' : 'No Route'),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Icon(
-                    PhosphorIconsRegular.users,
-                    size: 16,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    "${trip.totalStudents} ${AppLocalizations.of(context)!.totalStudents}",
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  const Spacer(),
-                  _StatusBadge(status: trip.status),
-                ],
-              ),
-              if (trip.departureTime != null || trip.arrivalTime != null) ...[
-                const Divider(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    if (trip.departureTime != null)
-                      Expanded(
-                        child: _TimeInfo(
-                          label: isArabic ? 'وقت الانطلاق' : 'Departure',
-                          time: _formatTime(trip.departureTime!),
-                        ),
-                      ),
-                    if (trip.departureTime != null && trip.arrivalTime != null)
-                      const SizedBox(width: AppSpacing.md),
-                    if (trip.arrivalTime != null)
-                      Expanded(
-                        child: _TimeInfo(
-                          label: isArabic ? 'وقت الوصول' : 'Arrival',
-                          time: _formatTime(trip.arrivalTime!),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  String _formatTime(String timeStr) {
+  String _formatTime(String timeStr, bool isArabic) {
     try {
+      DateTime dateTime;
       if (timeStr.contains('T')) {
-        final dateTime = DateTime.parse(timeStr).toLocal();
-        return DateFormat('hh:mm a').format(dateTime);
+        dateTime = DateTime.parse(timeStr).toLocal();
+      } else {
+        final parts = timeStr.split(':');
+        final hours = int.parse(parts[0]);
+        final minutes = int.parse(parts[1]);
+        final now = DateTime.now();
+        dateTime = DateTime(now.year, now.month, now.day, hours, minutes);
       }
-      return timeStr;
+      final timeFormat = DateFormat('hh:mm');
+      final timeOnly = timeFormat.format(dateTime);
+      final amPm = DateFormat('a').format(dateTime); // "AM" or "PM"
+      if (isArabic) {
+        final amPmAr = amPm == 'AM' ? 'ص' : 'م';
+        return '$timeOnly $amPmAr';
+      } else {
+        return '$timeOnly $amPm';
+      }
     } catch (e) {
-      return timeStr;
+      String result = timeStr;
+      if (isArabic) {
+        result = result.replaceAll('PM', 'م').replaceAll('AM', 'ص');
+      }
+      return result;
     }
   }
 }
@@ -403,20 +543,36 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isCompleted = status == 'completed' || status == 'finished';
-    final color = isCompleted ? Colors.green : Colors.orange;
+    final color = isCompleted ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        isCompleted ? 'مكتملة' : 'قيد المعالجة',
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.bold,
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1,
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isCompleted ? PhosphorIconsFill.checkCircle : PhosphorIconsFill.clock,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isCompleted ? 'مكتملة' : 'قيد المعالجة',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -431,22 +587,47 @@ class _TimeInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.outline,
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            PhosphorIconsRegular.clock,
+            size: 16,
+            color: theme.colorScheme.primary,
           ),
-        ),
-        Text(
-          time,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.bold,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  time,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : const Color(0xFF1E293B),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

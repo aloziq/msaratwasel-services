@@ -4,7 +4,6 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
@@ -71,20 +70,7 @@ class ApiClient {
       ),
     );
 
-    // ── إضافة أداة طباعة وتتبع مفصلة للطلبات في بيئة التطوير ──
-    if (kDebugMode) {
-      dio.interceptors.add(
-        PrettyDioLogger(
-          requestHeader: true,
-          requestBody: true,
-          responseBody: true,
-          responseHeader: false,
-          error: true,
-          compact: true,
-          maxWidth: 90,
-        ),
-      );
-    }
+    // Dio Logger disabled (removed pretty_dio_logger)
 
     return dio;
   }
