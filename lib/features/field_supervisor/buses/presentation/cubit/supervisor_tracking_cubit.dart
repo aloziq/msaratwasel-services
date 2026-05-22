@@ -1,10 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:dio/dio.dart';
+import 'package:msaratwasel_services/config/app_config.dart';
 import 'package:msaratwasel_services/core/network/api_client.dart';
 import 'package:msaratwasel_services/core/services/reverb_service.dart';
 import 'package:msaratwasel_services/features/driver/route/domain/entities/student_stop.dart';
-import 'package:msaratwasel_services/features/driver/route/data/models/student_stop_model.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
@@ -68,9 +68,6 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
   final int busId;
   ReverbService? _reverbService;
   StreamSubscription? _locationSubscription;
-  
-  // Google Maps API Key from the driver app context
-  static const String _apiKey = "AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs";
 
   SupervisorTrackingCubit({required this.busId}) : super(SupervisorTrackingInitial());
 
@@ -235,7 +232,9 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
     LatLng? target;
     if (loaded.tripType == 'morning') {
       try {
-        final nextStop = stops.firstWhere((s) => !s.isBoarded && !s.isAbsent);
+        final nextStop = stops.firstWhere(
+          (s) => !s.isBoarded && !s.isAbsent && s.location.latitude != 0.0 && s.location.longitude != 0.0
+        );
         target = nextStop.location;
       } catch (_) {
         // All students boarded or absent, go to school
@@ -243,7 +242,9 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       }
     } else {
       try {
-        final nextStop = stops.firstWhere((s) => !s.isDroppedOff && !s.isAbsent);
+        final nextStop = stops.firstWhere(
+          (s) => !s.isDroppedOff && !s.isAbsent && s.location.latitude != 0.0 && s.location.longitude != 0.0
+        );
         target = nextStop.location;
       } catch (_) {
         // All students dropped off, target is null (trip finished) or school if needed
@@ -255,7 +256,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
 
     try {
       final dio = Dio(); // Use fresh Dio for external API
-      final url = "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${target.latitude},${target.longitude}&key=$_apiKey";
+      final url = "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${target.latitude},${target.longitude}&key=${AppConfig.googleMapsApiKey}";
       
       final response = await dio.get(url);
       print("🚦 [Route] Status: ${response.data['status']}");

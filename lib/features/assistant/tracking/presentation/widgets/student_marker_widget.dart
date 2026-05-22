@@ -6,12 +6,16 @@ class StudentMarkerWidget extends StatelessWidget {
     super.key,
     required this.name,
     this.imageUrl,
-    this.color = Colors.white,
+    required this.borderColor,
+    this.backgroundColor = Colors.white,
+    this.textColor = AppColors.primary,
   });
 
   final String name;
   final String? imageUrl;
-  final Color color;
+  final Color borderColor;
+  final Color backgroundColor;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -22,12 +26,12 @@ class StudentMarkerWidget extends StatelessWidget {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: color,
+            color: backgroundColor,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
+            border: Border.all(color: borderColor, width: 3),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: borderColor.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -38,7 +42,7 @@ class StudentMarkerWidget extends StatelessWidget {
         // Triangle Tail
         CustomPaint(
           size: const Size(12, 8),
-          painter: _TrianglePainter(color: color),
+          painter: _TrianglePainter(color: borderColor),
         ),
       ],
     );
@@ -58,11 +62,11 @@ class StudentMarkerWidget extends StatelessWidget {
   Widget _buildInitials() {
     return Container(
       alignment: Alignment.center,
-      color: Colors.white,
+      color: backgroundColor,
       child: Text(
         name.isNotEmpty ? name[0].toUpperCase() : '?',
-        style: const TextStyle(
-          color: AppColors.primary,
+        style: TextStyle(
+          color: textColor,
           fontWeight: FontWeight.bold,
           fontSize: 22,
         ),

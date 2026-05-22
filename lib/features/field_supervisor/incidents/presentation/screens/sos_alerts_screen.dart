@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/data/field_supervisor_remote_datasource.dart';
@@ -641,7 +642,7 @@ class _IncidentCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(
+                          DirectionalIcon(
                             Icons.arrow_right_alt_rounded,
                             size: 16,
                             color: _typeColor,

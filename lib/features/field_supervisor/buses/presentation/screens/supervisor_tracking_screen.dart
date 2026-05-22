@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:widget_to_marker/widget_to_marker.dart';
@@ -19,6 +20,7 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
   bool _followBus = true;
   bool _isProgrammaticMove = false;
   bool _isMapMode = true; // Switch between Map mode and Student List mode
+  bool _initialBoundsFitted = false;
   final Map<String, BitmapDescriptor> _customMarkers = {};
 
   @override
@@ -27,40 +29,46 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
   }
 
   Future<void> _loadCustomMarkers(SupervisorTrackingLoaded state) async {
-    final newMarkers = <String, BitmapDescriptor>{};
+    bool hasChanges = false;
 
     // 1. Load Bus Marker
-    try {
-      final busMarker = await const BusMarkerWidget().toBitmapDescriptor(
-        logicalSize: const Size(100, 100),
-        imageSize: const Size(200, 200),
-      );
-      newMarkers['bus'] = busMarker;
-    } catch (_) {}
+    if (!_customMarkers.containsKey('bus')) {
+      try {
+        final busMarker = await const BusMarkerWidget().toBitmapDescriptor(
+          logicalSize: const Size(100, 100),
+          imageSize: const Size(200, 200),
+        );
+        _customMarkers['bus'] = busMarker;
+        hasChanges = true;
+      } catch (_) {}
+    }
 
     // 2. Load Student Number Markers
     int stopNum = 1;
     for (var stop in state.stops) {
       if (stop.location.latitude == 0 || stop.location.longitude == 0) continue;
       final isBoarded = state.tripType == 'morning' ? stop.isBoarded : stop.isDroppedOff;
-      try {
-        final marker = await StudentNumberMarkerWidget(
-          index: stopNum,
-          isCompleted: isBoarded,
-        ).toBitmapDescriptor(
-          logicalSize: const Size(80, 100),
-          imageSize: const Size(160, 200),
-        );
-        newMarkers['student_${stop.id}'] = marker;
-        stopNum++;
-      } catch (_) {}
+      final cacheKey = 'student_${stop.id}_${isBoarded}_${stop.isAbsent}';
+
+      if (!_customMarkers.containsKey(cacheKey)) {
+        try {
+          final marker = await StudentNumberMarkerWidget(
+            index: stopNum,
+            isCompleted: isBoarded,
+            isAbsent: stop.isAbsent,
+          ).toBitmapDescriptor(
+            logicalSize: const Size(80, 100),
+            imageSize: const Size(160, 200),
+          );
+          _customMarkers[cacheKey] = marker;
+          hasChanges = true;
+        } catch (_) {}
+      }
+      stopNum++;
     }
 
-    if (mounted) {
-      setState(() {
-        _customMarkers.clear();
-        _customMarkers.addAll(newMarkers);
-      });
+    if (hasChanges && mounted) {
+      setState(() {});
     }
   }
 
@@ -76,8 +84,12 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
               if (_followBus && state.busPosition != null) {
                 _moveCamera(state.busPosition!);
               }
-              if (_customMarkers.isEmpty) {
-                _loadCustomMarkers(state);
+              _loadCustomMarkers(state);
+              if (!_initialBoundsFitted) {
+                _initialBoundsFitted = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _fitRouteBounds(state);
+                });
               }
             }
           },
@@ -167,24 +179,29 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 60,
                       left: 16,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.explore_outlined,
-                          color: Colors.redAccent,
-                          size: 24,
+                      child: GestureDetector(
+                        onTap: () {
+                          _fitRouteBounds(state);
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.explore_outlined,
+                            color: Colors.redAccent,
+                            size: 24,
+                          ),
                         ),
                       ),
                     ),
@@ -326,7 +343,7 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                                     ),
                                   ],
                                 ),
-                                child: const Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Colors.black87),
+                                child: const DirectionalIcon(Icons.arrow_forward_ios_rounded, size: 18, color: Colors.black87),
                               ),
                             ),
                           ],
@@ -340,7 +357,7 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                     Positioned.fill(
                       bottom: 180 + MediaQuery.of(context).padding.bottom,
                       child: Container(
-                        color: Colors.white,
+                        color: Colors.grey[50],
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -356,77 +373,147 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                               ),
                             ),
                             Expanded(
-                              child: ListView.separated(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              child: ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                                 itemCount: state.stops.length,
-                                separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey[100]),
                                 itemBuilder: (context, index) {
                                   final stop = state.stops[index];
                                   final isBoarded = state.tripType == 'morning' ? stop.isBoarded : stop.isDroppedOff;
 
                                   Color statusColor = const Color(0xFF1A73E8);
-                                  String statusText = 'انتظار';
+                                  String statusText = 'في الانتظار';
+                                  String subtitleText = 'في انتظار وصول الحافلة';
+                                  IconData statusIcon = Icons.access_time_rounded;
+
                                   if (stop.isAbsent) {
-                                    statusColor = const Color(0xFFF44336);
+                                    statusColor = const Color(0xFFEF4444);
                                     statusText = 'غائب';
+                                    subtitleText = 'تم تسجيل غياب الطالب اليوم';
+                                    statusIcon = Icons.cancel_outlined;
                                   } else if (isBoarded) {
-                                    statusColor = const Color(0xFF4CAF50);
+                                    statusColor = const Color(0xFF10B981);
                                     statusText = state.tripType == 'morning' ? 'تم الركوب' : 'تم النزول';
+                                    subtitleText = state.tripType == 'morning' ? 'صعد الطالب إلى الحافلة' : 'نزل الطالب بسلام';
+                                    statusIcon = Icons.check_circle_outline_rounded;
                                   }
 
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          backgroundColor: statusColor.withValues(alpha: 0.1),
-                                          child: Text(
-                                            '${index + 1}',
-                                            style: TextStyle(
-                                              color: statusColor,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                stop.nameAr,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                stop.isAbsent ? 'مسجل كغائب' : (isBoarded ? 'تم بنجاح' : 'في الانتظار حالياً'),
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: statusColor.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: Text(
-                                            statusText,
-                                            style: TextStyle(
-                                              color: statusColor,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.04),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
                                         ),
                                       ],
+                                      border: Border.all(
+                                        color: Colors.grey.shade100,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Stack(
+                                        children: [
+                                          // Right colored status indicator line
+                                          Positioned(
+                                            top: 0,
+                                            bottom: 0,
+                                            right: 0,
+                                            width: 5,
+                                            child: Container(color: statusColor),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(16, 16, 20, 16),
+                                            child: Row(
+                                              children: [
+                                                // Student Avatar with indicator border
+                                                _buildStudentAvatar(stop, index, statusColor),
+                                                const SizedBox(width: 16),
+                                                
+                                                // Student Info
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        stop.nameAr,
+                                                        style: const TextStyle(
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 15,
+                                                          color: Colors.black87,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.location_on_outlined,
+                                                            size: 14,
+                                                            color: Colors.grey[500],
+                                                          ),
+                                                          const SizedBox(width: 4),
+                                                          Expanded(
+                                                            child: Text(
+                                                              stop.parentAr.isNotEmpty ? 'ولي الأمر: ${stop.parentAr}' : 'المحطة #${index + 1}',
+                                                              style: TextStyle(
+                                                                color: Colors.grey[600],
+                                                                fontSize: 12,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow: TextOverflow.ellipsis,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 6),
+                                                      Text(
+                                                        subtitleText,
+                                                        style: TextStyle(
+                                                          color: statusColor,
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                
+                                                // Status Badge
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: statusColor.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        statusIcon,
+                                                        color: statusColor,
+                                                        size: 14,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        statusText,
+                                                        style: TextStyle(
+                                                          color: statusColor,
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 },
@@ -497,17 +584,22 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
       if (stop.location.latitude == 0 || stop.location.longitude == 0) continue;
 
       final isBoarded = state.tripType == 'morning' ? stop.isBoarded : stop.isDroppedOff;
+      final cacheKey = 'student_${stop.id}_${isBoarded}_${stop.isAbsent}';
       markers.add(
         Marker(
           markerId: MarkerId('student_${stop.id}'),
           position: stop.location,
-          icon: _customMarkers['student_${stop.id}'] ??
+          icon: _customMarkers[cacheKey] ??
               BitmapDescriptor.defaultMarkerWithHue(
-                isBoarded ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueAzure,
+                stop.isAbsent
+                    ? BitmapDescriptor.hueRed
+                    : (isBoarded ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueAzure),
               ),
           infoWindow: InfoWindow(
             title: stop.nameAr,
-            snippet: isBoarded ? 'تم التوصيل' : 'في انتظار التوصيل',
+            snippet: stop.isAbsent
+                ? 'غائب'
+                : (isBoarded ? 'تم التوصيل' : 'في انتظار التوصيل'),
           ),
         ),
       );
@@ -538,6 +630,93 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
     final controller = await _mapController.future;
     _isProgrammaticMove = true;
     controller.animateCamera(CameraUpdate.newLatLng(position));
+  }
+
+  Future<void> _fitRouteBounds(SupervisorTrackingLoaded state) async {
+    final controller = await _mapController.future;
+    final List<LatLng> points = [];
+    
+    if (state.busPosition != null && state.busPosition!.latitude != 0.0) {
+      points.add(state.busPosition!);
+    }
+    if (state.schoolPosition != null && state.schoolPosition!.latitude != 0.0) {
+      points.add(state.schoolPosition!);
+    }
+    for (var stop in state.stops) {
+      if (stop.location.latitude != 0.0 && stop.location.longitude != 0.0) {
+        points.add(stop.location);
+      }
+    }
+
+    if (points.isEmpty) return;
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (var p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+
+    _isProgrammaticMove = true;
+    setState(() {
+      _followBus = false;
+    });
+    controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+  }
+
+  Widget _buildStudentAvatar(StudentStop stop, int index, Color statusColor) {
+    if (stop.photoUrl != null && stop.photoUrl!.isNotEmpty) {
+      return Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: statusColor, width: 2),
+          image: DecorationImage(
+            image: NetworkImage(stop.photoUrl!),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+
+    final initial = stop.nameAr.isNotEmpty ? stop.nameAr.trim().split(' ').last.substring(0, 1) : '${index + 1}';
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: statusColor, width: 2),
+        gradient: LinearGradient(
+          colors: [
+            statusColor.withValues(alpha: 0.8),
+            statusColor,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -637,50 +816,52 @@ class TriangleClipper extends CustomClipper<Path> {
 class StudentNumberMarkerWidget extends StatelessWidget {
   final int index;
   final bool isCompleted;
+  final bool isAbsent;
 
   const StudentNumberMarkerWidget({
     super.key,
     required this.index,
     required this.isCompleted,
+    this.isAbsent = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    Color pinColor = const Color(0xFF1A73E8); // Google Blue for waiting
+    IconData centerIcon = Icons.home_filled;
+    Color centerIconColor = const Color(0xFF1A73E8);
+
+    if (isAbsent) {
+      pinColor = const Color(0xFFEF4444); // Red for absent
+      centerIcon = Icons.cancel_rounded;
+      centerIconColor = const Color(0xFFEF4444);
+    } else if (isCompleted) {
+      pinColor = const Color(0xFF10B981); // Green for completed
+      centerIcon = Icons.check_circle_rounded;
+      centerIconColor = const Color(0xFF10B981);
+    }
+
     return SizedBox(
       width: 80,
       height: 100,
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // Pin Icon
           Positioned(
             bottom: 10,
             child: Icon(
               Icons.location_on,
               size: 70,
-              color: isCompleted ? const Color(0xFF4CAF50) : const Color(0xFF1A73E8),
+              color: pinColor,
             ),
           ),
+          // White Circle holding the icon status
           Positioned(
             top: 15,
             child: Container(
               width: 38,
               height: 38,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.home_filled,
-                size: 20,
-                color: Color(0xFF1A73E8),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 5,
-            right: 5,
-            child: Container(
-              padding: const EdgeInsets.all(4),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -692,10 +873,35 @@ class StudentNumberMarkerWidget extends StatelessWidget {
                   ),
                 ],
               ),
+              child: Icon(
+                centerIcon,
+                size: 24,
+                color: centerIconColor,
+              ),
+            ),
+          ),
+          // Small Floating stop index badge
+          Positioned(
+            top: 5,
+            right: 5,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: pinColor,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Text(
                 '$index',
                 style: const TextStyle(
-                  color: Color(0xFF1A73E8),
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 10,
                 ),
@@ -858,7 +1064,7 @@ class _BottomTrackingInfo extends StatelessWidget {
                   flex: 2,
                   child: _buildStatItem(
                     icon: Icons.group_rounded,
-                    iconColor: const Color(0xFF4CAF50),
+                    iconColor: const Color(0xFF1A73E8), // Blue for remaining
                     label: 'المتبقي',
                     value: '$remainingCount',
                   ),
@@ -868,7 +1074,7 @@ class _BottomTrackingInfo extends StatelessWidget {
                   flex: 2,
                   child: _buildStatItem(
                     icon: Icons.directions_bus_rounded,
-                    iconColor: const Color(0xFF1A73E8),
+                    iconColor: const Color(0xFF10B981), // Green for completed/in bus
                     label: 'في الحافلة',
                     value: '$boardedCount',
                   ),
@@ -878,7 +1084,7 @@ class _BottomTrackingInfo extends StatelessWidget {
                   flex: 2,
                   child: _buildStatItem(
                     icon: Icons.notifications_off_rounded,
-                    iconColor: const Color(0xFFF44336),
+                    iconColor: const Color(0xFFEF4444), // Red for absent
                     label: 'الغياب',
                     value: '$absentCount',
                   ),

@@ -49,6 +49,8 @@ class AssistantRepositoryImpl implements AssistantRepository {
             suggestedDirection: busData['suggested_direction']?.toString(),
             suggestedTripType: (busData['trip_type']?.toString() == 'afternoon' || busData['trip_type']?.toString() == 'back') ? 'to_home' : 'to_school',
             tripStatus: busData['trip_status']?.toString(),
+            schoolLatitude: double.tryParse(busData['school_lat']?.toString() ?? ''),
+            schoolLongitude: double.tryParse(busData['school_lng']?.toString() ?? ''),
           ),
         );
       }

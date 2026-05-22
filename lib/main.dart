@@ -171,6 +171,7 @@ class _MainAppState extends State<MainApp> {
               final themeController = ThemeProvider.of(context);
               final settingsController = SettingsProvider.of(context);
               return MaterialApp.router(
+                key: ValueKey(settingsController.locale?.languageCode ?? 'system'),
                 title: 'Msarat Wasel Services',
                 theme: AppTheme.light,
                 darkTheme: AppTheme.dark,

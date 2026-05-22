@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -423,7 +424,7 @@ class _ReportTile extends StatelessWidget {
             color: isDark ? Colors.white54 : AppColors.textSecondary,
           ),
         ),
-        trailing: Icon(
+        trailing: DirectionalIcon(
           Icons.arrow_forward_ios,
           size: 16,
           color: isDark ? Colors.white54 : AppColors.textSecondary,

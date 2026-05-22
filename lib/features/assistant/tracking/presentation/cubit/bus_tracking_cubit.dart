@@ -142,6 +142,13 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
     }
   }
 
+  void updateStudents(List<BusStudentEntity> newStudents) {
+    if (state is BusTrackingLoaded) {
+      final currentState = state as BusTrackingLoaded;
+      emit(BusTrackingLoaded(currentState.position, newStudents));
+    }
+  }
+
   @override
   Future<void> close() {
     _reverbService?.dispose();

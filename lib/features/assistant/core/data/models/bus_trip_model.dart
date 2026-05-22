@@ -17,6 +17,8 @@ class BusTripModel extends BusTripEntity {
     super.suggestedDirection,
     super.suggestedTripType,
     super.tripStatus,
+    super.schoolLatitude,
+    super.schoolLongitude,
   });
 
   factory BusTripModel.fromJson(Map<String, dynamic> json) {
@@ -40,6 +42,8 @@ class BusTripModel extends BusTripEntity {
       suggestedDirection: json['suggested_direction'] as String?,
       suggestedTripType: json['trip_type'] as String?,
       tripStatus: json['trip_status'] as String?,
+      schoolLatitude: double.tryParse(json['schoolLatitude']?.toString() ?? json['school_lat']?.toString() ?? ''),
+      schoolLongitude: double.tryParse(json['schoolLongitude']?.toString() ?? json['school_lng']?.toString() ?? ''),
     );
   }
 
@@ -69,6 +73,8 @@ class BusTripModel extends BusTripEntity {
       'startTime': startTime.toIso8601String(),
       'endTime': endTime?.toIso8601String(),
       'isCompleted': isCompleted,
+      'schoolLatitude': schoolLatitude,
+      'schoolLongitude': schoolLongitude,
     };
   }
 }

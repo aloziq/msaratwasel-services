@@ -35,11 +35,17 @@ class RouteRepositoryImpl implements RouteRepository {
   @override
   Future<List<StudentStop>> getTripStops() async {
     try {
-      // 1. Get current user to find bus_id
-      final userResponse = await _dio.get('auth/user');
-      final data = userResponse.data['data'] ?? userResponse.data['user'];
-      final busId = data['has_bus'] ?? data['bus_id'];
+      // 1. Get current user to find bus_id (use cached value if available)
+      if (_cachedBusId == null) {
+        final userResponse = await _dio.get('auth/user');
+        final data = userResponse.data['data'] ?? userResponse.data['user'];
+        final busId = data['has_bus'] ?? data['bus_id'];
+        if (busId != null) {
+          _cachedBusId = int.tryParse(busId.toString());
+        }
+      }
 
+      final busId = _cachedBusId;
       if (busId == null) {
         throw Exception('لا يوجد باص مخصص لهذا الحساب');
       }

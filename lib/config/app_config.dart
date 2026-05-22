@@ -2,7 +2,7 @@ import '../core/network/api_config.dart';
 
 class AppConfig {
   static const String googleMapsApiKey =
-      'AIzaSyAbfF78GQP30cJOgdSDnc_vM77oXWZSBQM';
+      'AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs';
   static const String apiBaseUrl =
       'https://masaratwasal.com/api/'; // Legacy, use ApiConfig.baseUrl instead
 
