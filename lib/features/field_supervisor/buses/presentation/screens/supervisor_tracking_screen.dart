@@ -97,14 +97,141 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
             if (state is SupervisorTrackingLoading) {
               return const Center(child: CircularProgressIndicator());
             }
+
             if (state is SupervisorTrackingError) {
-              return Center(child: Text(state.message));
+              return Scaffold(
+                backgroundColor: Colors.grey[50],
+                body: SafeArea(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.06),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade50,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.orange.shade800,
+                                size: 56,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'تنبيه الصلاحية والمتابعة',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                                fontFamily: 'Outfit',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              state.message,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 32),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1A73E8),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      context.read<SupervisorTrackingCubit>().init();
+                                    },
+                                    child: const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.refresh_rounded, size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'إعادة المحاولة',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.black87,
+                                      side: BorderSide(color: Colors.grey.shade300),
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.arrow_back, size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'رجوع',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
             }
+
             if (state is SupervisorTrackingLoaded) {
               final markers = _getMarkers(state);
               final polylines = _getPolylines(state);
 
-              // Next Stop Name and ETA
               String nextStopName = '';
               if (state.tripType == 'morning') {
                 try {
@@ -174,10 +301,73 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                       ),
                     ),
 
+                  // 2b. Beautiful Floating Warning Alert (when there's no active trip)
+                  if (!state.hasActiveTrip && _isMapMode)
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 60,
+                      left: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3CD), // Soft Amber background
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFFFEBAA), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFE8A1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Color(0xFF856404), // Dark Amber
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'لا توجد رحلة نشطة حالياً لهذا الباص',
+                                    style: TextStyle(
+                                      color: Color(0xFF856404),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'الموقع المعروض هو آخر موقع تم تسجيله للحافلة.',
+                                    style: TextStyle(
+                                      color: Color(0xFF856404),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
                   // 3. Floating Compass (Top Left, Map Mode only)
                   if (_isMapMode)
                     Positioned(
-                      top: MediaQuery.of(context).padding.top + 60,
+                      top: MediaQuery.of(context).padding.top + (state.hasActiveTrip ? 60 : 145),
                       left: 16,
                       child: GestureDetector(
                         onTap: () {
@@ -209,7 +399,7 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                   // 4. Floating Center Location (Top Right, Map Mode only)
                   if (_isMapMode)
                     Positioned(
-                      top: MediaQuery.of(context).padding.top + 60,
+                      top: MediaQuery.of(context).padding.top + (state.hasActiveTrip ? 60 : 145),
                       right: 16,
                       child: GestureDetector(
                         onTap: () {

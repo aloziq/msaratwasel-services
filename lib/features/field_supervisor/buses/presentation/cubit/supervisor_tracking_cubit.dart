@@ -24,6 +24,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
   final double heading;
   final String busNumber;
   final List<LatLng> polylinePoints;
+  final bool hasActiveTrip;
 
   SupervisorTrackingLoaded({
     required this.stops,
@@ -34,6 +35,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
     this.heading = 0,
     required this.busNumber,
     this.polylinePoints = const [],
+    this.hasActiveTrip = true,
   });
 
   SupervisorTrackingLoaded copyWith({
@@ -45,6 +47,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
     double? heading,
     String? busNumber,
     List<LatLng>? polylinePoints,
+    bool? hasActiveTrip,
   }) {
     return SupervisorTrackingLoaded(
       stops: stops ?? this.stops,
@@ -55,6 +58,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
       heading: heading ?? this.heading,
       busNumber: busNumber ?? this.busNumber,
       polylinePoints: polylinePoints ?? this.polylinePoints,
+      hasActiveTrip: hasActiveTrip ?? this.hasActiveTrip,
     );
   }
 }
@@ -87,6 +91,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       final String rawTripType = busInfo['trip_type'] ?? 'morning';
       final String tripType = (rawTripType == 'forth' || rawTripType == 'morning') ? 'morning' : 'afternoon';
       final String busNumber = busInfo['bus_number'] ?? '#$busId';
+      final bool hasActiveTrip = busInfo['has_active_trip'] == true;
       
       final List passengersJson = response.data['passengers'] ?? [];
       final stops = passengersJson.map((json) {
@@ -166,6 +171,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
         speed: speed,
         heading: heading,
         busNumber: busNumber,
+        hasActiveTrip: hasActiveTrip,
       ));
 
       // 3. Calculate initial route
@@ -175,7 +181,17 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       _initReverb();
       
     } catch (e) {
-      emit(SupervisorTrackingError(e.toString()));
+      String errMsg = 'تأكد من اتصالك بالإنترنت';
+      if (e is DioException) {
+        if (e.response != null && e.response!.data != null) {
+          errMsg = e.response!.data['message'] ?? e.response!.data['error'] ?? 'حدث خطأ أثناء تحميل البيانات';
+        } else {
+          errMsg = 'فشل الاتصال بالخادم (رمز الخطأ: ${e.response?.statusCode ?? 'غير معروف'})';
+        }
+      } else {
+        errMsg = e.toString();
+      }
+      emit(SupervisorTrackingError(errMsg));
     }
   }
 
