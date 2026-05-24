@@ -233,19 +233,38 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
               final polylines = _getPolylines(state);
 
               String nextStopName = '';
-              if (state.tripType == 'morning') {
+              final target = state.targetPosition;
+              if (target != null && target.latitude != 0.0 && target.longitude != 0.0) {
                 try {
-                  final nextStop = state.stops.firstWhere((s) => !s.isBoarded && !s.isAbsent);
-                  nextStopName = nextStop.nameAr;
+                  final matchedStop = state.stops.firstWhere(
+                    (s) => (s.location.latitude - target.latitude).abs() < 0.0001 &&
+                           (s.location.longitude - target.longitude).abs() < 0.0001
+                  );
+                  nextStopName = matchedStop.nameAr;
                 } catch (_) {
-                  nextStopName = 'المدرسة';
+                  if (state.schoolPosition != null &&
+                      (state.schoolPosition!.latitude - target.latitude).abs() < 0.0001 &&
+                      (state.schoolPosition!.longitude - target.longitude).abs() < 0.0001) {
+                    nextStopName = 'المدرسة';
+                  } else {
+                    nextStopName = 'الوجهة المحددة';
+                  }
                 }
               } else {
-                try {
-                  final nextStop = state.stops.firstWhere((s) => !s.isDroppedOff && !s.isAbsent);
-                  nextStopName = nextStop.nameAr;
-                } catch (_) {
-                  nextStopName = 'المستودع/المنزل';
+                if (state.tripType == 'morning') {
+                  try {
+                    final nextStop = state.stops.firstWhere((s) => !s.isBoarded && !s.isAbsent);
+                    nextStopName = nextStop.nameAr;
+                  } catch (_) {
+                    nextStopName = 'المدرسة';
+                  }
+                } else {
+                  try {
+                    final nextStop = state.stops.firstWhere((s) => !s.isDroppedOff && !s.isAbsent);
+                    nextStopName = nextStop.nameAr;
+                  } catch (_) {
+                    nextStopName = 'المستودع/المنزل';
+                  }
                 }
               }
 

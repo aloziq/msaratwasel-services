@@ -18,6 +18,8 @@ abstract class RouteRepository {
     double? heading,
     double? speed,
     double? accuracy,
+    double? targetLat,
+    double? targetLng,
   });
   Future<void> arriveAtSchool();
   int getOnBoardCount(List<StudentStop> stops);

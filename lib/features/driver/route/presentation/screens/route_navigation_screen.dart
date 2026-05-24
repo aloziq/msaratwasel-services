@@ -72,6 +72,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   Timer? _locationTimer;
   LatLng? _currentPosition;
   List<LatLng> _activeRoutePoints = []; // Road-following points
+  final Map<String, List<LatLng>> _cachedRoutesToTarget = {}; // Cache for routes
   double? _remainingDistanceKm;
   int? _remainingTimeMin;
 
@@ -273,6 +274,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         speed: position.speed,
         accuracy: position.accuracy,
         heading: position.heading,
+        targetLat: _currentTarget?.latitude,
+        targetLng: _currentTarget?.longitude,
       );
 
       if (distance > 15 || _activeRoutePoints.isEmpty) {
@@ -313,32 +316,50 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       return;
     }
 
-    final originStr = "${_currentPosition!.longitude},${_currentPosition!.latitude}";
-    final destStr = "${target.longitude},${target.latitude}";
+    final originStr = "${_currentPosition!.latitude},${_currentPosition!.longitude}";
+    final destStr = "${target.latitude},${target.longitude}";
+    final cacheKey = destStr;
 
-    debugPrint("🚀 [Navigation] Requesting OSRM Directions: $originStr -> $destStr");
+    // Fast transition: If we have a cached route to this destination, show it immediately 
+    // while we fetch the updated one in the background.
+    if (_activeRoutePoints.isEmpty && _cachedRoutesToTarget.containsKey(cacheKey)) {
+      if (mounted) {
+        setState(() {
+          _activeRoutePoints = _cachedRoutesToTarget[cacheKey]!;
+        });
+        _updatePolylines();
+      }
+    }
+
+    debugPrint("🚀 [Navigation] Requesting Google Directions: $originStr -> $destStr");
 
     try {
       final url = Uri.parse(
-        "https://router.project-osrm.org/route/v1/driving/$originStr;$destStr?overview=full&geometries=polyline",
+        "https://maps.googleapis.com/maps/api/directions/json?origin=$originStr&destination=$destStr&key=${AppConfig.googleMapsApiKey}&mode=driving",
       );
       final response = await http.get(url).timeout(const Duration(seconds: 8));
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint("DEBUG: OSRM API Status: ${data['code']}");
+        debugPrint("DEBUG: Google Directions API Status: ${data['status']}");
         
-        if (data['code'] == 'Ok' && data['routes'].isNotEmpty) {
+        if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
           final route = data['routes'][0];
-          final points = PolylinePoints.decodePolyline(route['geometry']);
+          final leg = route['legs'][0];
+          final points = PolylinePoints.decodePolyline(
+            route['overview_polyline']['points'],
+          );
           
-          debugPrint("✅ [Navigation] OSRM route decoded: ${points.length} points");
+          debugPrint("✅ [Navigation] Google route decoded: ${points.length} points");
 
           if (mounted) {
             setState(() {
               _activeRoutePoints = points.map((p) => LatLng(p.latitude, p.longitude)).toList();
-              final distInKm = (route['distance'] as num) / 1000;
-              final durInMin = (route['duration'] as num) / 60;
+              // Save to cache for instant loading next time
+              _cachedRoutesToTarget[cacheKey] = _activeRoutePoints;
+              
+              final distInKm = (leg['distance']['value'] as num) / 1000;
+              final durInMin = (leg['duration']['value'] as num) / 60;
               _remainingDistanceKm = distInKm;
               _remainingTimeMin = durInMin.ceil();
               _lastRouteFetchTime = now;
@@ -350,8 +371,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         }
       }
       
-      // Fallback if OSRM fails
-      debugPrint("❌ [Navigation] OSRM failed. Using straight line fallback.");
+      // Fallback if Google fails
+      debugPrint("❌ [Navigation] Google Directions failed. Using straight line fallback.");
       if (mounted) {
         setState(() {
           _activeRoutePoints = []; // Use straight dotted line
@@ -362,7 +383,12 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       }
     } catch (e) {
       debugPrint("❌ [Navigation] Directions Exception/Timeout: $e");
-      _updatePolylines();
+      if (mounted) {
+        setState(() {
+          _activeRoutePoints = []; // Clear old route points so fallback dotted line to target is drawn
+        });
+        _updatePolylines();
+      }
     }
   }
 
@@ -625,8 +651,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         Polyline(
           polylineId: const PolylineId('route_line'),
           points: _activeRoutePoints,
-          color: Colors.blue[700]!,
-          width: 7,
+          color: const Color(0xFF1A73E8), // Vibrant blue matching parent app
+          width: 6,
           jointType: JointType.round,
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
@@ -638,7 +664,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         Polyline(
           polylineId: const PolylineId('route_line'),
           points: [LatLng(_currentPosition!.latitude, _currentPosition!.longitude), target],
-          color: Colors.blue.withValues(alpha: 0.8),
+          color: const Color(0xFF1A73E8), // Vibrant blue matching parent app
           width: 6,
           jointType: JointType.round,
           patterns: [PatternItem.dash(20), PatternItem.gap(10)], // Dotted line for fallback
@@ -845,9 +871,14 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               label: isArabic ? 'تحديث' : 'Refresh',
               textColor: Colors.white,
               onPressed: () async {
-                try {
-                  await _fetchRouteData(silent: true);
-                } catch (_) {}
+                setState(() {
+                  _hasNotified = false;
+                  _isMovingToStop = false;
+                  _isArrived = false;
+                  _isActionLoading = false;
+                });
+                _sortPendingStopsByDistance();
+                _fetchRoadFollowingRoute();
               },
             ),
           ),
@@ -867,9 +898,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           setState(() {
             _hasNotified = false;
             _isMovingToStop = false;
-            _activeRoutePoints = [];
             _isArrived = false;
             _isActionLoading = false;
+            // DO NOT clear _activeRoutePoints here to prevent flickering. 
+            // It will be replaced by the cached route or new route instantly.
           });
           _sortPendingStopsByDistance();
           _fetchRoadFollowingRoute();
@@ -897,7 +929,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         if (!_hasDepartedSchool) {
           setState(() {
             _hasDepartedSchool = true;
-            _activeRoutePoints = [];
             _isActionLoading = false;
           });
           _sortPendingStopsByDistance();
@@ -916,8 +947,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           setState(() {
             _hasNotified = false;
             _isMovingToStop = false;
-            _activeRoutePoints = [];
             _isActionLoading = false;
+            // Kept active points to prevent flickering while fetching
           });
           await _fetchRouteData(silent: true);
           // Check if all students are now dropped off — if so, end the trip

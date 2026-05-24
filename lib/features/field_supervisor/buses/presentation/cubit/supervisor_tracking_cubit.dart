@@ -19,6 +19,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
   final List<StudentStop> stops;
   final LatLng? busPosition;
   final LatLng? schoolPosition;
+  final LatLng? targetPosition;
   final String tripType;
   final double speed;
   final double heading;
@@ -30,6 +31,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
     required this.stops,
     this.busPosition,
     this.schoolPosition,
+    this.targetPosition,
     required this.tripType,
     this.speed = 0,
     this.heading = 0,
@@ -42,6 +44,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
     List<StudentStop>? stops,
     LatLng? busPosition,
     LatLng? schoolPosition,
+    LatLng? targetPosition,
     String? tripType,
     double? speed,
     double? heading,
@@ -53,6 +56,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
       stops: stops ?? this.stops,
       busPosition: busPosition ?? this.busPosition,
       schoolPosition: schoolPosition ?? this.schoolPosition,
+      targetPosition: targetPosition ?? this.targetPosition,
       tripType: tripType ?? this.tripType,
       speed: speed ?? this.speed,
       heading: heading ?? this.heading,
@@ -145,6 +149,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       // 2. Fetch current bus location
       final locResponse = await dio.get('bus/$busId/location');
       LatLng? currentBusPos;
+      LatLng? targetPos;
       double speed = 0;
       double heading = 0;
       
@@ -158,6 +163,13 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
           speed = double.tryParse(locData['speed_kmh']?.toString() ?? '0') ?? 0;
           heading = double.tryParse(locData['heading']?.toString() ?? '0') ?? 0;
         }
+        if (locData['target_lat'] != null && locData['target_lng'] != null) {
+          final tLat = double.tryParse(locData['target_lat'].toString());
+          final tLng = double.tryParse(locData['target_lng'].toString());
+          if (tLat != null && tLng != null && tLat != 0.0 && tLng != 0.0) {
+            targetPos = LatLng(tLat, tLng);
+          }
+        }
       }
 
       // If bus location is missing, use school location as fallback to avoid "the sea"
@@ -167,6 +179,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
         stops: stops,
         busPosition: currentBusPos,
         schoolPosition: schoolPos,
+        targetPosition: targetPos,
         tripType: tripType,
         speed: speed,
         heading: heading,
@@ -211,11 +224,18 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
             final lng = double.tryParse(data['longitude']?.toString() ?? '');
             final speed = double.tryParse(data['speed_kmh']?.toString() ?? '0') ?? 0;
             final heading = double.tryParse(data['heading']?.toString() ?? '0') ?? 0;
+            final targetLat = double.tryParse(data['target_lat']?.toString() ?? '');
+            final targetLng = double.tryParse(data['target_lng']?.toString() ?? '');
 
             if (lat != null && lng != null) {
               final newPos = LatLng(lat, lng);
+              LatLng? newTargetPos;
+              if (targetLat != null && targetLng != null && targetLat != 0.0 && targetLng != 0.0) {
+                newTargetPos = LatLng(targetLat, targetLng);
+              }
               emit(loaded.copyWith(
                 busPosition: newPos,
+                targetPosition: newTargetPos,
                 speed: speed,
                 heading: heading,
               ));
@@ -244,27 +264,29 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
     
     if (origin == null) return;
 
-    // Determine target based on trip type and progress
-    LatLng? target;
-    if (loaded.tripType == 'morning') {
-      try {
-        final nextStop = stops.firstWhere(
-          (s) => !s.isBoarded && !s.isAbsent && s.location.latitude != 0.0 && s.location.longitude != 0.0
-        );
-        target = nextStop.location;
-      } catch (_) {
-        // All students boarded or absent, go to school
-        target = school;
-      }
-    } else {
-      try {
-        final nextStop = stops.firstWhere(
-          (s) => !s.isDroppedOff && !s.isAbsent && s.location.latitude != 0.0 && s.location.longitude != 0.0
-        );
-        target = nextStop.location;
-      } catch (_) {
-        // All students dropped off, target is null (trip finished) or school if needed
-        target = null;
+    // Determine target based on backend if available, otherwise fall back to client-side logic
+    LatLng? target = loaded.targetPosition;
+    if (target == null || (target.latitude == 0.0 && target.longitude == 0.0)) {
+      if (loaded.tripType == 'morning') {
+        try {
+          final nextStop = stops.firstWhere(
+            (s) => !s.isBoarded && !s.isAbsent && s.location.latitude != 0.0 && s.location.longitude != 0.0
+          );
+          target = nextStop.location;
+        } catch (_) {
+          // All students boarded or absent, go to school
+          target = school;
+        }
+      } else {
+        try {
+          final nextStop = stops.firstWhere(
+            (s) => !s.isDroppedOff && !s.isAbsent && s.location.latitude != 0.0 && s.location.longitude != 0.0
+          );
+          target = nextStop.location;
+        } catch (_) {
+          // All students dropped off, target is null (trip finished) or school if needed
+          target = null;
+        }
       }
     }
 

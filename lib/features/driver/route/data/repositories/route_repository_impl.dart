@@ -274,6 +274,8 @@ class RouteRepositoryImpl implements RouteRepository {
     double? heading,
     double? speed,
     double? accuracy,
+    double? targetLat,
+    double? targetLng,
   }) async {
     try {
       if (_cachedBusId == null) {
@@ -298,6 +300,8 @@ class RouteRepositoryImpl implements RouteRepository {
             'heading': heading ?? 0.0,
             'speed': speed ?? 0.0,
             'accuracy': accuracy ?? 0.0,
+            if (targetLat != null) 'target_lat': targetLat,
+            if (targetLng != null) 'target_lng': targetLng,
             'timestamp': timestamp,
             'sequence_number': DateTime.now().millisecondsSinceEpoch,
           },
