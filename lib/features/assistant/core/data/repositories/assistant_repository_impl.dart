@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../../core/network/api_client.dart';
@@ -78,6 +79,18 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
       return Left(response.data['message'] ?? 'فشل تأكيد الرحلة');
     } catch (e) {
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data != null) {
+          String errorBody = data.toString();
+          // Extract the title tag if it's an HTML response
+          final titleMatch = RegExp(r'<title>(.*?)</title>', caseSensitive: false, dotAll: true).firstMatch(errorBody);
+          if (titleMatch != null && titleMatch.groupCount >= 1) {
+             return Left('خطأ 500: ${titleMatch.group(1).trim()}');
+          }
+          return Left('خطأ 500 من السيرفر: ${errorBody.length > 150 ? errorBody.substring(0, 150) : errorBody}');
+        }
+      }
       return Left('خطأ في الاتصال: $e');
     }
   }

@@ -97,14 +97,22 @@ void onStart(ServiceInstance service) async {
     }
 
     final repository = RouteRepositoryImpl();
+    DateTime? lastEmitTime;
 
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
+        distanceFilter: 15,
       ),
     ).listen((Position position) async {
       try {
+        final now = DateTime.now();
+        // Throttler: Do not emit more frequently than every 3 seconds
+        if (lastEmitTime != null && now.difference(lastEmitTime!).inSeconds < 3) {
+          return;
+        }
+        lastEmitTime = now;
+
         await repository.updateLocation(
           latitude: position.latitude,
           longitude: position.longitude,

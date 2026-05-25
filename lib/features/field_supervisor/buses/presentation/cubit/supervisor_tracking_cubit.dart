@@ -76,11 +76,14 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
   final int busId;
   ReverbService? _reverbService;
   StreamSubscription? _locationSubscription;
+  Timer? _pollingTimer;
 
   SupervisorTrackingCubit({required this.busId}) : super(SupervisorTrackingInitial());
 
-  Future<void> init() async {
-    emit(SupervisorTrackingLoading());
+  Future<void> init({bool silent = false}) async {
+    if (!silent) {
+      emit(SupervisorTrackingLoading());
+    }
     try {
       final dio = ApiClient.instance;
       
@@ -193,6 +196,9 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       // 4. Connect to Reverb for real-time updates
       _initReverb();
       
+      // 5. Start background periodic polling as fallback
+      _startPolling();
+      
     } catch (e) {
       String errMsg = 'تأكد من اتصالك بالإنترنت';
       if (e is DioException) {
@@ -204,8 +210,19 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       } else {
         errMsg = e.toString();
       }
-      emit(SupervisorTrackingError(errMsg));
+      if (!silent) {
+        emit(SupervisorTrackingError(errMsg));
+      }
     }
+  }
+
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (!isClosed) {
+        init(silent: true);
+      }
+    });
   }
 
   void _initReverb() {
@@ -217,15 +234,20 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       userId: userId,
       dio: ApiClient.instance,
       onMessageReceived: (data) {
-        if (data.containsKey('latitude') && data.containsKey('longitude')) {
+        // Extract the actual payload from the wrapper 'data' field if it exists
+        final eventData = data.containsKey('data') && data['data'] is Map
+            ? data['data'] as Map
+            : data;
+
+        if (eventData.containsKey('latitude') && eventData.containsKey('longitude')) {
           if (state is SupervisorTrackingLoaded) {
             final loaded = state as SupervisorTrackingLoaded;
-            final lat = double.tryParse(data['latitude']?.toString() ?? '');
-            final lng = double.tryParse(data['longitude']?.toString() ?? '');
-            final speed = double.tryParse(data['speed_kmh']?.toString() ?? '0') ?? 0;
-            final heading = double.tryParse(data['heading']?.toString() ?? '0') ?? 0;
-            final targetLat = double.tryParse(data['target_lat']?.toString() ?? '');
-            final targetLng = double.tryParse(data['target_lng']?.toString() ?? '');
+            final lat = double.tryParse(eventData['latitude']?.toString() ?? '');
+            final lng = double.tryParse(eventData['longitude']?.toString() ?? '');
+            final speed = double.tryParse(eventData['speed_kmh']?.toString() ?? '0') ?? 0;
+            final heading = double.tryParse(eventData['heading']?.toString() ?? '0') ?? 0;
+            final targetLat = double.tryParse(eventData['target_lat']?.toString() ?? '');
+            final targetLng = double.tryParse(eventData['target_lng']?.toString() ?? '');
 
             if (lat != null && lng != null) {
               final newPos = LatLng(lat, lng);
@@ -245,8 +267,8 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
             }
           }
         } else {
-          // Refresh full data if student status changes
-          init();
+          // Refresh full data silently if student status changes
+          init(silent: true);
         }
       }
     );
@@ -346,6 +368,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
 
   @override
   Future<void> close() {
+    _pollingTimer?.cancel();
     _reverbService?.dispose();
     _locationSubscription?.cancel();
     return super.close();

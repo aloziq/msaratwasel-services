@@ -111,10 +111,15 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
         dio: ApiClient.instance,
         onMessageReceived: (data) {
           if (isClosed) return;
-          final lat = double.tryParse(data['latitude']?.toString() ?? '') ?? currentPosition?.lat ?? 0.0;
-          final lng = double.tryParse(data['longitude']?.toString() ?? '') ?? currentPosition?.lng ?? 0.0;
-          final speedKmh = double.tryParse(data['speed_kmh']?.toString() ?? '') ?? currentPosition?.speedKmh ?? 0.0;
-          final studentsOnBoard = int.tryParse(data['students_on_board']?.toString() ?? '') ?? currentPosition?.studentsOnBoard ?? 0;
+          // Extract the actual payload from the wrapper 'data' field if it exists
+          final eventData = data.containsKey('data') && data['data'] is Map
+              ? data['data'] as Map
+              : data;
+
+          final lat = double.tryParse(eventData['latitude']?.toString() ?? '') ?? currentPosition?.lat ?? 0.0;
+          final lng = double.tryParse(eventData['longitude']?.toString() ?? '') ?? currentPosition?.lng ?? 0.0;
+          final speedKmh = double.tryParse(eventData['speed_kmh']?.toString() ?? '') ?? currentPosition?.speedKmh ?? 0.0;
+          final studentsOnBoard = int.tryParse(eventData['students_on_board']?.toString() ?? '') ?? currentPosition?.studentsOnBoard ?? 0;
           
           currentPosition = BusPosition(
             busId: busId,

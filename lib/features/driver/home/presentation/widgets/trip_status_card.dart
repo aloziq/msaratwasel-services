@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
+import 'package:msaratwasel_services/core/presentation/widgets/route_preview/route_preview_widget.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -137,6 +139,19 @@ class TripStatusCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xl),
+          // Route Preview Map
+          SizedBox(
+            height: 260,
+            width: double.infinity,
+            child: RoutePreviewWidget(
+              busLocation: const LatLng(13.9306736, 43.7773597),
+              schoolLocation: const LatLng(13.9073801, 43.7684195),
+              studentLocations: const [
+                LatLng(13.91531857, 43.78167629),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(

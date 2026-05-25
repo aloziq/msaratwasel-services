@@ -95,8 +95,20 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
         debugPrint('DriverHomeCubit: after reload dashboard, state is: $state');
       } catch (e) {
         if (isClosed) return;
-        debugPrint('DriverHomeCubit: startTrip catch block error: $e');
-        emit(DriverHomeError(e.toString()));
+        
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('socketexception') || 
+            errorStr.contains('network error') || 
+            errorStr.contains('failed host lookup') ||
+            errorStr.contains('connection refused') ||
+            errorStr.contains('os error: 101') ||
+            errorStr.contains('dioexception [connection error]')) {
+          debugPrint('DriverHomeCubit: Network error detected in startTrip. Stopping polling.');
+          _stopPolling();
+          emit(const DriverHomeError("عذراً، تعذر الاتصال بالسيرفر. يرجى التحقق من شبكة الإنترنت والمحاولة مجدداً"));
+        } else {
+          emit(DriverHomeError(e.toString()));
+        }
       }
     } else {
       debugPrint(
@@ -109,11 +121,25 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
     debugPrint('DriverHomeCubit: confirmTrip called with tripId: $tripId');
     try {
       await _repository.confirmTrip(tripId);
-      _wasAwaitingConfirmation = false; // Reset waiting flag
+      // 🔥 جعلها true بدلاً من false لكي يتم اكتشاف التغيير والانتقال التلقائي لشاشة الخريطة
+      _wasAwaitingConfirmation = true; 
       await loadDashboard();
     } catch (e) {
       if (isClosed) return;
-      emit(DriverHomeError(e.toString()));
+      
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('socketexception') || 
+          errorStr.contains('network error') || 
+          errorStr.contains('failed host lookup') ||
+          errorStr.contains('connection refused') ||
+          errorStr.contains('os error: 101') ||
+          errorStr.contains('dioexception [connection error]')) {
+        debugPrint('DriverHomeCubit: Network error detected in confirmTrip. Stopping polling.');
+        _stopPolling(); // Prevent random page updates while offline
+        emit(const DriverHomeError("عذراً، تعذر الاتصال بالسيرفر. يرجى التحقق من شبكة الإنترنت والمحاولة مجدداً"));
+      } else {
+        emit(DriverHomeError(e.toString()));
+      }
     }
   }
 

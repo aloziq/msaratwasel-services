@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
 import 'api_config.dart';
+import '../responsive/api_language_interceptor.dart';
 
 class ApiClient {
   static Dio get instance {
@@ -23,6 +24,9 @@ class ApiClient {
         },
       ),
     );
+
+    // Interceptor لضبط اللغة
+    dio.interceptors.add(ApiLanguageInterceptor());
 
     // Interceptor لإضافة token تلقائياً في كل request
     dio.interceptors.add(

@@ -460,41 +460,8 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Reload pill button
-                        GestureDetector(
-                          onTap: () {
-                            context.read<SupervisorTrackingCubit>().init();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 6,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.sync_rounded, size: 16, color: Colors.black87),
-                                SizedBox(width: 4),
-                                Text(
-                                  'آخر تحديث 1 دقيقة',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        // Live tracking status pill (updates automatically)
+                        const _LiveTrackingPill(),
 
                         // Back Button & Status
                         Row(
@@ -1425,6 +1392,88 @@ class _BottomTrackingInfo extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LiveTrackingPill extends StatefulWidget {
+  const _LiveTrackingPill();
+
+  @override
+  State<_LiveTrackingPill> createState() => _LiveTrackingPillState();
+}
+
+class _LiveTrackingPillState extends State<_LiveTrackingPill> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              return Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withValues(
+                    alpha: 0.3 + (_pulseController.value * 0.7),
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4CAF50).withValues(
+                        alpha: 0.4 * (1.0 - _pulseController.value),
+                      ),
+                      blurRadius: 6,
+                      spreadRadius: 2 * _pulseController.value,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'تتبع مباشر نشط',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

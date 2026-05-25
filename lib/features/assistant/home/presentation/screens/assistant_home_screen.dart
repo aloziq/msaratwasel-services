@@ -92,7 +92,26 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
               end: Alignment.bottomCenter,
             ),
           ),
-          child: BlocBuilder<BusTripCubit, BusTripState>(
+          child: BlocConsumer<BusTripCubit, BusTripState>(
+            listener: (context, state) {
+              if (state is BusTripUpdateError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } else if (state is BusTripUpdateSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
             builder: (context, state) {
               return CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),

@@ -75,6 +75,10 @@ class _BusMapScreenState extends State<BusMapScreen> {
           userId: int.tryParse(user.id) ?? 0,
           dio: ApiClient.instance,
           onMessageReceived: (data) {
+            final event = data['event']?.toString() ?? '';
+            if (event == 'bus.location.updated' || event == 'driver.location.updated') {
+              return; // Ignore location updates, they are handled by BusTrackingCubit
+            }
             debugPrint('🔄 Trip status updated via Reverb inside BusMapScreen: $data');
             if (mounted) {
               context.read<BusTripCubit>().loadTrip(silent: true);
@@ -385,6 +389,7 @@ class _TrackingMap extends StatefulWidget {
 
 class _TrackingMapState extends State<_TrackingMap> {
   final Map<String, BitmapDescriptor> _markers = {};
+  final Map<String, BitmapDescriptor> _markerCache = {};
   GoogleMapController? _mapController;
   String? _lastRouteKey;
   List<LatLng> _routePoints = [];
@@ -647,6 +652,14 @@ class _TrackingMapState extends State<_TrackingMap> {
 
     final newMarkers = <String, BitmapDescriptor>{};
     for (final student in widget.students) {
+      final isNext = student.id == nextStudent?.id;
+      final cacheKey = 'student_${student.id}_${student.status.name}_$isNext';
+
+      if (_markerCache.containsKey(cacheKey)) {
+        newMarkers[student.id] = _markerCache[cacheKey]!;
+        continue;
+      }
+
       try {
         final Color borderColor;
         final Color backgroundColor;
@@ -664,7 +677,7 @@ class _TrackingMapState extends State<_TrackingMap> {
             borderColor = const Color(0xFF10B981);
             backgroundColor = const Color(0xFFF0FDF4);
             textColor = const Color(0xFF10B981);
-          } else if (student.id == nextStudent?.id) {
+          } else if (isNext) {
             borderColor = const Color(0xFF3B82F6);
             backgroundColor = const Color(0xFFEFF6FF);
             textColor = const Color(0xFF3B82F6);
@@ -685,6 +698,7 @@ class _TrackingMapState extends State<_TrackingMap> {
           logicalSize: const Size(100, 100),
           imageSize: const Size(200, 200),
         );
+        _markerCache[cacheKey] = marker;
         newMarkers[student.id] = marker;
       } catch (e) {
         newMarkers[student.id] = BitmapDescriptor.defaultMarkerWithHue(
