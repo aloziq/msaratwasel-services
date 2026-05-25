@@ -86,7 +86,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
           // Extract the title tag if it's an HTML response
           final titleMatch = RegExp(r'<title>(.*?)</title>', caseSensitive: false, dotAll: true).firstMatch(errorBody);
           if (titleMatch != null && titleMatch.groupCount >= 1) {
-             return Left('خطأ 500: ${titleMatch.group(1).trim()}');
+             return Left('خطأ 500: ${titleMatch.group(1)?.trim()}');
           }
           return Left('خطأ 500 من السيرفر: ${errorBody.length > 150 ? errorBody.substring(0, 150) : errorBody}');
         }
