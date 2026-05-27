@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:widget_to_marker/widget_to_marker.dart';
 import 'package:msaratwasel_services/features/driver/route/domain/entities/student_stop.dart';
+import 'package:msaratwasel_services/core/responsive/adaptive_list_view.dart';
 import '../cubit/supervisor_tracking_cubit.dart';
 
 class SupervisorTrackingScreen extends StatefulWidget {
@@ -546,9 +547,12 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                               ),
                             ),
                             Expanded(
-                              child: ListView.builder(
+                              child: AdaptiveListView(
+                                storageKey: 'supervisor_student_list_${widget.busId}',
                                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                                 itemCount: state.stops.length,
+                                childAspectRatio: 3.5,
+                                maxExtent: 400.0,
                                 itemBuilder: (context, index) {
                                   final stop = state.stops[index];
                                   final isBoarded = state.tripType == 'morning' ? stop.isBoarded : stop.isDroppedOff;
