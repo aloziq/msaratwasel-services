@@ -4,6 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
+import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../domain/entities/student_stop.dart';
 import '../../domain/repositories/route_repository.dart';
 import '../../../../../core/services/reverb_service.dart';
@@ -73,6 +75,7 @@ class RouteNavigationCompleted extends RouteNavigationState {}
 class RouteNavigationCubit extends Cubit<RouteNavigationState> {
   final RouteRepository _repository;
   ReverbService? _reverbService;
+  StreamSubscription? _connectivitySubscription;
 
   RouteNavigationCubit(this._repository) : super(RouteNavigationInitial()) {
     _initReverb();
@@ -103,6 +106,9 @@ class RouteNavigationCubit extends Cubit<RouteNavigationState> {
         ? (state as RouteNavigationLoaded).currentStopIndex 
         : 0;
     
+    if (_connectivitySubscription == null) {
+      _initConnectivityListener();
+    }
     emit(RouteNavigationLoading());
     try {
       final stops = await _repository.getTripStops();
@@ -140,9 +146,25 @@ class RouteNavigationCubit extends Cubit<RouteNavigationState> {
     }
   }
 
+  void _initConnectivityListener() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      final List<ConnectivityResult> resultsList = results is List<ConnectivityResult>
+          ? results
+          : [results as ConnectivityResult];
+
+      final hasConnection = resultsList.any((result) => result != ConnectivityResult.none);
+
+      if (hasConnection && state is RouteNavigationError) {
+        loadRoute(preserveIndex: true);
+      }
+    });
+  }
+
   @override
   Future<void> close() {
     _reverbService?.dispose();
+    _connectivitySubscription?.cancel();
     return super.close();
   }
 }

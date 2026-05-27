@@ -10,6 +10,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_directions_api/google_directions_api.dart' as gmaps;
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/glass_card.dart';
@@ -35,6 +36,7 @@ class RouteNavigationScreen extends StatefulWidget {
 
 class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   final Completer<GoogleMapController> _controller = Completer();
+  StreamSubscription? _connectivitySubscription;
 
   // Improved fallback initial position (more central to Ibb/Yemen)
   static const CameraPosition _kInitialPosition = CameraPosition(
@@ -100,6 +102,22 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     _initReverb();
     _startStatusPolling();
     _startGpsCheckTimer();
+    _initConnectivityListener();
+  }
+
+  void _initConnectivityListener() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      final List<ConnectivityResult> resultsList = results is List<ConnectivityResult>
+          ? results
+          : [results as ConnectivityResult];
+
+      final hasConnection = resultsList.any((result) => result != ConnectivityResult.none);
+
+      if (hasConnection && _error != null) {
+        debugPrint('🌐 [Navigation] Connection restored, auto-retrying fetchRouteData...');
+        _fetchRouteData(silent: false);
+      }
+    });
   }
 
   void _startGpsCheckTimer() {
@@ -572,6 +590,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     _locationTimer?.cancel();
     _waitingTimer?.cancel();
     _gpsCheckTimer?.cancel();
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 
@@ -991,18 +1010,67 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'خطأ: $_error',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                  ElevatedButton(
-                    onPressed: _fetchRouteData,
-                    child: const Text('إعادة المحاولة'),
-                  ),
-                ],
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.1)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      PhosphorIconsBold.wifiSlash,
+                      size: 48,
+                      color: Colors.red.withValues(alpha: 0.6),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      isArabic ? 'حدث خطأ في الاتصال بالإنترنت' : 'Internet Connection Error',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1D1D1F),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isArabic
+                          ? 'سيتم تحديث البيانات تلقائياً عند استعادة الاتصال...'
+                          : 'Reconnecting automatically when internet is restored...',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: const Color(0xFF1D1D1F).withValues(alpha: 0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A73E8)),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'جاري محاولة الاتصال تلقائياً...',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A73E8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             )
           : (_routeRepository.currentTripStatus != 'in_progress' &&

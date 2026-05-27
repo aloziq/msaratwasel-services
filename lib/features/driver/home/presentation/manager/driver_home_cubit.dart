@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../domain/entities/trip_status.dart';
 import '../../domain/repositories/home_repository.dart';
 import 'package:msaratwasel_services/core/services/location_service.dart';
@@ -46,12 +47,16 @@ class DriverHomeError extends DriverHomeState {
 class DriverHomeCubit extends Cubit<DriverHomeState> {
   final HomeRepository _repository;
   Timer? _pollingTimer;
+  StreamSubscription? _connectivitySubscription;
   bool _wasAwaitingConfirmation = false;
 
   DriverHomeCubit(this._repository) : super(DriverHomeInitial());
 
   Future<void> loadDashboard({bool showLoading = true}) async {
     debugPrint('DriverHomeCubit: loadDashboard called (showLoading: $showLoading)');
+    if (_connectivitySubscription == null) {
+      _initConnectivityListener();
+    }
     if (showLoading) {
       emit(DriverHomeLoading());
     }
@@ -225,9 +230,25 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
     _pollingTimer = null;
   }
 
+  void _initConnectivityListener() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      final List<ConnectivityResult> resultsList = results is List<ConnectivityResult>
+          ? results
+          : [results as ConnectivityResult];
+
+      final hasConnection = resultsList.any((result) => result != ConnectivityResult.none);
+
+      if (hasConnection && state is DriverHomeError) {
+        loadDashboard(showLoading: true);
+      }
+    });
+  }
+
   @override
   Future<void> close() {
     _stopPolling();
+    _connectivitySubscription?.cancel();
     return super.close();
   }
 }

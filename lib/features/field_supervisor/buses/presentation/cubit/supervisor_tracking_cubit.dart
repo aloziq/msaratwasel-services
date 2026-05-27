@@ -8,6 +8,7 @@ import 'package:msaratwasel_services/features/driver/route/domain/entities/stude
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 abstract class SupervisorTrackingState {}
 
@@ -76,11 +77,15 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
   final int busId;
   ReverbService? _reverbService;
   StreamSubscription? _locationSubscription;
+  StreamSubscription? _connectivitySubscription;
   Timer? _pollingTimer;
 
   SupervisorTrackingCubit({required this.busId}) : super(SupervisorTrackingInitial());
 
   Future<void> init({bool silent = false}) async {
+    if (_connectivitySubscription == null) {
+      _initConnectivityListener();
+    }
     if (!silent) {
       emit(SupervisorTrackingLoading());
     }
@@ -221,6 +226,22 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
     _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (!isClosed) {
         init(silent: true);
+      }
+    });
+  }
+
+  void _initConnectivityListener() {
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      // Support both List<ConnectivityResult> (v6.0+) and single ConnectivityResult (v5.0-)
+      final List<ConnectivityResult> resultsList = results is List<ConnectivityResult>
+          ? results
+          : [results as ConnectivityResult];
+
+      final hasConnection = resultsList.any((result) => result != ConnectivityResult.none);
+
+      if (hasConnection && state is SupervisorTrackingError) {
+        init(silent: false);
       }
     });
   }
@@ -369,6 +390,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
   @override
   Future<void> close() {
     _pollingTimer?.cancel();
+    _connectivitySubscription?.cancel();
     _reverbService?.dispose();
     _locationSubscription?.cancel();
     return super.close();

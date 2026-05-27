@@ -161,10 +161,42 @@ class _BusMapScreenState extends State<BusMapScreen> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: AppSpacing.lg),
-                          FilledButton.icon(
-                            onPressed: () => context.read<BusTrackingCubit>().startTracking(),
-                            icon: const Icon(Icons.refresh_rounded),
-                            label: Text(AppLocalizations.of(context)!.refresh),
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1A73E8).withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFF1A73E8).withOpacity(0.1)),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A73E8)),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'جاري محاولة الاتصال تلقائياً...',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1A73E8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: () => context.go(AppRoutes.assistantHome),
+                            icon: const Icon(Icons.arrow_back),
+                            label: const Text('رجوع'),
                           ),
                         ],
                       ),
@@ -194,7 +226,7 @@ class _BusMapScreenState extends State<BusMapScreen> {
                           ),
                           const SizedBox(height: AppSpacing.md),
                           Text(
-                            'لم يتم تسجيل موقع للحافلة بعد',
+                            'لم يتم تسجيل موقع للحافلة بعد. سيتم التحديث تلقائياً بمجرد إرساله من السائق.',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
@@ -202,9 +234,9 @@ class _BusMapScreenState extends State<BusMapScreen> {
                           ),
                           const SizedBox(height: AppSpacing.lg),
                           OutlinedButton.icon(
-                            onPressed: () => context.read<BusTrackingCubit>().startTracking(),
-                            icon: const Icon(Icons.refresh_rounded),
-                            label: Text(l10n.refresh),
+                            onPressed: () => context.go(AppRoutes.assistantHome),
+                            icon: const Icon(Icons.arrow_back),
+                            label: const Text('رجوع'),
                           ),
                         ],
                       ),
