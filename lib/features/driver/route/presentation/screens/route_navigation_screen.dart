@@ -37,6 +37,8 @@ class RouteNavigationScreen extends StatefulWidget {
 class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   final Completer<GoogleMapController> _controller = Completer();
   StreamSubscription? _connectivitySubscription;
+  List<Map<String, dynamic>> _navigationSteps = [];
+  int _consecutiveOffRouteUpdates = 0;
 
   // Improved fallback initial position (more central to Ibb/Yemen)
   static const CameraPosition _kInitialPosition = CameraPosition(
@@ -173,6 +175,125 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     _isProgrammaticMove = true;
     controller.animateCamera(
       CameraUpdate.newLatLngBounds(bounds, 70),
+    );
+  }
+
+  String _cleanHtmlInstruction(String htmlStr) {
+    final RegExp exp = RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false);
+    String cleanStr = htmlStr.replaceAll(exp, ' ');
+    cleanStr = cleanStr.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return cleanStr;
+  }
+
+  bool _checkIfOffRoute(LatLng currentPos) {
+    if (_activeRoutePoints.isEmpty) return false;
+
+    double minDistance = double.infinity;
+
+    for (final point in _activeRoutePoints) {
+      final double distance = Geolocator.distanceBetween(
+        currentPos.latitude,
+        currentPos.longitude,
+        point.latitude,
+        point.longitude,
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+      }
+    }
+
+    debugPrint('🛣️ [Navigation] Distance to route path: ${minDistance.toStringAsFixed(1)}m');
+    return minDistance > 65.0;
+  }
+
+  Widget _buildInstructionCard(bool isArabic, ThemeData theme) {
+    if (_navigationSteps.isEmpty) return const SizedBox.shrink();
+    
+    final nextStep = _navigationSteps.first;
+    final rawInstruction = nextStep['html_instructions'] ?? '';
+    final cleanInstruction = _cleanHtmlInstruction(rawInstruction);
+    final distanceText = nextStep['distance']?['text'] ?? '';
+    
+    IconData turnIcon = PhosphorIconsBold.arrowUp;
+    final lowercaseInstruction = cleanInstruction.toLowerCase();
+    
+    if (lowercaseInstruction.contains('يمي') || lowercaseInstruction.contains('right')) {
+      turnIcon = PhosphorIconsBold.arrowRight;
+    } else if (lowercaseInstruction.contains('يسار') || lowercaseInstruction.contains('left')) {
+      turnIcon = PhosphorIconsBold.arrowLeft;
+    } else if (lowercaseInstruction.contains('دوار') || lowercaseInstruction.contains('roundabout')) {
+      turnIcon = PhosphorIconsBold.arrowsClockwise;
+    } else if (lowercaseInstruction.contains('يو تيرن') || lowercaseInstruction.contains('u-turn')) {
+      turnIcon = PhosphorIconsBold.arrowUUpLeft;
+    }
+    
+    return GlassCard(
+      borderRadius: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              turnIcon,
+              color: const Color(0xFF1A73E8),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isArabic ? 'التعليمات القادمة' : 'Next Instruction',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.amber,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 240),
+                child: Text(
+                  cleanInstruction,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          if (distanceText.isNotEmpty) ...[
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                distanceText,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -335,8 +456,16 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       if ((_followMe && distance > 5) || _isFirstLock) {
         _controller.future.then((controller) {
           _isProgrammaticMove = true;
+          final double bearing = (position.heading > 0 && position.heading.isFinite) ? position.heading : 0.0;
           controller.animateCamera(
-            CameraUpdate.newLatLng(newPos),
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: newPos,
+                zoom: 17.0,
+                bearing: bearing,
+                tilt: 35.0,
+              ),
+            ),
           );
         });
         if (_isFirstLock) _isFirstLock = false;
@@ -352,10 +481,22 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         targetLng: _currentTarget?.longitude,
       );
 
-      if (distance > 15 || _activeRoutePoints.isEmpty) {
-        _fetchRoadFollowingRoute();
+      bool isOff = _checkIfOffRoute(newPos);
+      if (isOff) {
+        _consecutiveOffRouteUpdates++;
+        if (_consecutiveOffRouteUpdates >= 2) {
+          debugPrint('🚨 [Navigation] Off-Route detected! Recalculating route...');
+          _consecutiveOffRouteUpdates = 0;
+          _lastRouteFetchTime = null;
+          _fetchRoadFollowingRoute();
+        }
       } else {
-        _updatePolylines();
+        _consecutiveOffRouteUpdates = 0;
+        if (distance > 15 || _activeRoutePoints.isEmpty) {
+          _fetchRoadFollowingRoute();
+        } else {
+          _updatePolylines();
+        }
       }
     });
   }
@@ -431,6 +572,12 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               _activeRoutePoints = points.map((p) => LatLng(p.latitude, p.longitude)).toList();
               // Save to cache for instant loading next time
               _cachedRoutesToTarget[cacheKey] = _activeRoutePoints;
+              
+              if (leg['steps'] != null) {
+                _navigationSteps = List<Map<String, dynamic>>.from(leg['steps']);
+              } else {
+                _navigationSteps = [];
+              }
               
               final distInKm = (leg['distance']['value'] as num) / 1000;
               final durInMin = (leg['duration']['value'] as num) / 60;
@@ -1259,6 +1406,18 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                     ),
                   ),
 
+                // 2.2 Next Instruction Card (Turn-by-turn guidance)
+                if (_navigationSteps.isNotEmpty && currentStop != null && !isSchoolState)
+                  Positioned(
+                    top: 130,
+                    left: 20,
+                    right: 20,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: _buildInstructionCard(isArabic, theme),
+                    ),
+                  ),
+
                 if (isSchoolState)
                   Positioned(
                     top: 60,
@@ -1437,6 +1596,49 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                             ),
                           ),
                         ).animate().slideY(begin: 1, end: 0, duration: 400.ms),
+
+                        // Route Progress Bar
+                        if (!isSchoolState && _stops.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Column(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: LinearProgressIndicator(
+                                    value: _stops.isEmpty ? 0.0 : (_currentStopIndex / _stops.length),
+                                    backgroundColor: Colors.white.withValues(alpha: 0.1),
+                                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1D40AF)),
+                                    minHeight: 6,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      isArabic 
+                                          ? 'المحطة $_currentStopIndex من ${_stops.length}' 
+                                          : 'Stop $_currentStopIndex of ${_stops.length}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${((_stops.isEmpty ? 0.0 : (_currentStopIndex / _stops.length)) * 100).toInt()}%',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn(delay: 200.ms),
                         
                         // Absence Warning Card (Show if student is absent)
                         if (currentStop != null && currentStop.isAbsent && !isSchoolState)
