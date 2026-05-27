@@ -120,6 +120,62 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     });
   }
 
+  Future<void> _showRouteOverview() async {
+    if (_currentPosition == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('الرجاء الانتظار حتى يتم تحديد موقعك (GPS)...'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+    
+    setState(() {
+      _followMe = false;
+    });
+
+    final controller = await _controller.future;
+
+    List<LatLng> points = [];
+    points.add(_currentPosition!);
+    
+    if (_activeRoutePoints.isNotEmpty) {
+      points.addAll(_activeRoutePoints);
+    } else {
+      final target = _currentTarget;
+      if (target != null) {
+        points.add(target);
+      }
+    }
+
+    if (points.length < 2) return;
+
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (final point in points) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+
+    _isProgrammaticMove = true;
+    controller.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 70),
+    );
+  }
+
   void _startGpsCheckTimer() {
     _gpsCheckTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       final enabled = await Geolocator.isLocationServiceEnabled();
@@ -1274,6 +1330,17 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                         },
                         child: const Icon(
                           PhosphorIconsBold.qrCode,
+                        ),
+                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
+                      const SizedBox(height: 12),
+                      FloatingActionButton(
+                        heroTag: 'route_overview',
+                        mini: true,
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.blue[700],
+                        onPressed: _showRouteOverview,
+                        child: const Icon(
+                          PhosphorIconsBold.mapTrifold,
                         ),
                       ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
                       const SizedBox(height: 12),
