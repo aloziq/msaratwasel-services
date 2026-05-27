@@ -58,6 +58,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   bool _isActionLoading = false;
   bool _isSyncingStops = false;
   bool _followMe = true; // Automatically follow the bus
+  bool _isRouteOverview = false; // Toggle for in-map route overview
   bool _isFirstLock = true; // Track first GPS lock to center camera
   bool _isProgrammaticMove = false; // Distinguish between manual and automatic camera moves
   bool _hasDepartedSchool = false; // Only used for afternoon trip
@@ -206,92 +207,495 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     return minDistance > 65.0;
   }
 
-  Widget _buildInstructionCard(bool isArabic, ThemeData theme) {
-    if (_navigationSteps.isEmpty) return const SizedBox.shrink();
-    
-    final nextStep = _navigationSteps.first;
-    final rawInstruction = nextStep['html_instructions'] ?? '';
-    final cleanInstruction = _cleanHtmlInstruction(rawInstruction);
-    final distanceText = nextStep['distance']?['text'] ?? '';
+  // Unified navigation + student card
+  Widget _buildInstructionCard(bool isArabic, ThemeData theme, StudentStop? currentStop) {
+    if (_navigationSteps.isEmpty && currentStop == null) return const SizedBox.shrink();
     
     IconData turnIcon = PhosphorIconsBold.arrowUp;
-    final lowercaseInstruction = cleanInstruction.toLowerCase();
+    String distanceText = '';
+    String mainAction = isArabic ? 'استمر' : 'Keep straight';
+    String streetName = isArabic ? 'جاري حساب الطريق...' : 'Calculating route...';
     
-    if (lowercaseInstruction.contains('يمي') || lowercaseInstruction.contains('right')) {
-      turnIcon = PhosphorIconsBold.arrowRight;
-    } else if (lowercaseInstruction.contains('يسار') || lowercaseInstruction.contains('left')) {
-      turnIcon = PhosphorIconsBold.arrowLeft;
-    } else if (lowercaseInstruction.contains('دوار') || lowercaseInstruction.contains('roundabout')) {
-      turnIcon = PhosphorIconsBold.arrowsClockwise;
-    } else if (lowercaseInstruction.contains('يو تيرن') || lowercaseInstruction.contains('u-turn')) {
-      turnIcon = PhosphorIconsBold.arrowUUpLeft;
+    if (_navigationSteps.isNotEmpty) {
+      final nextStep = _navigationSteps.first;
+      final rawInstruction = nextStep['html_instructions'] ?? '';
+      final cleanInstruction = _cleanHtmlInstruction(rawInstruction);
+      distanceText = nextStep['distance']?['text'] ?? '';
+      final lowercaseInstruction = cleanInstruction.toLowerCase();
+      
+      if (lowercaseInstruction.contains('يمي') || lowercaseInstruction.contains('right')) {
+        turnIcon = PhosphorIconsBold.arrowRight;
+      } else if (lowercaseInstruction.contains('يسار') || lowercaseInstruction.contains('left')) {
+        turnIcon = PhosphorIconsBold.arrowLeft;
+      } else if (lowercaseInstruction.contains('دوار') || lowercaseInstruction.contains('roundabout')) {
+        turnIcon = PhosphorIconsBold.arrowsClockwise;
+      } else if (lowercaseInstruction.contains('يو تيرن') || lowercaseInstruction.contains('u-turn')) {
+        turnIcon = PhosphorIconsBold.arrowUUpLeft;
+      }
+      
+      // Action & street parsing
+      if (!isArabic) {
+        if (lowercaseInstruction.contains('turn right')) {
+          mainAction = 'Turn Right';
+        } else if (lowercaseInstruction.contains('turn left')) {
+          mainAction = 'Turn Left';
+        } else if (lowercaseInstruction.contains('roundabout')) {
+          mainAction = 'Roundabout';
+        } else if (lowercaseInstruction.contains('u-turn')) {
+          mainAction = 'U-Turn';
+        } else if (lowercaseInstruction.contains('keep straight') || lowercaseInstruction.contains('continue')) {
+          mainAction = 'Keep Straight';
+        }
+        
+        final ontoIndex = lowercaseInstruction.indexOf('onto ');
+        if (ontoIndex != -1) {
+          streetName = cleanInstruction.substring(ontoIndex + 5).trim();
+        } else {
+          final towardIndex = lowercaseInstruction.indexOf('toward ');
+          if (towardIndex != -1) {
+            streetName = cleanInstruction.substring(towardIndex + 7).trim();
+          } else {
+            streetName = cleanInstruction;
+          }
+        }
+      } else {
+        if (lowercaseInstruction.contains('يمي') || lowercaseInstruction.contains('اليمين')) {
+          mainAction = 'اتجه يميناً';
+        } else if (lowercaseInstruction.contains('يسار') || lowercaseInstruction.contains('اليسار')) {
+          mainAction = 'اتجه يساراً';
+        } else if (lowercaseInstruction.contains('دوار')) {
+          mainAction = 'اسلك الدوار';
+        } else if (lowercaseInstruction.contains('الخلف') || lowercaseInstruction.contains('دوران')) {
+          mainAction = 'دوران للخلف';
+        } else if (lowercaseInstruction.contains('مستقيم') || lowercaseInstruction.contains('استمر')) {
+          mainAction = 'استمر في المسار';
+        }
+        
+        final indexInto = cleanInstruction.indexOf('نحو ');
+        if (indexInto != -1) {
+          streetName = cleanInstruction.substring(indexInto + 4).trim();
+        } else {
+          final indexIn = cleanInstruction.indexOf('في ');
+          if (indexIn != -1) {
+            streetName = cleanInstruction.substring(indexIn + 3).trim();
+          } else {
+            final indexStreet = cleanInstruction.indexOf('شارع');
+            if (indexStreet != -1) {
+              streetName = cleanInstruction.substring(indexStreet).trim();
+            } else {
+              streetName = cleanInstruction;
+            }
+          }
+        }
+      }
     }
     
-    return GlassCard(
-      borderRadius: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
+    final isRtl = isArabic;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D3321).withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF198754).withValues(alpha: 0.35),
+              width: 1,
             ),
-            child: Icon(
-              turnIcon,
-              color: const Color(0xFF1A73E8),
-              size: 20,
-            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // ── Row 1: Navigation direction ──
+              if (_navigationSteps.isNotEmpty)
+                Row(
+                  textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                  children: [
+                    // Direction icon circle
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(turnIcon, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    // Distance + action label + street
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                            children: [
+                              if (distanceText.isNotEmpty) ...[
+                                Text(
+                                  distanceText,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF198754).withValues(alpha: 0.85),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  mainAction,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (streetName.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              streetName,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // Compact time/distance pill
+                    if (_remainingTimeMin != null || _remainingDistanceKm != null)
+                      Container(
+                        margin: EdgeInsets.only(
+                          left: isRtl ? 0 : 8,
+                          right: isRtl ? 8 : 0,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_remainingTimeMin != null)
+                              Text(
+                                '$_remainingTimeMin${isArabic ? 'د' : 'm'}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            if (_remainingDistanceKm != null)
+                              Text(
+                                '${_remainingDistanceKm!.toStringAsFixed(1)}${isArabic ? 'كم' : 'km'}',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+
+              // ── Divider + Row 2: Student info (only when currentStop exists) ──
+              if (currentStop != null) ...[
+                if (_navigationSteps.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Container(
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                Row(
+                  textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                  children: [
+                    // Student avatar with amber ring
+                    Container(
+                      padding: const EdgeInsets.all(1.5),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.amber,
+                      ),
+                      child: CircleAvatar(
+                        radius: 14,
+                        backgroundImage: currentStop.photoUrl != null && currentStop.photoUrl!.isNotEmpty
+                            ? NetworkImage(currentStop.photoUrl!)
+                            : null,
+                        backgroundColor: Colors.grey[800],
+                        child: currentStop.photoUrl == null || currentStop.photoUrl!.isEmpty
+                            ? const Icon(Icons.person, size: 14, color: Colors.white)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Name
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isArabic ? 'الوجهة التالية' : 'Next Stop',
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: Colors.amber[400],
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            isArabic ? currentStop.nameAr : currentStop.nameEn,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Waiting countdown timer
+                    if (_waitingStudent?.id == currentStop.id && _waitingTimer?.isActive == true)
+                      Builder(builder: (context) {
+                        final bool timeUp = _secondsRemaining <= 0;
+                        final Color timerColor = timeUp ? Colors.redAccent : Colors.greenAccent;
+                        return Container(
+                          margin: EdgeInsets.only(
+                            left: isRtl ? 0 : 6,
+                            right: isRtl ? 6 : 0,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: timerColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: timerColor.withValues(alpha: 0.4), width: 1),
+                          ),
+                          child: Text(
+                            _secondsRemaining > 0
+                                ? '${_secondsRemaining ~/ 60}:${(_secondsRemaining % 60).toString().padLeft(2, '0')}'
+                                : '+${(_secondsRemaining.abs() ~/ 60)}:${(_secondsRemaining.abs() % 60).toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: timerColor,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentedProgressBar(bool isArabic, ThemeData theme) {
+    if (_stops.isEmpty) return const SizedBox.shrink();
+    
+    List<Widget> children = [];
+    
+    for (int i = 0; i < _stops.length; i++) {
+      final stop = _stops[i];
+      final isCompleted = i < _currentStopIndex;
+      final isActive = i == _currentStopIndex;
+      
+      // 1. Draw the Milestone Node
+      Widget node;
+      if (isCompleted) {
+        // Glowing Emerald Checkmark
+        node = Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981), // Emerald
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                blurRadius: 6,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.check,
+              size: 14,
+              color: Colors.white,
+            ),
+          ),
+        );
+      } else if (isActive) {
+        // Glowing electric blue node with pulsing halo
+        node = Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A73E8), // Electric Blue
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white,
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1A73E8).withValues(alpha: 0.6),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+        ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+         .scale(begin: const Offset(1, 1), end: const Offset(1.15, 1.15), duration: 1000.ms);
+      } else {
+        // Semi-transparent upcoming white/gray dot
+        node = Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.35),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+          ),
+        );
+      }
+      
+      children.add(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            node,
+            const SizedBox(height: 4),
+            Text(
+              '${i + 1}',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: isActive 
+                  ? const Color(0xFF1A73E8) 
+                  : (isCompleted ? const Color(0xFF10B981) : Colors.white.withValues(alpha: 0.5)),
+              ),
+            ),
+          ],
+        ),
+      );
+      
+      // 2. Draw Connector Line if not the last node
+      if (i < _stops.length - 1) {
+        final nextIsCompletedOrActive = i < _currentStopIndex;
+        final connectorColor = nextIsCompletedOrActive 
+          ? const Color(0xFF10B981) // Completed track is green
+          : Colors.white.withValues(alpha: 0.15); // Upcoming track is grey
+          
+        children.add(
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Container(
+                height: 3,
+                decoration: BoxDecoration(
+                  color: connectorColor,
+                  borderRadius: BorderRadius.circular(1.5),
+                  boxShadow: nextIsCompletedOrActive ? [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                      blurRadius: 4,
+                    )
+                  ] : null,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A).withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Text(
-                isArabic ? 'التعليمات القادمة' : 'Next Instruction',
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.amber,
+                isArabic 
+                    ? 'المحطة $_currentStopIndex من ${_stops.length}' 
+                    : 'Stop $_currentStopIndex of ${_stops.length}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 2),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 240),
-                child: Text(
-                  cleanInstruction,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                '${((_stops.isEmpty ? 0.0 : (_currentStopIndex / _stops.length)) * 100).toInt()}%',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          if (distanceText.isNotEmpty) ...[
-            const SizedBox(width: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                distanceText,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: children,
+          ),
         ],
       ),
     );
@@ -680,6 +1084,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         _stops = stops;
         _currentStopIndex = initialIndex == -1 ? stops.length : initialIndex;
         _isLoading = false;
+        _error = null; // Clear error upon successful connection recovery!
         _activeRoutePoints = []; 
         _initMapData();
       });
@@ -1388,77 +1793,59 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                 ),
 
 
-                // 2. Next Stop Card (Centered Adaptive Pill)
-                if (currentStop != null && !isSchoolState)
+                // ── Zone 2: Unified Navigation + Student Card (below top bar) ──
+                if (!isSchoolState && !_isRouteOverview)
                   Positioned(
-                    top: 60,
-                    left: 20,
-                    right: 20,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: IntrinsicWidth(
-                        child: _NextStopCard(
-                          isArabic: isArabic,
-                          stop: currentStop,
-                          secondsRemaining: (_waitingStudent?.id == currentStop.id) ? _secondsRemaining : null,
-                        ),
-                      ),
-                    ),
+                    top: 96,
+                    left: 16,
+                    right: 64, // leave room for FABs on the right
+                    child: _buildInstructionCard(isArabic, theme, currentStop)
+                        .animate()
+                        .fadeIn(duration: 300.ms)
+                        .slideY(begin: -0.2, end: 0, duration: 300.ms),
                   ),
 
-                // 2.2 Next Instruction Card (Turn-by-turn guidance)
-                if (_navigationSteps.isNotEmpty && currentStop != null && !isSchoolState)
+                if (isSchoolState && !_isRouteOverview)
                   Positioned(
-                    top: 130,
-                    left: 20,
-                    right: 20,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: _buildInstructionCard(isArabic, theme),
-                    ),
-                  ),
-
-                if (isSchoolState)
-                  Positioned(
-                    top: 60,
-                    left: 20,
-                    right: 20,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: IntrinsicWidth(
-                        child: GlassCard(
-                          borderRadius: 24,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
+                    top: 96,
+                    left: 16,
+                    right: 64,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.amber[900]!.withValues(alpha: 0.88),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.amber.withValues(alpha: 0.35),
+                              width: 1,
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(
-                                PhosphorIconsFill.buildings,
-                                color: Colors.amber,
-                                size: 32,
-                              ),
-                              const SizedBox(width: 14),
+                              const Icon(PhosphorIconsFill.buildings, color: Colors.white, size: 28),
+                              const SizedBox(width: 12),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    isArabic
-                                        ? 'الوجهة الحالية'
-                                        : 'Current Stop',
+                                    isArabic ? 'الوجهة الحالية' : 'Current Stop',
                                     style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.amber[900],
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                      color: Colors.white.withValues(alpha: 0.7),
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                   Text(
                                     isArabic ? 'المدرسة' : 'School',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.onSurface,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ],
@@ -1470,344 +1857,291 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                     ),
                   ),
 
-                // 2.5 Follow Me / Recenter Button
-                Positioned(
-                  right: 20,
-                  bottom: 240, // Adjusted to be above the bottom panel
-                  child: Column(
-                    children: [
-                      FloatingActionButton(
-                        heroTag: 'qr_scanner',
-                        mini: true,
-                        backgroundColor: const Color(0xFF10B981), // Emerald/Green for smart scanner
-                        foregroundColor: Colors.white,
-                        onPressed: () {
-                          context.push(
-                            AppRoutes.qrScan,
-                            extra: {'isTripMode': true},
+                // ── Route Overview "Return" banner (shown when overview mode is active) ──
+                if (_isRouteOverview)
+                  Positioned(
+                    top: 96,
+                    left: 40,
+                    right: 40,
+                    child: GestureDetector(
+                      onTap: () async {
+                        setState(() {
+                          _isRouteOverview = false;
+                          _followMe = true;
+                        });
+                        if (_currentPosition != null) {
+                          final controller = await _controller.future;
+                          controller.animateCamera(
+                            CameraUpdate.newLatLngZoom(_currentPosition!, 16),
                           );
-                        },
-                        child: const Icon(
-                          PhosphorIconsBold.qrCode,
+                        }
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(25),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[700]!.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(25),
+                              border: Border.all(color: Colors.white24, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(PhosphorIconsBold.navigationArrow, color: Colors.white, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isArabic ? 'العودة للملاحة' : 'Back to Navigation',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
-                      const SizedBox(height: 12),
-                      FloatingActionButton(
+                      ),
+                    ).animate().fadeIn(duration: 200.ms).slideY(begin: -0.3, end: 0, duration: 250.ms),
+                  ),
+
+                // ── Zone 3: Right Side FABs ──
+                Positioned(
+                  right: 12,
+                  top: 96,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _MapFab(
                         heroTag: 'route_overview',
-                        mini: true,
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blue[700],
-                        onPressed: _showRouteOverview,
-                        child: const Icon(
-                          PhosphorIconsBold.mapTrifold,
-                        ),
-                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
-                      const SizedBox(height: 12),
-                      FloatingActionButton(
-                        heroTag: 'recenter',
-                        mini: true,
-                        backgroundColor: _followMe ? Colors.blue[700] : Colors.white,
-                        foregroundColor: _followMe ? Colors.white : Colors.blue[700],
+                        bgColor: _isRouteOverview ? Colors.blue[700]! : Colors.white,
+                        fgColor: _isRouteOverview ? Colors.white : Colors.blue[700]!,
+                        icon: _isRouteOverview
+                            ? PhosphorIconsBold.navigationArrow
+                            : PhosphorIconsBold.mapTrifold,
                         onPressed: () async {
-                          setState(() {
-                            _followMe = !_followMe;
-                          });
-                          if (_followMe && _currentPosition != null) {
-                            final controller = await _controller.future;
-                            controller.animateCamera(
-                              CameraUpdate.newLatLngZoom(_currentPosition!, 16),
-                            );
+                          if (_isRouteOverview) {
+                            // Return to navigation
+                            setState(() {
+                              _isRouteOverview = false;
+                              _followMe = true;
+                            });
+                            if (_currentPosition != null) {
+                              final controller = await _controller.future;
+                              controller.animateCamera(
+                                CameraUpdate.newLatLngZoom(_currentPosition!, 16),
+                              );
+                            }
+                          } else {
+                            // Enter overview mode
+                            setState(() => _isRouteOverview = true);
+                            _showRouteOverview();
                           }
                         },
-                        child: Icon(
-                          _followMe 
-                              ? PhosphorIconsBold.navigationArrow 
+                      ),
+                      const SizedBox(height: 10),
+                      if (!_isRouteOverview)
+                        _MapFab(
+                          heroTag: 'recenter',
+                          bgColor: _followMe ? Colors.blue[700]! : Colors.white,
+                          fgColor: _followMe ? Colors.white : Colors.blue[700]!,
+                          icon: _followMe
+                              ? PhosphorIconsBold.navigationArrow
                               : PhosphorIconsBold.crosshair,
+                          onPressed: () async {
+                            setState(() { _followMe = !_followMe; });
+                            if (_followMe && _currentPosition != null) {
+                              final controller = await _controller.future;
+                              controller.animateCamera(
+                                CameraUpdate.newLatLngZoom(_currentPosition!, 16),
+                              );
+                            }
+                          },
                         ),
-                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
                     ],
                   ),
                 ),
 
-                // 3. Bottom Action Panel
+
+                // ── Zone 4: Bottom Panel (progress + action button) ──
                 Positioned(
-                  bottom: 30,
-                  left: 20,
-                  right: 20,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
                   child: SafeArea(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Route Info Pill
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surface.withValues(
-                                  alpha: 0.8,
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    PhosphorIconsFill.clock,
-                                    size: 18,
-                                    color: Colors.orange,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _remainingTime,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  const Icon(
-                                    PhosphorIconsFill.path,
-                                    size: 18,
-                                    color: Colors.blue,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _remainingDistance,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                    top: false,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface.withValues(alpha: 0.92),
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                            border: Border(
+                              top: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1,
                               ),
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 20,
+                                offset: const Offset(0, -4),
+                              ),
+                            ],
                           ),
-                        ).animate().slideY(begin: 1, end: 0, duration: 400.ms),
-
-                        // Route Progress Bar
-                        if (!isSchoolState && _stops.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Column(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: LinearProgressIndicator(
-                                    value: _stops.isEmpty ? 0.0 : (_currentStopIndex / _stops.length),
-                                    backgroundColor: Colors.white.withValues(alpha: 0.1),
-                                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1D40AF)),
-                                    minHeight: 6,
-                                  ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Drag handle
+                              Container(
+                                width: 36,
+                                height: 3,
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(2),
                                 ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      isArabic 
-                                          ? 'المحطة $_currentStopIndex من ${_stops.length}' 
-                                          : 'Stop $_currentStopIndex of ${_stops.length}',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white.withValues(alpha: 0.7),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${((_stops.isEmpty ? 0.0 : (_currentStopIndex / _stops.length)) * 100).toInt()}%',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white.withValues(alpha: 0.7),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ).animate().fadeIn(delay: 200.ms),
-                        
-                        // Absence Warning Card (Show if student is absent)
-                        if (currentStop != null && currentStop.isAbsent && !isSchoolState)
-                          GlassCard(
-                            margin: const EdgeInsets.only(top: 15),
-                            padding: const EdgeInsets.all(16),
-                            borderRadius: 24,
-                            child: Stack(
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.withValues(alpha: 0.15),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        PhosphorIconsFill.warningCircle,
-                                        color: Colors.red[400],
-                                        size: 28,
-                                      ),
-                                    ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-                                     .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 1000.ms),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                isArabic ? 'بلاغ غياب' : 'Absence Reported',
-                                                style: TextStyle(
-                                                  color: Colors.red[400],
-                                                  fontWeight: FontWeight.w900,
-                                                  fontSize: 14,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.red.withValues(alpha: 0.2),
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  isArabic ? 'هام' : 'IMPORTANT',
-                                                  style: TextStyle(
-                                                    color: Colors.red[300],
-                                                    fontSize: 8,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            isArabic
-                                                ? 'الطالب  مسجل كغائب اليوم.'
-                                                : ' is marked absent today.',
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.9),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          Text(
-                                            isArabic ? 'يمكنك تخطي هذه النقطة.' : 'You can safely skip this stop.',
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.6),
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ).animate().fadeIn().slideY(begin: 0.2, end: 0, duration: 400.ms),
-
-                        const SizedBox(height: 20),
-
-                        // Main Action Button (PremiumButton)
-                        _isActionLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : PremiumButton(
-                                height: 60,
-                                borderRadius: 20,
-                                text: _getActionButtonText(
-                                  isArabic,
-                                  isSchoolState,
-                                  isMorning,
-                                  currentStop,
-                                ),
-                                color: (!isMorning && _currentStopIndex == _stops.length - 1 && _routeRepository.getOnBoardCount(_stops) > 0)
-                                    ? Colors.grey[700]
-                                    : ((currentStop?.isAbsent == true && !isSchoolState)
-                                        ? Colors.red[600]
-                                        : null),
-                                gradient: (!isMorning && _currentStopIndex == _stops.length - 1 && _routeRepository.getOnBoardCount(_stops) > 0)
-                                    ? null
-                                    : ((currentStop?.isAbsent == true && !isSchoolState)
-                                        ? LinearGradient(
-                                            colors: [Colors.red[600]!, Colors.orange[800]!],
-                                            begin: AlignmentDirectional.centerStart,
-                                            end: AlignmentDirectional.centerEnd,
-                                          )
-                                        : const LinearGradient(
-                                            colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
-                                            begin: AlignmentDirectional.topStart,
-                                            end: AlignmentDirectional.bottomEnd,
-                                          )),
-                                icon: (currentStop?.isAbsent == true && !isSchoolState)
-                                    ? PhosphorIconsBold.skipForward
-                                    : (_hasNotified || isSchoolState || !_isMovingToStop
-                                        ? PhosphorIconsBold.arrowRight
-                                        : PhosphorIconsBold.mapPin),
-                                onTap: () {
-                                  if (_isFinished) return;
-                                  // If absent, skip directly
-                                  if (currentStop?.isAbsent == true && !isSchoolState) {
-                                    _advanceToNextStop();
-                                    return;
-                                  }
-                                  if (isSchoolState) {
-                                    _advanceToNextStop();
-                                  } else {
-                                    if (_hasNotified) {
-                                      _advanceToNextStop();
-                                    } else if (!_isMovingToStop) {
-                                      setState(() { _isMovingToStop = true; });
-                                    } else {
-                                      _handleNearHouse();
-                                    }
-                                  }
-                                },
-                              ).animate(
-                                onPlay: (controller) {
-                                  if (currentStop?.isAbsent == true && !isSchoolState) {
-                                    controller.repeat(reverse: true);
-                                  }
-                                },
-                              ).slideY(
-                                begin: 1,
-                                end: 0,
-                                duration: 500.ms,
-                              ).then().shimmer(
-                                duration: 2000.ms,
-                                color: Colors.white.withValues(alpha: 0.2),
                               ),
-                      ],
+
+                              // ── Segmented progress bar ──
+                              if (!isSchoolState && _stops.isNotEmpty)
+                                _buildSegmentedProgressBar(isArabic, theme)
+                                    .animate()
+                                    .fadeIn(delay: 150.ms),
+
+                              // ── Absence inline banner ──
+                              if (currentStop != null && currentStop.isAbsent && !isSchoolState) ...
+                                [
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.redAccent.withValues(alpha: 0.35),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          PhosphorIconsFill.warningCircle,
+                                          color: Colors.redAccent,
+                                          size: 20,
+                                        ).animate(
+                                          onPlay: (c) => c.repeat(reverse: true),
+                                        ).scale(
+                                          begin: const Offset(1, 1),
+                                          end: const Offset(1.2, 1.2),
+                                          duration: 700.ms,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            isArabic
+                                                ? '${currentStop.nameAr} غائب اليوم — يمكنك التخطي'
+                                                : '${currentStop.nameEn} is absent — you can skip',
+                                            style: const TextStyle(
+                                              color: Colors.redAccent,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+
+                              const SizedBox(height: 12),
+
+                              // ── Main action button ──
+                              _isActionLoading
+                                  ? const Center(child: CircularProgressIndicator())
+                                  : PremiumButton(
+                                      height: 56,
+                                      borderRadius: 16,
+                                      text: _getActionButtonText(
+                                        isArabic,
+                                        isSchoolState,
+                                        isMorning,
+                                        currentStop,
+                                      ),
+                                      color: (!isMorning && _currentStopIndex == _stops.length - 1 && _routeRepository.getOnBoardCount(_stops) > 0)
+                                          ? Colors.grey[700]
+                                          : ((currentStop?.isAbsent == true && !isSchoolState)
+                                              ? Colors.red[600]
+                                              : null),
+                                      gradient: (!isMorning && _currentStopIndex == _stops.length - 1 && _routeRepository.getOnBoardCount(_stops) > 0)
+                                          ? null
+                                          : ((currentStop?.isAbsent == true && !isSchoolState)
+                                              ? LinearGradient(
+                                                  colors: [Colors.red[600]!, Colors.orange[800]!],
+                                                  begin: AlignmentDirectional.centerStart,
+                                                  end: AlignmentDirectional.centerEnd,
+                                                )
+                                              : const LinearGradient(
+                                                  colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+                                                  begin: AlignmentDirectional.topStart,
+                                                  end: AlignmentDirectional.bottomEnd,
+                                                )),
+                                      icon: (currentStop?.isAbsent == true && !isSchoolState)
+                                          ? PhosphorIconsBold.skipForward
+                                          : (_hasNotified || isSchoolState || !_isMovingToStop
+                                              ? PhosphorIconsBold.arrowRight
+                                              : PhosphorIconsBold.mapPin),
+                                      onTap: () {
+                                        if (_isFinished) return;
+                                        if (currentStop?.isAbsent == true && !isSchoolState) {
+                                          _advanceToNextStop();
+                                          return;
+                                        }
+                                        if (isSchoolState) {
+                                          _advanceToNextStop();
+                                        } else {
+                                          if (_hasNotified) {
+                                            _advanceToNextStop();
+                                          } else if (!_isMovingToStop) {
+                                            setState(() { _isMovingToStop = true; });
+                                          } else {
+                                            _handleNearHouse();
+                                          }
+                                        }
+                                      },
+                                    ).animate(
+                                      onPlay: (controller) {
+                                        if (currentStop?.isAbsent == true && !isSchoolState) {
+                                          controller.repeat(reverse: true);
+                                        }
+                                      },
+                                    ).slideY(begin: 0.3, end: 0, duration: 350.ms),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
 
-                // 4. Top Bar (Back Button & Title) - MOVED TO END of Stack to be ON TOP
+                // ── Zone 1 (on top): Top bar — SafeArea spacing guaranteed ──
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
                   child: SafeArea(
+                    bottom: false,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
+                        horizontal: 16,
                         vertical: 10,
                       ),
                       child: Row(
@@ -1980,6 +2314,37 @@ class _TripTypeBadge extends StatelessWidget {
   }
 }
 
+/// Compact mini FAB used in the right-side button column on the map.
+class _MapFab extends StatelessWidget {
+  final String heroTag;
+  final Color bgColor;
+  final Color fgColor;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _MapFab({
+    required this.heroTag,
+    required this.bgColor,
+    required this.icon,
+    required this.onPressed,
+    this.fgColor = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: heroTag,
+      mini: true,
+      backgroundColor: bgColor,
+      foregroundColor: fgColor,
+      elevation: 2,
+      onPressed: onPressed,
+      child: Icon(icon, size: 20),
+    );
+  }
+}
+
+
 
 class _NextStopCard extends StatelessWidget {
   const _NextStopCard({required this.isArabic, required this.stop, this.secondsRemaining});
@@ -1992,133 +2357,203 @@ class _NextStopCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return GlassCard(
-      borderRadius: 24,
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          // Student Photo Avatar
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.amber, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF0B192C).withValues(alpha: 0.85),
+                const Color(0xFF1E3E62).withValues(alpha: 0.65),
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: CircleAvatar(
-              radius: 26,
-              backgroundImage: NetworkImage(stop.photoUrl ?? ''),
-              onBackgroundImageError: (exception, stackTrace) =>
-                  const Icon(Icons.person),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.amber.withValues(alpha: 0.3),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.amber.withValues(alpha: 0.1),
+                blurRadius: 15,
+                spreadRadius: 1,
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
-          // Info List
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        isArabic ? 'الوجهة التالية' : 'Next Stop',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.amber[900],
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+          child: Row(
+            children: [
+              // Student Photo Avatar with breathing animation
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.amber, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      spreadRadius: 2,
                     ),
-                    const SizedBox(width: 12),
-                    if (stop.isAbsent)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.red.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Text(
-                          isArabic ? 'غياب محتمل' : 'Probable Absence',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  isArabic ? stop.nameAr : stop.nameEn,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                child: CircleAvatar(
+                  radius: 26,
+                  backgroundImage: NetworkImage(stop.photoUrl ?? ''),
+                  onBackgroundImageError: (exception, stackTrace) =>
+                      const Icon(Icons.person),
+                ),
+              ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+               .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 1500.ms, curve: Curves.easeInOut)
+               .shimmer(color: Colors.white.withValues(alpha: 0.2), duration: 2500.ms),
+              const SizedBox(width: 14),
+              // Info List
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        // LED status pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD230).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFFFFD230).withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFFD230).withValues(alpha: 0.1),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            isArabic ? 'الوجهة التالية' : 'Next Stop',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.amber[400],
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (stop.isAbsent)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.red.withValues(alpha: 0.4),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              isArabic ? 'غياب محتمل' : 'Probable Absence',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isArabic ? stop.nameAr : stop.nameEn,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (secondsRemaining != null) ...[
+                const SizedBox(width: 12),
+                // Monospace stopwatch-style digital countdown timer
+                Builder(
+                  builder: (context) {
+                    final bool timeUp = secondsRemaining! <= 0;
+                    final Color timerColor = timeUp ? Colors.redAccent : const Color(0xFF10B981);
+                    
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: timerColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: timerColor.withValues(alpha: 0.4),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: timerColor.withValues(alpha: 0.15),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            PhosphorIconsFill.timer,
+                            size: 20,
+                            color: timerColor,
+                          ).animate(onPlay: (controller) {
+                            if (timeUp) controller.repeat(reverse: true);
+                          }).scale(
+                            begin: const Offset(1, 1),
+                            end: timeUp ? const Offset(1.2, 1.2) : const Offset(1.05, 1.05),
+                            duration: 800.ms,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            secondsRemaining! > 0 
+                              ? "${(secondsRemaining! ~/ 60)}:${(secondsRemaining! % 60).toString().padLeft(2, '0')}" 
+                              : "+${(secondsRemaining!.abs() ~/ 60)}:${(secondsRemaining!.abs() % 60).toString().padLeft(2, '0')}",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              color: timerColor,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                 ),
               ],
-            ),
+            ],
           ),
-          if (secondsRemaining != null) ...[
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: (secondsRemaining! <= 0)
-                    ? Colors.red.withValues(alpha: 0.15)
-                    : Colors.green.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: (secondsRemaining! <= 0)
-                      ? Colors.red.withValues(alpha: 0.3)
-                      : Colors.green.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    PhosphorIconsFill.timer,
-                    size: 18,
-                    color: (secondsRemaining! <= 0) ? Colors.red : Colors.green,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    secondsRemaining! > 0 ? "${(secondsRemaining! ~/ 60)}:${(secondsRemaining! % 60).toString().padLeft(2, '0')}" : "+${(secondsRemaining!.abs() ~/ 60)}:${(secondsRemaining!.abs() % 60).toString().padLeft(2, '0')}",
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      color: (secondsRemaining! <= 0) ? Colors.red : Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     )
     .animate(key: ValueKey(stop.nameEn))
