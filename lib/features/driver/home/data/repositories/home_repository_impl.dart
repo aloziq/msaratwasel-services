@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../domain/entities/trip_status.dart';
 import '../../domain/repositories/home_repository.dart';
@@ -115,7 +116,26 @@ class HomeRepositoryImpl implements HomeRepository {
       debugPrint('HomeRepositoryImpl: starting trip for busId: $busId');
       if (busId == null) throw Exception('No bus assigned');
 
-      final response = await ApiClient.instance.post('bus/$busId/start-trip');
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 5),
+          ),
+        );
+        debugPrint('HomeRepositoryImpl: Got position: ${position.latitude}, ${position.longitude}');
+      } catch (e) {
+        debugPrint('HomeRepositoryImpl: Failed to fetch current location for startTrip: $e');
+      }
+
+      final response = await ApiClient.instance.post(
+        'bus/$busId/start-trip',
+        data: {
+          if (position != null) 'latitude': position.latitude,
+          if (position != null) 'longitude': position.longitude,
+        },
+      );
       debugPrint(
         'HomeRepositoryImpl: start-trip response code: ${response.statusCode}',
       );

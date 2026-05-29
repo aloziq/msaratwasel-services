@@ -99,6 +99,27 @@ void onStart(ServiceInstance service) async {
     final repository = RouteRepositoryImpl();
     DateTime? lastEmitTime;
 
+    // Send immediate initial location update on service startup
+    try {
+      final initialPosition = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
+      await repository.updateLocation(
+        latitude: initialPosition.latitude,
+        longitude: initialPosition.longitude,
+        heading: initialPosition.heading,
+        speed: initialPosition.speed,
+        accuracy: initialPosition.accuracy,
+      );
+      lastEmitTime = DateTime.now();
+      debugPrint('🚀 [LocationService] Sent initial position update successfully');
+    } catch (e) {
+      debugPrint('⚠️ [LocationService] Failed to send initial position update: $e');
+    }
+
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,

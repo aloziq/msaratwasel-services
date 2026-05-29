@@ -67,7 +67,7 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
       emit(DriverHomeLoaded(trips));
 
       // Handle Location Service Lifecycle
-      final activeTrip = trips.where((t) => t.status == 'in_progress').firstOrNull;
+      final activeTrip = trips.where((t) => t.status == 'in_progress' || t.status == 'awaiting_confirmation').firstOrNull;
       if (activeTrip != null) {
         LocationService.start();
       } else {
