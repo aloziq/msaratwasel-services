@@ -42,6 +42,7 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
   StreamSubscription? _connectivitySubscription;
   Timer? _pollingTimer;
   String? _busId;
+  DateTime? _lastWebSocketMessageTime;
 
   BusTrackingCubit() : super(BusTrackingInitial());
 
@@ -134,6 +135,13 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
       dio: ApiClient.instance,
       onMessageReceived: (data) {
         if (isClosed) return;
+        final event = data['event']?.toString() ?? '';
+        if (event != 'bus.location.updated' && event != 'driver.location.updated') {
+          return;
+        }
+        
+        _lastWebSocketMessageTime = DateTime.now();
+        
         // Extract the actual payload from the wrapper 'data' field if it exists
         final eventData = data.containsKey('data') && data['data'] is Map
             ? data['data'] as Map
@@ -170,6 +178,12 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 15), (timer) async {
       if (isClosed || state is! BusTrackingLoaded) return;
+      
+      // If live WebSocket updates are active and healthy, skip HTTP polling to conserve battery and server resources!
+      if (_lastWebSocketMessageTime != null && 
+          DateTime.now().difference(_lastWebSocketMessageTime!).inSeconds < 40) {
+        return;
+      }
       try {
         final loadedState = state as BusTrackingLoaded;
         final locationResponse = await ApiClient.instance.get('/bus/$busId/location');

@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:msaratwasel_services/core/utils/active_conversation_tracker.dart';
 import 'package:injectable/injectable.dart';
@@ -11,6 +12,7 @@ import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
 import '../../features/shared/auth/presentation/cubit/auth_state.dart';
 import '../../features/shared/auth/domain/entities/user_entity.dart';
 import '../../config/routes/app_routes.dart';
+import '../../config/routes/app_router.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -251,6 +253,9 @@ class FcmService {
       );
 
       final data = message.data;
+      final type = data['type']?.toString();
+
+
       final correlationId = _pick([data['correlation_id']]);
       final notificationId = _pick([
         data['notification_id'],
@@ -429,6 +434,8 @@ class FcmService {
     final type = data['type']?.toString();
 
     debugPrint('🔔 [FCM] Handling notification tap of type: $type');
+
+
 
     if (type == 'chat' ||
         type == 'new_message' ||

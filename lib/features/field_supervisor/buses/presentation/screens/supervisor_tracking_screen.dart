@@ -235,14 +235,14 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
               if (target != null && target.latitude != 0.0 && target.longitude != 0.0) {
                 try {
                   final matchedStop = state.stops.firstWhere(
-                    (s) => (s.location.latitude - target.latitude).abs() < 0.0001 &&
-                           (s.location.longitude - target.longitude).abs() < 0.0001
+                    (s) => (s.location.latitude - target.latitude).abs() < 0.00015 &&
+                           (s.location.longitude - target.longitude).abs() < 0.00015
                   );
                   nextStopName = matchedStop.nameAr;
                 } catch (_) {
                   if (state.schoolPosition != null &&
-                      (state.schoolPosition!.latitude - target.latitude).abs() < 0.0001 &&
-                      (state.schoolPosition!.longitude - target.longitude).abs() < 0.0001) {
+                      (state.schoolPosition!.latitude - target.latitude).abs() < 0.00015 &&
+                      (state.schoolPosition!.longitude - target.longitude).abs() < 0.00015) {
                     nextStopName = 'المدرسة';
                   } else {
                     nextStopName = 'الوجهة المحددة';

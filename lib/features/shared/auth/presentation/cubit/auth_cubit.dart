@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../../core/usecases/usecase.dart';
@@ -14,6 +16,8 @@ import '../../../../../core/services/reverb_service.dart';
 import '../../../../../core/services/fcm_service.dart';
 import '../../../../../core/di/injection.dart';
 import '../../../../../core/network/api_client.dart';
+import '../../../../../core/error/failure.dart';
+import '../../../../../config/routes/app_router.dart';
 import 'auth_state.dart';
 
 @lazySingleton
@@ -87,11 +91,13 @@ class AuthCubit extends Cubit<AuthState> {
       userId: int.parse(user.id),
       dio: ApiClient.instance,
       onMessageReceived: (data) {
-        // Handle global message events if needed
+        // Handle foreground notifications or Reverb messages if needed
       },
     );
     _reverbService!.connect();
   }
+
+
 
   Future<void> logout() async {
     emit(AuthLoading());
@@ -164,6 +170,10 @@ class AuthCubit extends Cubit<AuthState> {
         }
       },
     );
+  }
+
+  void forceLogout() {
+    _handleLogoutSuccess();
   }
 }
 

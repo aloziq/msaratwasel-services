@@ -73,6 +73,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
   ReverbService? _reverbService;
   StreamSubscription<Position>? _gpsSubscription;
+  DateTime? _lastUpdateLocationTime;
   Timer? _statusPollingTimer;
   Timer? _locationTimer;
   LatLng? _currentPosition;
@@ -834,7 +835,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     _gpsSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
+        distanceFilter: 20,
       ),
     ).listen((Position position) {
       if (!mounted) return;
@@ -875,15 +876,21 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         if (_isFirstLock) _isFirstLock = false;
       }
 
-      _routeRepository.updateLocation(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        speed: position.speed,
-        accuracy: position.accuracy,
-        heading: position.heading,
-        targetLat: _currentTarget?.latitude,
-        targetLng: _currentTarget?.longitude,
-      );
+      // Throttle server uploads: send updates at most once every 6 seconds to drastically conserve battery and data!
+      final now = DateTime.now();
+      if (_lastUpdateLocationTime == null || 
+          now.difference(_lastUpdateLocationTime!).inSeconds >= 6) {
+        _lastUpdateLocationTime = now;
+        _routeRepository.updateLocation(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          speed: position.speed,
+          accuracy: position.accuracy,
+          heading: position.heading,
+          targetLat: _currentTarget?.latitude,
+          targetLng: _currentTarget?.longitude,
+        );
+      }
 
       bool isOff = _checkIfOffRoute(newPos);
       if (isOff) {

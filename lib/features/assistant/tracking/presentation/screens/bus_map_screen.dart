@@ -323,35 +323,6 @@ class _BusMapScreenState extends State<BusMapScreen> {
                                       ],
                                     ),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                    child: _InteractiveRefreshButton(
-                                      onTap: () {
-                                        context.read<BusTripCubit>().loadTrip(silent: false);
-                                        context.read<BusTrackingCubit>().startTracking();
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Row(
-                                              children: [
-                                                SizedBox(
-                                                  width: 16,
-                                                  height: 16,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                  ),
-                                                ),
-                                                SizedBox(width: 12),
-                                                Text('جاري تحديث المسار والموقع...'),
-                                              ],
-                                            ),
-                                            backgroundColor: Color(0xFF1A73E8),
-                                            duration: Duration(seconds: 1),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -2042,84 +2013,7 @@ class _BreathingStatusDotState extends State<_BreathingStatusDot>
   }
 }
 
-class _InteractiveRefreshButton extends StatefulWidget {
-  final VoidCallback onTap;
 
-  const _InteractiveRefreshButton({required this.onTap});
-
-  @override
-  State<_InteractiveRefreshButton> createState() => _InteractiveRefreshButtonState();
-}
-
-class _InteractiveRefreshButtonState extends State<_InteractiveRefreshButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _handleTap() {
-    if (_isLoading) return;
-    setState(() {
-      _isLoading = true;
-    });
-    _controller.repeat();
-    widget.onTap();
-    
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        _controller.stop();
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: Tooltip(
-        message: 'تحديث البيانات',
-        child: InkWell(
-          onTap: _handleTap,
-          customBorder: const CircleBorder(),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-            ),
-            child: RotationTransition(
-              turns: _controller,
-              child: Icon(
-                Icons.refresh_rounded,
-                color: theme.colorScheme.primary,
-                size: 22,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _MapControlButton extends StatelessWidget {
   final IconData icon;

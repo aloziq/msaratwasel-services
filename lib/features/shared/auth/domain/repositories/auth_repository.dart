@@ -36,4 +36,5 @@ abstract class AuthRepository {
   /// Re-fetches user profile from the server and updates the local cache.
   /// Call this after a language change so the cached `name` reflects the new locale.
   Future<Either<Failure, UserEntity>> refreshUserProfile();
+
 }

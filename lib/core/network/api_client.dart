@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' as ui;
 import 'api_config.dart';
 import '../responsive/api_language_interceptor.dart';
+import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
 
 class ApiClient {
   static Dio get instance {
@@ -79,7 +80,6 @@ class ApiClient {
     return dio;
   }
 
-  /// مسح التوكن المنتهي من التخزين المحلي
   static void _handleUnauthorized() {
     try {
       final prefs = GetIt.instance<SharedPreferences>();
@@ -90,6 +90,11 @@ class ApiClient {
       prefs.remove('USER_AVATAR');
       prefs.remove('USER_BUS_ID');
       debugPrint('[ApiClient] 🗑️ Cleared expired session data');
+      
+      // Force AuthCubit to emit AuthUnauthenticated and redirect to Login
+      if (GetIt.instance.isRegistered<AuthCubit>()) {
+        GetIt.instance<AuthCubit>().forceLogout();
+      }
     } catch (e) {
       debugPrint('[ApiClient] Error clearing session: $e');
     }

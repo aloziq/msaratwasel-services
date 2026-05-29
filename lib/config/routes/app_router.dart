@@ -59,6 +59,8 @@ import '../../features/field_supervisor/delays/presentation/screens/delays_scree
 import '../../features/field_supervisor/field_trips/presentation/screens/field_trips_screen.dart';
 import '../../features/field_supervisor/buses/presentation/screens/supervisor_tracking_screen.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 /// Application router configuration using GoRouter.
 ///
 /// Features:
@@ -71,6 +73,7 @@ class AppRouter {
   AppRouter({required this.authCubit});
 
   late final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.login,
     debugLogDiagnostics: true,
     refreshListenable: GoRouterRefreshStream(authCubit.stream),

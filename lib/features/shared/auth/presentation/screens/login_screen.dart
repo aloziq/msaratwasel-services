@@ -80,9 +80,6 @@ class _LoginScreenState extends State<LoginScreen>
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
-        } else if (state is AuthAuthenticated) {
-          // The router will handle the redirection automatically based on the new state
-          // and its refreshListenable: GoRouterRefreshStream(authCubit.stream)
         }
       },
       builder: (context, state) {

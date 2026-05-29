@@ -31,6 +31,8 @@ class AuthFailure extends Failure {
   const AuthFailure([super.message]);
 }
 
+
+
 /// Failure when cache operations fail.
 class CacheFailure extends Failure {
   const CacheFailure([super.message]);
