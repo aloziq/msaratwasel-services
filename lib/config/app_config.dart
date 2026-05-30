@@ -6,11 +6,11 @@ class AppConfig {
 
   // Distance filter (in meters) before triggering a GPS location update
   // Recommended: 0 for local testing/simulation, 20 for real production
-  static const int locationDistanceFilter = 0;
+  static const int locationDistanceFilter = 10;
 
   // Throttle time (in seconds) between sending updates to the server
   // Recommended: 3 for local testing/simulation, 6 for real production
-  static const int locationUploadThrottleSeconds = 3;
+  static const int locationUploadThrottleSeconds = 5;
 
   static const String googleMapsApiKey =
       'AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs';
