@@ -128,15 +128,15 @@ void onStart(ServiceInstance service) async {
     int simStep = 0;
 
     Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
+      locationSettings: LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 0,
+        distanceFilter: AppConfig.locationDistanceFilter,
       ),
     ).listen((Position position) async {
       try {
         final now = DateTime.now();
-        // Throttler: Do not emit more frequently than every 3 seconds
-        if (lastEmitTime != null && now.difference(lastEmitTime!).inSeconds < 3) {
+        // Throttler: Do not emit more frequently than configured seconds
+        if (lastEmitTime != null && now.difference(lastEmitTime!).inSeconds < AppConfig.locationUploadThrottleSeconds) {
           return;
         }
         lastEmitTime = now;

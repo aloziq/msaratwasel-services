@@ -4,6 +4,14 @@ class AppConfig {
   // Set to true for indoor testing/simulation, false for real hardware GPS tracking
   static const bool enableLocationSimulation = false;
 
+  // Distance filter (in meters) before triggering a GPS location update
+  // Recommended: 0 for local testing/simulation, 20 for real production
+  static const int locationDistanceFilter = 0;
+
+  // Throttle time (in seconds) between sending updates to the server
+  // Recommended: 3 for local testing/simulation, 6 for real production
+  static const int locationUploadThrottleSeconds = 3;
+
   static const String googleMapsApiKey =
       'AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs';
   static const String apiBaseUrl =

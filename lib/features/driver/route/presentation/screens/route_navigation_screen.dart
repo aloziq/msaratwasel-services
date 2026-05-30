@@ -836,7 +836,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     _gpsSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 0,
+        distanceFilter: AppConfig.locationDistanceFilter,
       ),
     ).listen((Position position) {
       if (!mounted) return;
@@ -884,10 +884,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         if (_isFirstLock) _isFirstLock = false;
       }
 
-      // Throttle server uploads: send updates at most once every 3 seconds to drastically conserve battery and data!
+      // Throttle server uploads: send updates at most once every configured seconds to drastically conserve battery and data!
       final now = DateTime.now();
       if (_lastUpdateLocationTime == null || 
-          now.difference(_lastUpdateLocationTime!).inSeconds >= 3) {
+          now.difference(_lastUpdateLocationTime!).inSeconds >= AppConfig.locationUploadThrottleSeconds) {
         _lastUpdateLocationTime = now;
         _routeRepository.updateLocation(
           latitude: simulatedLat,
