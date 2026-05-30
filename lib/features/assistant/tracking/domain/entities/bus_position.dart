@@ -6,6 +6,8 @@ class BusPosition extends Equatable {
   final String busId;
   final double lat;
   final double lng;
+  final double? targetLat;
+  final double? targetLng;
   final double speedKmh;
   final double distanceKm;
   final int etaMinutes;
@@ -17,6 +19,8 @@ class BusPosition extends Equatable {
     required this.busId,
     required this.lat,
     required this.lng,
+    this.targetLat,
+    this.targetLng,
     required this.speedKmh,
     required this.distanceKm,
     required this.etaMinutes,
@@ -29,6 +33,8 @@ class BusPosition extends Equatable {
     String? busId,
     double? lat,
     double? lng,
+    double? targetLat,
+    double? targetLng,
     double? speedKmh,
     double? distanceKm,
     int? etaMinutes,
@@ -40,6 +46,8 @@ class BusPosition extends Equatable {
       busId: busId ?? this.busId,
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
+      targetLat: targetLat ?? this.targetLat,
+      targetLng: targetLng ?? this.targetLng,
       speedKmh: speedKmh ?? this.speedKmh,
       distanceKm: distanceKm ?? this.distanceKm,
       etaMinutes: etaMinutes ?? this.etaMinutes,
@@ -54,6 +62,8 @@ class BusPosition extends Equatable {
     busId,
     lat,
     lng,
+    targetLat,
+    targetLng,
     speedKmh,
     distanceKm,
     etaMinutes,

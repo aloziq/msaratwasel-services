@@ -96,6 +96,8 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
               busId: busId,
               lat: lat,
               lng: lng,
+              targetLat: double.tryParse(locationData['target_lat']?.toString() ?? ''),
+              targetLng: double.tryParse(locationData['target_lng']?.toString() ?? ''),
               speedKmh: double.tryParse(locationData['speed_kmh']?.toString() ?? '') ?? 0.0,
               distanceKm: 0.0,
               etaMinutes: 0,
@@ -149,6 +151,8 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
 
         final lat = double.tryParse(eventData['latitude']?.toString() ?? '') ?? currentPosition?.lat ?? 0.0;
         final lng = double.tryParse(eventData['longitude']?.toString() ?? '') ?? currentPosition?.lng ?? 0.0;
+        final targetLat = double.tryParse(eventData['target_lat']?.toString() ?? '');
+        final targetLng = double.tryParse(eventData['target_lng']?.toString() ?? '');
         final speedKmh = double.tryParse(eventData['speed_kmh']?.toString() ?? '') ?? currentPosition?.speedKmh ?? 0.0;
         final studentsOnBoard = int.tryParse(eventData['students_on_board']?.toString() ?? '') ?? currentPosition?.studentsOnBoard ?? 0;
         
@@ -156,6 +160,8 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
           busId: busId,
           lat: lat,
           lng: lng,
+          targetLat: targetLat ?? currentPosition?.targetLat,
+          targetLng: targetLng ?? currentPosition?.targetLng,
           speedKmh: speedKmh,
           distanceKm: currentPosition?.distanceKm ?? 0.0,
           etaMinutes: currentPosition?.etaMinutes ?? 0,
@@ -202,6 +208,8 @@ class BusTrackingCubit extends Cubit<BusTrackingState> {
               busId: busId,
               lat: lat,
               lng: lng,
+              targetLat: double.tryParse(locationData['target_lat']?.toString() ?? ''),
+              targetLng: double.tryParse(locationData['target_lng']?.toString() ?? ''),
               speedKmh: double.tryParse(locationData['speed_kmh']?.toString() ?? '') ?? 0.0,
               distanceKm: loadedState.position?.distanceKm ?? 0.0,
               etaMinutes: loadedState.position?.etaMinutes ?? 0,

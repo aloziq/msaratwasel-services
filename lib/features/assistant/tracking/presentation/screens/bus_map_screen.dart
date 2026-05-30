@@ -485,34 +485,48 @@ class _TrackingMapState extends State<_TrackingMap> {
 
     LatLng? destination;
 
-    if (isToHome) {
-      // Afternoon trip: next destination is the first student not yet dropped at home
-      BusStudentEntity? nextStudent;
+    // Use driver's active target if available
+    if (widget.busPosition.targetLat != null && widget.busPosition.targetLng != null) {
+      final targetLatLng = LatLng(widget.busPosition.targetLat!, widget.busPosition.targetLng!);
       for (final s in activeStudents) {
-        if (s.status != BusStudentStatus.atHome) {
-          nextStudent = s;
+        if (_isStudentActiveTarget(s, targetLatLng, isToHome)) {
+          destination = _getStudentLocation(s, isToHome);
           break;
         }
       }
-      if (nextStudent != null) {
-        destination = _getStudentLocation(nextStudent, isToHome);
-      }
-    } else {
-      // Morning trip: next destination is first student not yet boarded and not yet dropped off at school
-      BusStudentEntity? nextStudent;
-      for (final s in activeStudents) {
-        if (s.status != BusStudentStatus.onBus && s.status != BusStudentStatus.atSchool) {
-          nextStudent = s;
-          break;
+    }
+
+    // Fallback if no driver target or target student not found in active list
+    if (destination == null) {
+      if (isToHome) {
+        // Afternoon trip: next destination is the first student not yet dropped at home
+        BusStudentEntity? nextStudent;
+        for (final s in activeStudents) {
+          if (s.status != BusStudentStatus.atHome) {
+            nextStudent = s;
+            break;
+          }
         }
-      }
-      if (nextStudent != null) {
-        destination = _getStudentLocation(nextStudent, isToHome);
+        if (nextStudent != null) {
+          destination = _getStudentLocation(nextStudent, isToHome);
+        }
       } else {
-        // All active students have boarded. Destination is now the school!
-        if (widget.trip?.schoolLatitude != null && widget.trip?.schoolLongitude != null &&
-            widget.trip!.schoolLatitude != 0.0 && widget.trip!.schoolLongitude != 0.0) {
-          destination = LatLng(widget.trip!.schoolLatitude!, widget.trip!.schoolLongitude!);
+        // Morning trip: next destination is first student not yet boarded and not yet dropped off at school
+        BusStudentEntity? nextStudent;
+        for (final s in activeStudents) {
+          if (s.status != BusStudentStatus.onBus && s.status != BusStudentStatus.atSchool) {
+            nextStudent = s;
+            break;
+          }
+        }
+        if (nextStudent != null) {
+          destination = _getStudentLocation(nextStudent, isToHome);
+        } else {
+          // All active students have boarded. Destination is now the school!
+          if (widget.trip?.schoolLatitude != null && widget.trip?.schoolLongitude != null &&
+              widget.trip!.schoolLatitude != 0.0 && widget.trip!.schoolLongitude != 0.0) {
+            destination = LatLng(widget.trip!.schoolLatitude!, widget.trip!.schoolLongitude!);
+          }
         }
       }
     }
@@ -610,6 +624,38 @@ class _TrackingMapState extends State<_TrackingMap> {
     return LatLng(lat, lng);
   }
 
+  bool _isStudentActiveTarget(BusStudentEntity student, LatLng? target, bool isToHome) {
+    if (target == null) return false;
+
+    final loc = _getStudentLocation(student, isToHome);
+    if (loc != null) {
+      final latDiff = (loc.latitude - target.latitude).abs();
+      final lngDiff = (loc.longitude - target.longitude).abs();
+      if (latDiff < 0.00015 && lngDiff < 0.00015) {
+        return true;
+      }
+    }
+
+    // Try fallback locations
+    final coords = [
+      student.latitude != null && student.longitude != null ? LatLng(student.latitude!, student.longitude!) : null,
+      student.forthLatitude != null && student.forthLongitude != null ? LatLng(student.forthLatitude!, student.forthLongitude!) : null,
+      student.backLatitude != null && student.backLongitude != null ? LatLng(student.backLatitude!, student.backLongitude!) : null,
+    ];
+
+    for (final coord in coords) {
+      if (coord != null && coord.latitude != 0.0 && coord.longitude != 0.0) {
+        final latDiff = (coord.latitude - target.latitude).abs();
+        final lngDiff = (coord.longitude - target.longitude).abs();
+        if (latDiff < 0.00015 && lngDiff < 0.00015) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   Future<void> _loadMarkers() async {
     final langCode = Localizations.localeOf(context).languageCode;
     final isToHome = widget.trip?.suggestedTripType == 'to_home';
@@ -651,7 +697,19 @@ class _TrackingMapState extends State<_TrackingMap> {
       return distA.compareTo(distB);
     });
 
-    final BusStudentEntity? nextStudent = activeStudents.isNotEmpty ? activeStudents.first : null;
+    BusStudentEntity? nextStudent;
+    if (widget.busPosition.targetLat != null && widget.busPosition.targetLng != null) {
+      final targetLatLng = LatLng(widget.busPosition.targetLat!, widget.busPosition.targetLng!);
+      for (final s in activeStudents) {
+        if (_isStudentActiveTarget(s, targetLatLng, isToHome)) {
+          nextStudent = s;
+          break;
+        }
+      }
+    }
+    
+    // Fallback: If no target or no match, use the closest student
+    nextStudent ??= activeStudents.isNotEmpty ? activeStudents.first : null;
 
     final newMarkers = <String, BitmapDescriptor>{};
     for (final student in widget.students) {

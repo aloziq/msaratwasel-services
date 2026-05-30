@@ -101,6 +101,9 @@ void onStart(ServiceInstance service) async {
 
     // Send immediate initial location update on service startup
     try {
+      try {
+        await prefs.reload();
+      } catch (_) {}
       final initialPosition = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -120,10 +123,12 @@ void onStart(ServiceInstance service) async {
       debugPrint('⚠️ [LocationService] Failed to send initial position update: $e');
     }
 
+    int simStep = 0;
+
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 15,
+        distanceFilter: 0,
       ),
     ).listen((Position position) async {
       try {
@@ -134,9 +139,17 @@ void onStart(ServiceInstance service) async {
         }
         lastEmitTime = now;
 
+        try {
+          await prefs.reload();
+        } catch (_) {}
+
+        simStep++;
+        final double finalLat = position.latitude + (simStep * 0.00015);
+        final double finalLng = position.longitude + (simStep * 0.00008);
+
         await repository.updateLocation(
-          latitude: position.latitude,
-          longitude: position.longitude,
+          latitude: finalLat,
+          longitude: finalLng,
           heading: position.heading,
           speed: position.speed,
           accuracy: position.accuracy,
@@ -147,7 +160,7 @@ void onStart(ServiceInstance service) async {
             service.setForegroundNotificationInfo(
               title: "تتبع الموقع نشط",
               content:
-                  "تم تحديث الموقع: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}",
+                  "تم تحديث الموقع: ${finalLat.toStringAsFixed(4)}, ${finalLng.toStringAsFixed(4)}",
             );
           }
         }

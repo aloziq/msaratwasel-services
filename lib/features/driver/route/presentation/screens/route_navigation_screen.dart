@@ -76,6 +76,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   DateTime? _lastUpdateLocationTime;
   Timer? _statusPollingTimer;
   Timer? _locationTimer;
+  int _simStep = 0;
   LatLng? _currentPosition;
   List<LatLng> _activeRoutePoints = []; // Road-following points
   final Map<String, List<LatLng>> _cachedRoutesToTarget = {}; // Cache for routes
@@ -835,12 +836,15 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     _gpsSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 20,
+        distanceFilter: 0,
       ),
     ).listen((Position position) {
       if (!mounted) return;
       
-      final newPos = LatLng(position.latitude, position.longitude);
+      _simStep++;
+      final double simulatedLat = position.latitude + (_simStep * 0.00015);
+      final double simulatedLng = position.longitude + (_simStep * 0.00008);
+      final newPos = LatLng(simulatedLat, simulatedLng);
       
       // Only trigger updates if moved > 15m or current position was null
       double distance = 0;
@@ -876,14 +880,14 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         if (_isFirstLock) _isFirstLock = false;
       }
 
-      // Throttle server uploads: send updates at most once every 6 seconds to drastically conserve battery and data!
+      // Throttle server uploads: send updates at most once every 3 seconds to drastically conserve battery and data!
       final now = DateTime.now();
       if (_lastUpdateLocationTime == null || 
-          now.difference(_lastUpdateLocationTime!).inSeconds >= 6) {
+          now.difference(_lastUpdateLocationTime!).inSeconds >= 3) {
         _lastUpdateLocationTime = now;
         _routeRepository.updateLocation(
-          latitude: position.latitude,
-          longitude: position.longitude,
+          latitude: simulatedLat,
+          longitude: simulatedLng,
           speed: position.speed,
           accuracy: position.accuracy,
           heading: position.heading,

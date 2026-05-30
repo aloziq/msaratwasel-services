@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get_it/get_it.dart';
 import '../../../../../core/network/api_client.dart';
 import '../models/student_stop_model.dart';
 import '../../domain/entities/student_stop.dart';
@@ -279,9 +281,22 @@ class RouteRepositoryImpl implements RouteRepository {
   }) async {
     try {
       if (_cachedBusId == null) {
+        try {
+          final prefs = GetIt.I<SharedPreferences>();
+          final busIdStr = prefs.getString('USER_BUS_ID');
+          if (busIdStr != null) {
+            _cachedBusId = int.tryParse(busIdStr);
+          }
+        } catch (_) {}
+      }
+
+      if (_cachedBusId == null) {
         final userResponse = await _dio.get('auth/user');
         final data = userResponse.data['data'] ?? userResponse.data['user'];
-        _cachedBusId = data['bus_id'] ?? data['has_bus'];
+        final busId = data['bus_id'] ?? data['has_bus'];
+        if (busId != null) {
+          _cachedBusId = int.tryParse(busId.toString());
+        }
       }
 
       if (_cachedBusId != null) {
@@ -298,7 +313,7 @@ class RouteRepositoryImpl implements RouteRepository {
             'latitude': latitude,
             'longitude': longitude,
             'heading': heading ?? 0.0,
-            'speed': speed ?? 0.0,
+            'speed': speed ?? 15.0, // Default to 15 km/h for simulated speed
             'accuracy': accuracy ?? 0.0,
             if (targetLat != null) 'target_lat': targetLat,
             if (targetLng != null) 'target_lng': targetLng,
