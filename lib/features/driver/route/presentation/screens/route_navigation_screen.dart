@@ -1309,7 +1309,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           color: const Color(0xFF1A73E8), // Vibrant blue matching parent app
           width: 6,
           jointType: JointType.round,
-          patterns: [PatternItem.dash(20), PatternItem.gap(10)], // Dotted line for fallback
         ),
       );
     }

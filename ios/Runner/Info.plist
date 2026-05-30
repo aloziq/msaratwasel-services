@@ -46,12 +46,16 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>FirebaseAppDelegateProxyEnabled</key>
-	<true/>
+	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
 		<string>remote-notification</string>
 		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>dev.flutter.background.refresh</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>نحتاج الوصول لموقعك أثناء استخدام التطبيق لتتبع مسار الحافلة وتحديث موقعك للأهالي</string>

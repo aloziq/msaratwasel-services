@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:893934602338:android:0c56e41b38971585fea93b",
+        "mobilesdk_app_id": "1:893934602338:android:25d5f73389dc8995fea93b",
         "android_client_info": {
-          "package_name": "com.example.msaratwasel_user"
+          "package_name": "com.msaratwasel.services"
         }
       },
       "oauth_client": [],
@@ -26,9 +26,9 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:893934602338:android:25d5f73389dc8995fea93b",
+        "mobilesdk_app_id": "1:893934602338:android:b654c67ce0498d75fea93b",
         "android_client_info": {
-          "package_name": "com.msaratwasel.services"
+          "package_name": "com.msaratwasel.user"
         }
       },
       "oauth_client": [],
