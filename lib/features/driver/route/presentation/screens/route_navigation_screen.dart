@@ -842,8 +842,12 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       if (!mounted) return;
       
       _simStep++;
-      final double simulatedLat = position.latitude + (_simStep * 0.00015);
-      final double simulatedLng = position.longitude + (_simStep * 0.00008);
+      final double simulatedLat = AppConfig.enableLocationSimulation
+          ? position.latitude + (_simStep * 0.00015)
+          : position.latitude;
+      final double simulatedLng = AppConfig.enableLocationSimulation
+          ? position.longitude + (_simStep * 0.00008)
+          : position.longitude;
       final newPos = LatLng(simulatedLat, simulatedLng);
       
       // Only trigger updates if moved > 15m or current position was null

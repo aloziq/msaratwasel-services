@@ -1,6 +1,9 @@
 import '../core/network/api_config.dart';
 
 class AppConfig {
+  // Set to true for indoor testing/simulation, false for real hardware GPS tracking
+  static const bool enableLocationSimulation = false;
+
   static const String googleMapsApiKey =
       'AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs';
   static const String apiBaseUrl =

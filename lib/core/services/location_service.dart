@@ -8,6 +8,8 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:msaratwasel_services/features/driver/route/data/repositories/route_repository_impl.dart';
 
+import 'package:msaratwasel_services/config/app_config.dart';
+
 @pragma('vm:entry-point')
 class LocationService {
   static bool _isConfigured = false;
@@ -144,8 +146,12 @@ void onStart(ServiceInstance service) async {
         } catch (_) {}
 
         simStep++;
-        final double finalLat = position.latitude + (simStep * 0.00015);
-        final double finalLng = position.longitude + (simStep * 0.00008);
+        final double finalLat = AppConfig.enableLocationSimulation
+            ? position.latitude + (simStep * 0.00015)
+            : position.latitude;
+        final double finalLng = AppConfig.enableLocationSimulation
+            ? position.longitude + (simStep * 0.00008)
+            : position.longitude;
 
         await repository.updateLocation(
           latitude: finalLat,
