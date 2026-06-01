@@ -4,6 +4,7 @@ import 'package:msaratwasel_services/config/theme/app_colors.dart';
 import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
+import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -74,9 +75,30 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       body: BlocListener<AuthCubit, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
+            final l10n = AppLocalizations.of(context)!;
+            String errorMsg = state.message;
+            final lowerError = errorMsg.toLowerCase();
+            
+            if ((lowerError.contains('uppercase') && lowerError.contains('lowercase')) ||
+                (lowerError.contains('كبير') && lowerError.contains('صغير')) ||
+                lowerError.contains('mixed case') ||
+                lowerError.contains('mixedcase')) {
+              errorMsg = l10n.passwordRequiresMixedCase;
+            } else if (lowerError.contains('number') || 
+                       lowerError.contains('digit') || 
+                       lowerError.contains('رقم') || 
+                       lowerError.contains('أرقام')) {
+              errorMsg = l10n.passwordRequiresNumber;
+            } else if (lowerError.contains('8 characters') || 
+                       lowerError.contains('8 أحرف') || 
+                       lowerError.contains('8 خانات') ||
+                       lowerError.contains('at least 8')) {
+              errorMsg = l10n.passwordMinLength;
+            }
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.message),
+                content: Text(errorMsg),
                 backgroundColor: AppColors.dangerRed,
               ),
             );

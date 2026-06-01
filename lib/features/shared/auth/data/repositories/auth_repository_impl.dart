@@ -78,8 +78,13 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> resetPassword({required String id}) async {
-    // لم يُنفَّذ بعد في الـ Backend بشكل كامل
-    return const Right(null);
+    try {
+      await remoteDataSource.resetPassword(nationalId: id);
+      return const Right(null);
+    } on Exception catch (e) {
+      final message = e.toString().replaceFirst('Exception: ', '');
+      return Left(ServerFailure(message));
+    }
   }
 
   @override

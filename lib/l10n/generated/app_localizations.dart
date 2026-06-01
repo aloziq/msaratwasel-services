@@ -830,6 +830,24 @@ abstract class AppLocalizations {
   /// **'Password updated successfully'**
   String get passwordUpdatedSuccess;
 
+  /// No description provided for @passwordRequiresMixedCase.
+  ///
+  /// In en, this message translates to:
+  /// **'Must contain at least one uppercase and one lowercase letter'**
+  String get passwordRequiresMixedCase;
+
+  /// No description provided for @passwordRequiresNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one number.'**
+  String get passwordRequiresNumber;
+
+  /// No description provided for @passwordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters.'**
+  String get passwordMinLength;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:
@@ -1835,7 +1853,7 @@ abstract class AppLocalizations {
   /// No description provided for @resetPasswordSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Password reset link sent successfully!'**
+  /// **'Password has been reset to your registered phone number successfully.'**
   String get resetPasswordSuccess;
 
   /// No description provided for @resetPasswordTitle.
@@ -1847,13 +1865,13 @@ abstract class AppLocalizations {
   /// No description provided for @resetPasswordSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter your ID to recover your account'**
+  /// **'Enter Civil ID to reset your password to your registered phone number.'**
   String get resetPasswordSubtitle;
 
   /// No description provided for @sendResetLink.
   ///
   /// In en, this message translates to:
-  /// **'Send Reset Link'**
+  /// **'Reset Password'**
   String get sendResetLink;
 
   /// No description provided for @maintenance.

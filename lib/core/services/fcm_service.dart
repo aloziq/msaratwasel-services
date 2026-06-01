@@ -19,6 +19,13 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint("Handling a background message: ${message.messageId}");
 
+  final prefs = await SharedPreferences.getInstance();
+  final String? token = prefs.getString('USER_TOKEN');
+  if (token == null || token.trim().isEmpty) {
+    debugPrint('🚫 [FCM BG] No active user session (USER_TOKEN is null/empty). Skipping notification.');
+    return;
+  }
+
   final data = message.data;
   final String? cid =
       data['correlation_id']?.toString() ??
@@ -27,7 +34,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       message.messageId;
 
   // 1. Persistent Deduplication check
-  final prefs = await SharedPreferences.getInstance();
   final List<String> processedCids =
       prefs.getStringList('processed_fcm_cids') ?? [];
   if (cid != null && processedCids.contains(cid)) {
@@ -327,6 +333,12 @@ class FcmService {
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
+    final authState = _authCubit.state;
+    if (authState is! AuthAuthenticated) {
+      debugPrint('🔇 [FCM FG] Suppressing notification - user is not authenticated.');
+      return;
+    }
+
     final data = message.data;
     final String? cid = _pick([
       data['correlation_id'],
@@ -510,6 +522,15 @@ class FcmService {
     } catch (e) {
       debugPrint('Error getting FCM token: $e');
       return null;
+    }
+  }
+
+  Future<void> deleteToken() async {
+    try {
+      await _messaging.deleteToken();
+      debugPrint('✅ [FCM] Token deleted successfully');
+    } catch (e) {
+      debugPrint('❌ [FCM] Error deleting token: $e');
     }
   }
 }

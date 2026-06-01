@@ -14,6 +14,7 @@ import '../../domain/usecases/update_avatar_usecase.dart';
 import '../../domain/usecases/update_fcm_token_usecase.dart';
 import '../../../../../core/services/reverb_service.dart';
 import '../../../../../core/services/fcm_service.dart';
+import '../../../../../core/services/location_service.dart';
 import '../../../../../core/di/injection.dart';
 import '../../../../../core/network/api_client.dart';
 import '../../../../../core/error/failure.dart';
@@ -101,6 +102,13 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> logout() async {
     emit(AuthLoading());
+    
+    // Stop background location updates immediately on logout
+    LocationService.stop();
+    
+    // Delete the local FCM token from Firebase
+    await getIt<FcmService>().deleteToken();
+
     final result = await logoutUseCase(NoParams());
     result.fold(
       (failure) => _handleLogoutSuccess(),
@@ -173,6 +181,8 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   void forceLogout() {
+    LocationService.stop();
+    getIt<FcmService>().deleteToken();
     _handleLogoutSuccess();
   }
 }

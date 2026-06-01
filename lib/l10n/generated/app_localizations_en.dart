@@ -391,6 +391,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordUpdatedSuccess => 'Password updated successfully';
 
   @override
+  String get passwordRequiresMixedCase =>
+      'Must contain at least one uppercase and one lowercase letter';
+
+  @override
+  String get passwordRequiresNumber =>
+      'Password must contain at least one number.';
+
+  @override
+  String get passwordMinLength => 'Password must be at least 8 characters.';
+
+  @override
   String get privacyPolicy => 'Privacy Policy';
 
   @override
@@ -926,16 +937,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectCorrectRole => 'Please select the correct role to login';
 
   @override
-  String get resetPasswordSuccess => 'Password reset link sent successfully!';
+  String get resetPasswordSuccess =>
+      'Password has been reset to your registered phone number successfully.';
 
   @override
   String get resetPasswordTitle => 'Reset Password';
 
   @override
-  String get resetPasswordSubtitle => 'Enter your ID to recover your account';
+  String get resetPasswordSubtitle =>
+      'Enter Civil ID to reset your password to your registered phone number.';
 
   @override
-  String get sendResetLink => 'Send Reset Link';
+  String get sendResetLink => 'Reset Password';
 
   @override
   String get maintenance => 'Maintenance';

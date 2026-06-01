@@ -204,7 +204,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                 text: AppLocalizations.of(context)!.sendResetLink,
                 onTap: _handleReset,
                 isLoading: isLoading,
-                icon: Icons.send_rounded,
+                icon: Icons.lock_reset,
               ),
             ],
           ),

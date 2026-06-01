@@ -388,6 +388,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordUpdatedSuccess => 'تم تغيير كلمة المرور بنجاح';
 
   @override
+  String get passwordRequiresMixedCase =>
+      'يجب أن تحتوي كلمة المرور على حرف كبير وحرف صغير واحد على الأقل.';
+
+  @override
+  String get passwordRequiresNumber =>
+      'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل.';
+
+  @override
+  String get passwordMinLength => 'يجب أن لا تقل كلمة المرور عن 8 خانات.';
+
+  @override
   String get privacyPolicy => 'السياسة والخصوصية';
 
   @override
@@ -917,16 +928,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get resetPasswordSuccess =>
-      'تم إرسال رابط إعادة تعيين كلمة المرور بنجاح!';
+      'تمت إعادة تعيين كلمة المرور إلى رقم جوالك المسجل بنجاح.';
 
   @override
   String get resetPasswordTitle => 'استعادة كلمة المرور';
 
   @override
-  String get resetPasswordSubtitle => 'أدخل الرقم التعريفي لاستعادة حسابك';
+  String get resetPasswordSubtitle =>
+      'أدخل الرقم المدني لإعادة تعيين كلمة المرور إلى رقم جوالك المسجل.';
 
   @override
-  String get sendResetLink => 'إرسال رابط الاستعادة';
+  String get sendResetLink => 'إعادة تعيين كلمة المرور';
 
   @override
   String get maintenance => 'الصيانة';

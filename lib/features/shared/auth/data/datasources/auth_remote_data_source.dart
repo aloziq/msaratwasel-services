@@ -36,6 +36,7 @@ abstract class AuthRemoteDataSource {
   Future<void> updateLanguage(String languageCode);
   Future<UserModel> fetchUserProfile();
   Future<void> updateFcmToken(String fcmToken);
+  Future<String> resetPassword({required String nationalId});
 }
 
 @LazySingleton(as: AuthRemoteDataSource)
@@ -228,5 +229,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
-
+  @override
+  Future<String> resetPassword({required String nationalId}) async {
+    try {
+      final response = await _dio.post(
+        '/auth/forgot-password',
+        data: {
+          'national_id': nationalId,
+        },
+      );
+      return response.data['message'] ?? 'تم إعادة تعيين كلمة المرور بنجاح';
+    } on DioException catch (e) {
+      final message = e.response?.data?['message']
+          ?? e.response?.data?['errors']?['national_id']?.first
+          ?? 'فشل إعادة تعيين كلمة المرور';
+      throw Exception(message);
+    }
+  }
 }
