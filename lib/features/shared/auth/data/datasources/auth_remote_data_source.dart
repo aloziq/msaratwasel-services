@@ -109,9 +109,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> logout({required String token, String? fcmToken}) async {
     try {
       final authenticatedDio = ApiClient.authenticatedInstance(token);
-      await authenticatedDio.post('/auth/logout', data: {
-        if (fcmToken != null) 'fcm_token': fcmToken,
-      });
+      await authenticatedDio.post(
+        '/auth/logout',
+        data: {if (fcmToken != null) 'fcm_token': fcmToken},
+      );
     } catch (_) {}
   }
 
@@ -175,7 +176,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> updateLanguage(String languageCode) async {
     try {
-      await _dio.post('/auth/profile/language', data: {'language': languageCode});
+      await _dio.post(
+        '/auth/profile/language',
+        data: {'language': languageCode},
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data?['message'] ?? 'فشل تحديث اللغة');
     }
@@ -203,7 +207,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'bus': userJson['bus'],
       });
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['message'] ?? 'فشل جلب بيانات المستخدم');
+      throw Exception(
+        e.response?.data?['message'] ?? 'فشل جلب بيانات المستخدم',
+      );
     }
   }
 
@@ -234,15 +240,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final response = await _dio.post(
         '/auth/forgot-password',
-        data: {
-          'national_id': nationalId,
-        },
+        data: {'national_id': nationalId},
       );
       return response.data['message'] ?? 'تم إعادة تعيين كلمة المرور بنجاح';
     } on DioException catch (e) {
-      final message = e.response?.data?['message']
-          ?? e.response?.data?['errors']?['national_id']?.first
-          ?? 'فشل إعادة تعيين كلمة المرور';
+      final message =
+          e.response?.data?['message'] ??
+          e.response?.data?['errors']?['national_id']?.first ??
+          'فشل إعادة تعيين كلمة المرور';
       throw Exception(message);
     }
   }

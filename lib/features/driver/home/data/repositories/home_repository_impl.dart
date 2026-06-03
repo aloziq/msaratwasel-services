@@ -33,19 +33,19 @@ class HomeRepositoryImpl implements HomeRepository {
       final response = await ApiClient.instance.get('auth/user');
       final data =
           response.data['data'] ?? response.data['user'] ?? response.data;
-      
+
       // CRITICAL FIX: Only use bus_id or has_bus. NEVER fallback to user 'id'.
       final busId = data['bus_id'] ?? data['has_bus'];
-      
+
       if (busId != null) {
         _cachedBusId = int.tryParse(busId.toString());
-        
+
         // Update local storage too
         if (_cachedBusId != null) {
           final prefs = GetIt.instance<SharedPreferences>();
           await prefs.setString('USER_BUS_ID', _cachedBusId.toString());
         }
-        
+
         return _cachedBusId;
       }
     } catch (_) {}
@@ -95,7 +95,9 @@ class HomeRepositoryImpl implements HomeRepository {
         final data = response.data;
         final trips = data['trips'] as List<dynamic>? ?? [];
         return trips
-            .map((trip) => TripStatusModel.fromJson(trip as Map<String, dynamic>))
+            .map(
+              (trip) => TripStatusModel.fromJson(trip as Map<String, dynamic>),
+            )
             .toList();
       }
       throw Exception('Failed to load trips');
@@ -124,9 +126,13 @@ class HomeRepositoryImpl implements HomeRepository {
             timeLimit: Duration(seconds: 5),
           ),
         );
-        debugPrint('HomeRepositoryImpl: Got position: ${position.latitude}, ${position.longitude}');
+        debugPrint(
+          'HomeRepositoryImpl: Got position: ${position.latitude}, ${position.longitude}',
+        );
       } catch (e) {
-        debugPrint('HomeRepositoryImpl: Failed to fetch current location for startTrip: $e');
+        debugPrint(
+          'HomeRepositoryImpl: Failed to fetch current location for startTrip: $e',
+        );
       }
 
       final response = await ApiClient.instance.post(
@@ -169,13 +175,14 @@ class HomeRepositoryImpl implements HomeRepository {
         'bus/$busId/confirm-trip',
         data: {'trip_id': tripId},
       );
-      
+
       if (response.statusCode != 200) {
         throw Exception(response.data['message'] ?? 'Failed to confirm trip');
       }
       debugPrint('HomeRepositoryImpl: Trip confirmed successfully');
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? e.message ?? 'Network error';
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
       throw Exception('Failed to confirm trip: $message');
     } catch (e) {
       throw Exception('Failed to confirm trip: ${e.toString()}');

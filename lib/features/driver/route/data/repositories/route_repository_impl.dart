@@ -57,12 +57,16 @@ class RouteRepositoryImpl implements RouteRepository {
 
       final busInfo = response.data['bus'] ?? {};
       final String rawTripType = busInfo['trip_type'] ?? 'morning';
-      _currentTripType = (rawTripType == 'forth' || rawTripType == 'morning') ? 'morning' : 'afternoon';
+      _currentTripType = (rawTripType == 'forth' || rawTripType == 'morning')
+          ? 'morning'
+          : 'afternoon';
       _currentTripStatus = busInfo['trip_status'] ?? 'idle';
 
       // Parse school coordinates
-      final sLat = double.tryParse(busInfo['school_lat']?.toString() ?? '0.0') ?? 0.0;
-      final sLng = double.tryParse(busInfo['school_lng']?.toString() ?? '0.0') ?? 0.0;
+      final sLat =
+          double.tryParse(busInfo['school_lat']?.toString() ?? '0.0') ?? 0.0;
+      final sLng =
+          double.tryParse(busInfo['school_lng']?.toString() ?? '0.0') ?? 0.0;
       if (sLat != 0.0 || sLng != 0.0) {
         _schoolLocation = LatLng(sLat, sLng);
         debugPrint('🏫 [REPO] School Location: ($sLat, $sLng)');
@@ -74,16 +78,18 @@ class RouteRepositoryImpl implements RouteRepository {
         final isOnBus = json['isOnBus'] == true;
         final isWaiting = json['isWaiting'] == true;
         final lastEvent = json['lastEvent'];
-        
+
         final isMorning = _currentTripType == 'morning';
         final expectedDirection = isMorning ? 'to_school' : 'to_home';
-        final isDroppedOff = lastEvent != null &&
+        final isDroppedOff =
+            lastEvent != null &&
             lastEvent['type'] == 'alighting' &&
             lastEvent['direction'] == expectedDirection;
 
         // In afternoon trips, 'waiting' means the student is still on the bus
         // (driver pressed "near house" but student hasn't gotten off yet)
-        final effectivelyBoarded = isOnBus || (!isMorning && isWaiting && !isDroppedOff);
+        final effectivelyBoarded =
+            isOnBus || (!isMorning && isWaiting && !isDroppedOff);
 
         debugPrint(
           '👤 [REPO] Passenger: ${json['name']}, status: ${json['status']}, '
@@ -106,7 +112,9 @@ class RouteRepositoryImpl implements RouteRepository {
           isAbsent: json['isAbsent'] == true || json['status'] == 'absent',
           isWaiting: isWaiting,
           waitingSince: json['waitingSince']?.toString(),
-          waitingElapsedSeconds: int.tryParse(json['waitingElapsedSeconds']?.toString() ?? '0') ?? 0,
+          waitingElapsedSeconds:
+              int.tryParse(json['waitingElapsedSeconds']?.toString() ?? '0') ??
+              0,
         );
       }).toList();
     } on DioException catch (e) {
@@ -334,7 +342,7 @@ class RouteRepositoryImpl implements RouteRepository {
 
   LatLng _getStudentLocation(Map<String, dynamic> json) {
     final isMorning = _currentTripType == 'morning';
-    
+
     // 1. Try trip-specific coordinates first
     var lat = isMorning ? json['forth_latitude'] : json['back_latitude'];
     var lng = isMorning ? json['forth_longitude'] : json['back_longitude'];
@@ -349,11 +357,15 @@ class RouteRepositoryImpl implements RouteRepository {
     final parsedLng = double.tryParse(lng?.toString() ?? '0.0') ?? 0.0;
 
     if (parsedLat != 0.0 || parsedLng != 0.0) {
-      debugPrint('📍 [REPO] Found location for student: $parsedLat, $parsedLng');
+      debugPrint(
+        '📍 [REPO] Found location for student: $parsedLat, $parsedLng',
+      );
       return LatLng(parsedLat, parsedLng);
     }
-    
-    debugPrint('⚠️ [REPO] No valid location for student: ${json['name']}, falling back to school/default');
+
+    debugPrint(
+      '⚠️ [REPO] No valid location for student: ${json['name']}, falling back to school/default',
+    );
     // Final fallback to school location or Muscat if everything fails (to avoid Null Island)
     return _schoolLocation ?? const LatLng(23.6080, 58.4500);
   }

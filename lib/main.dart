@@ -72,12 +72,16 @@ Future<void> bootstrap() async {
   late final ThemeController themeController;
   late final SettingsController settingsController;
   try {
-    // Initialize Controllers without blocking main
     themeController = ThemeController();
     settingsController = SettingsController();
 
     debugPrint('🚀 [Main] Configuring Dependencies...');
     await configureDependencies();
+
+    // Load controllers before runApp to prevent MaterialApp from rebuilding and unmounting immediately
+    await themeController.load();
+    await settingsController.load();
+
     debugPrint('✅ [Main] Dependencies Configured');
   } catch (e, stack) {
     developer.log('Dependency Configuration Error: $e', stackTrace: stack);
@@ -109,7 +113,7 @@ void main() async {
 void _runPostStartupTasks() async {
   // Wait for the app to stabilize
   await Future.delayed(const Duration(seconds: 1));
-  
+
   try {
     debugPrint('🚀 [Main] Step 1: Initializing FCM...');
     await getIt<FcmService>().init();
@@ -145,10 +149,6 @@ class _MainAppState extends State<MainApp> {
     _appRouter = AppRouter(authCubit: getIt<AuthCubit>());
     getIt<FcmService>().setRouter(_appRouter.router);
 
-    // Load controllers in background without blocking the first frame
-    widget.themeController.load();
-    widget.settingsController.load();
-
     // Hide system UI (back/home/recents) after the app starts
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
@@ -170,7 +170,9 @@ class _MainAppState extends State<MainApp> {
               final themeController = ThemeProvider.of(context);
               final settingsController = SettingsProvider.of(context);
               return MaterialApp.router(
-                key: ValueKey(settingsController.locale?.languageCode ?? 'system'),
+                key: ValueKey(
+                  settingsController.locale?.languageCode ?? 'system',
+                ),
                 title: 'Msarat Wasel Services',
                 theme: AppTheme.light,
                 darkTheme: AppTheme.dark,
@@ -186,52 +188,60 @@ class _MainAppState extends State<MainApp> {
                 debugShowCheckedModeBanner: false,
                 routerConfig: _appRouter.router,
                 builder: (context, child) {
-                  return KeyedSubtree(
-                    key: ValueKey(child?.hashCode ?? 'msarat_root'),
-                    child: ResponsiveBreakpoints.builder(
-                      child: Builder(
+                  return ResponsiveBreakpoints.builder(
+                    child: Builder(
                       builder: (buildContext) {
-                        if (!buildContext.mounted) return child ?? const SizedBox.shrink();
-                        
+                        if (!buildContext.mounted)
+                          return child ?? const SizedBox.shrink();
+
                         // 1. جلب المقاسات الحية للشاشة
-                        final double currentWidth = MediaQuery.sizeOf(buildContext).width;
-                        final double currentHeight = MediaQuery.sizeOf(buildContext).height;
-                        
-                        // 2. 🎯 السحر هنا: جلب مسافة أزرار التنقل السفلية لنظام أندرويد ديناميكياً
-                        final double systemPadding = MediaQuery.viewPaddingOf(buildContext).bottom;
-                        
-                        // 💡 الحل العبقري: إذا كانت أزرار النظام مخفية (صفر)، نخرق النظام ونفرض مسافة أمان يدوية بـ 24 بكسل لحماية السحب السفلي
-                        final double finalBottomPadding = systemPadding > 0 ? systemPadding : 24.0;
-                        
+                        final double currentWidth = MediaQuery.sizeOf(
+                          buildContext,
+                        ).width;
+                        final double currentHeight = MediaQuery.sizeOf(
+                          buildContext,
+                        ).height;
+
                         // الأبعاد الدنيا التي يبدأ عندها التطبيق بالانكماش
                         const double minSafeWidth = 450;
                         const double minSafeHeight = 650;
 
                         // حساب معامل تقلص المساحة
-                        double widthFactor = currentWidth < minSafeWidth ? (minSafeWidth / currentWidth) : 1.0;
-                        double heightFactor = currentHeight < minSafeHeight ? (minSafeHeight / currentHeight) : 1.0;
+                        double widthFactor = currentWidth < minSafeWidth
+                            ? (minSafeWidth / currentWidth)
+                            : 1.0;
+                        double heightFactor = currentHeight < minSafeHeight
+                            ? (minSafeHeight / currentHeight)
+                            : 1.0;
 
                         // نختار الانكماش الأكبر (سواء ضغطت الشاشة بالطول أو بالعرض)
                         // نضع حد أقصى (مثلاً 2.0) لكي لا تنكمش الأيقونات وتختفي تماماً
-                        double maxScaleFactor = (widthFactor > heightFactor ? widthFactor : heightFactor).clamp(1.0, 2.0);
+                        double maxScaleFactor =
+                            (widthFactor > heightFactor
+                                    ? widthFactor
+                                    : heightFactor)
+                                .clamp(1.0, 2.0);
 
                         // حساب العرض الوهمي الذي سيتم تغذيته للصندوق ليقوم بالانكماش الصحيح
-                        double? targetWidth = maxScaleFactor > 1.0 ? (currentWidth * maxScaleFactor) : null;
+                        double? targetWidth = maxScaleFactor > 1.0
+                            ? (currentWidth * maxScaleFactor)
+                            : null;
 
-                            final bool isDark = Theme.of(buildContext).brightness == Brightness.dark;
-                            // نختار لون نهاية التدرج (Gradient) الذي يظهر أسفل الشاشة ليكون التطابق 100%
-                            final Color exactScreenColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+                        final bool isDark =
+                            Theme.of(buildContext).brightness ==
+                            Brightness.dark;
+                        // نختار لون نهاية التدرج (Gradient) الذي يظهر أسفل الشاشة ليكون التطابق 100%
+                        final Color exactScreenColor = isDark
+                            ? const Color(0xFF1E293B)
+                            : const Color(0xFFE2E8F0);
 
-                            return ResponsiveScaledBox(
-                              width: targetWidth,
-                              child: Container(
-                                width: double.infinity,
-                                height: double.infinity,
-                                color: exactScreenColor,
-                            
-                            // 🔥 هنا حجز المساحة للمشروع كامل: أي صفحة بداخل child سيتم رفعها تلقائياً
-                            padding: EdgeInsets.only(bottom: finalBottomPadding),
-                            
+                        return ResponsiveScaledBox(
+                          width: targetWidth,
+                          child: Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            color: exactScreenColor,
+
                             child: MediaQuery(
                               data: MediaQuery.of(context).copyWith(
                                 textScaler: TextScaler.linear(
@@ -247,9 +257,12 @@ class _MainAppState extends State<MainApp> {
                     breakpoints: [
                       const Breakpoint(start: 0, end: 450, name: MOBILE),
                       const Breakpoint(start: 451, end: 800, name: TABLET),
-                      const Breakpoint(start: 801, end: double.infinity, name: DESKTOP),
+                      const Breakpoint(
+                        start: 801,
+                        end: double.infinity,
+                        name: DESKTOP,
+                      ),
                     ],
-                  ),
                   );
                 },
               );
