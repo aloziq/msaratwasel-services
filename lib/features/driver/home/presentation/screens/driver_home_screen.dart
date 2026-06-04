@@ -44,6 +44,8 @@ class _DriverHomeContent extends StatefulWidget {
 }
 
 class _DriverHomeContentState extends State<_DriverHomeContent> {
+  bool _isActionInProgress = false;
+
   Future<bool> _checkLocationServices(BuildContext context) async {
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
     
@@ -448,48 +450,72 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                               isDark: isDark,
                               userRole: userRole,
                               onConfirm: (trip) async {
-                                final cubit = context.read<DriverHomeCubit>();
-                                await cubit.confirmTrip(trip.id.toString());
-                                if (context.mounted && cubit.state is DriverHomeError) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text((cubit.state as DriverHomeError).message),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              },
-                              onTripAction: (trip) async {
-                                final cubit = context.read<DriverHomeCubit>();
-                                if (trip.status == 'in_progress') {
-                                  final hasGps = await GpsSecurityHelper.checkLocationServices(context);
-                                  if (!hasGps) return;
-                                  if (context.mounted) {
-                                    await context.push('/driver/route');
-                                    if (context.mounted) {
-                                      cubit.loadDashboard();
-                                    }
-                                  }
-                                  return;
-                                }
-
-                                // ─── GPS/Location Checks ───
-                                final hasLocation = await _checkLocationServices(context);
-                                if (!hasLocation) return;
-
-                                await cubit.startTrip(trip.id.toString());
-
-                                if (context.mounted) {
-                                  final updatedState = cubit.state;
-                                  if (updatedState is DriverHomeLoaded) {
-                                      cubit.loadDashboard();
-                                  } else if (updatedState is DriverHomeError) {
+                                if (_isActionInProgress) return;
+                                setState(() {
+                                  _isActionInProgress = true;
+                                });
+                                try {
+                                  final cubit = context.read<DriverHomeCubit>();
+                                  await cubit.confirmTrip(trip.id.toString());
+                                  if (context.mounted && cubit.state is DriverHomeError) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(updatedState.message),
+                                        content: Text((cubit.state as DriverHomeError).message),
                                         backgroundColor: Colors.red,
                                       ),
                                     );
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isActionInProgress = false;
+                                    });
+                                  }
+                                }
+                              },
+                              onTripAction: (trip) async {
+                                if (_isActionInProgress) return;
+                                setState(() {
+                                  _isActionInProgress = true;
+                                });
+                                try {
+                                  final cubit = context.read<DriverHomeCubit>();
+                                  if (trip.status == 'in_progress') {
+                                    final hasGps = await GpsSecurityHelper.checkLocationServices(context);
+                                    if (!hasGps) return;
+                                    if (context.mounted) {
+                                      await context.push('/driver/route');
+                                      if (context.mounted) {
+                                        cubit.loadDashboard();
+                                      }
+                                    }
+                                    return;
+                                  }
+
+                                  // ─── GPS/Location Checks ───
+                                  final hasLocation = await _checkLocationServices(context);
+                                  if (!hasLocation) return;
+
+                                  await cubit.startTrip(trip.id.toString());
+
+                                  if (context.mounted) {
+                                    final updatedState = cubit.state;
+                                    if (updatedState is DriverHomeLoaded) {
+                                        cubit.loadDashboard();
+                                    } else if (updatedState is DriverHomeError) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(updatedState.message),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isActionInProgress = false;
+                                    });
                                   }
                                 }
                               },
