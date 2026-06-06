@@ -123,4 +123,65 @@ class GpsSecurityHelper {
 
     return true;
   }
+
+  /// Requests background location permission with a prominent disclosure dialog as required by Google Play policies.
+  static Future<bool> requestBackgroundLocationWithDisclosure(BuildContext context) async {
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    
+    // Check if permission is already granted
+    final status = await Permission.locationAlways.status;
+    if (status.isGranted) {
+      return true;
+    }
+
+    if (!context.mounted) return false;
+
+    // Show prominent disclosure dialog
+    final proceed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.location_on_rounded, color: Color(0xFF2563EB), size: 28),
+            const SizedBox(width: 8),
+            Text(
+              isArabic ? 'استخدام الموقع في الخلفية' : 'Background Location Usage',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Text(
+          isArabic
+              ? 'يجمع تطبيق "مسارات واصل للخدمات" بيانات الموقع لتمكين تتبع حافلة المدرسة والرحلة وتحديث مسارك لأولياء الأمور والإدارة في الوقت الفعلي، حتى عندما يكون التطبيق مغلقاً أو غير مستخدم بنشاط.'
+              : 'Masarat Wasel Services collects location data to enable school bus tracking and trip route updates for parents and administration in real-time, even when the app is closed or not actively in use.',
+          style: const TextStyle(fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(isArabic ? 'رفض' : 'Deny', style: const TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(isArabic ? 'موافق' : 'Accept'),
+          ),
+        ],
+      ),
+    );
+
+    if (proceed == true) {
+      final newStatus = await Permission.locationAlways.request();
+      return newStatus.isGranted;
+    }
+    
+    return false;
+  }
 }
+

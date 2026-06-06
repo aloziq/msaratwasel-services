@@ -162,8 +162,10 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
       return false;
     }
 
-    // Request background location permission in background as well (optional but recommended)
-    await Permission.locationAlways.request();
+    // Request background location permission with prominent disclosure
+    if (context.mounted) {
+      await GpsSecurityHelper.requestBackgroundLocationWithDisclosure(context);
+    }
 
     return true;
   }

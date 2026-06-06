@@ -157,3 +157,6 @@ flutter_launcher_icons:
   image_path: "assets/images/icon 4.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/images/icon 4.png"
+
+dependency_overrides:
+  sqflite_android: 2.4.1

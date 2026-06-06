@@ -23,6 +23,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
+import 'package:msaratwasel_services/core/utils/gps_security_helper.dart';
 import 'package:msaratwasel_services/config/app_config.dart';
 
 import '../../domain/entities/student_stop.dart';
@@ -775,8 +776,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       return;
     }
 
-    // Also check for background location if possible
-    await Permission.locationAlways.request();
+    // Also check for background location with prominent disclosure if possible
+    if (mounted) {
+      await GpsSecurityHelper.requestBackgroundLocationWithDisclosure(context);
+    }
 
     debugPrint('GPS: Location permissions granted. Starting stream...');
 

@@ -334,14 +334,16 @@ class _EndTripContentState extends State<_EndTripContent> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: ValueListenableBuilder<FlashMode>(
-                            valueListenable: _cameraState!.sensorConfig.flashMode,
-                            builder: (context, flashMode, child) {
+                          icon: StreamBuilder<FlashMode>(
+                            stream: _cameraState!.sensorConfig.flashMode$,
+                            initialData: _cameraState!.sensorConfig.flashMode,
+                            builder: (context, snapshot) {
+                              final flashMode = snapshot.data ?? FlashMode.none;
                               return Icon(
-                                flashMode == FlashMode.torch
+                                flashMode == FlashMode.always
                                     ? Icons.flash_on_rounded
                                     : Icons.flash_off_rounded,
-                                color: flashMode == FlashMode.torch
+                                color: flashMode == FlashMode.always
                                     ? Colors.yellow
                                     : Colors.white,
                               );
@@ -349,8 +351,8 @@ class _EndTripContentState extends State<_EndTripContent> {
                           ),
                           onPressed: () async {
                             final config = _cameraState!.sensorConfig;
-                            if (config.flashMode.value == FlashMode.none) {
-                              await config.setFlashMode(FlashMode.torch);
+                            if (config.flashMode == FlashMode.none) {
+                              await config.setFlashMode(FlashMode.always);
                             } else {
                               await config.setFlashMode(FlashMode.none);
                             }
