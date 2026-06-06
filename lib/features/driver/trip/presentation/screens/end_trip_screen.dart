@@ -245,7 +245,7 @@ class _EndTripContentState extends State<_EndTripContent> {
                   androidOptions: const AndroidAnalysisOptions.nv21(
                     width: 1024,
                   ),
-                  maxFramesPerSecond: 3, 
+                  maxFramesPerSecond: 8, 
                   autoStart: true,
                 ),
                 onImageForAnalysis: (image) async {
@@ -323,7 +323,44 @@ class _EndTripContentState extends State<_EndTripContent> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const CustomMenuButton(),
+                Row(
+                  children: [
+                    const CustomMenuButton(),
+                    if (_cameraState != null && (state is EndTripInitial || state is EndTripRecording)) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: ValueListenableBuilder<FlashMode>(
+                            valueListenable: _cameraState!.sensorConfig.flashMode,
+                            builder: (context, flashMode, child) {
+                              return Icon(
+                                flashMode == FlashMode.torch
+                                    ? Icons.flash_on_rounded
+                                    : Icons.flash_off_rounded,
+                                color: flashMode == FlashMode.torch
+                                    ? Colors.yellow
+                                    : Colors.white,
+                              );
+                            },
+                          ),
+                          onPressed: () async {
+                            final config = _cameraState!.sensorConfig;
+                            if (config.flashMode.value == FlashMode.none) {
+                              await config.setFlashMode(FlashMode.torch);
+                            } else {
+                              await config.setFlashMode(FlashMode.none);
+                            }
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
