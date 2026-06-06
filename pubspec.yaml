@@ -74,6 +74,45 @@ dependencies:
   platform: ^3.1.6
   connectivity_plus: 7.0.0
 
+  # Added packages requested by user
+  get: ^4.6.1
+  
+  # DateTime
+  jiffy: any
+  
+  # Images
+  cached_network_image: ^3.2.0 
+  image_pickers: ^2.0.0+2
+  
+  # Animate
+  show_up_animation: ^2.0.0
+  auto_animated: ^3.0.1
+  
+  # Google Map
+  geocoding: ^2.0.4
+  
+  # Firebase And Notification 
+  cloud_firestore: any
+  
+  # Local Data Cache
+  sqflite: ^2.0.2
+  path: ^1.8.0
+  
+  # Qrcode 
+  qr_flutter: ^4.0.0
+  
+  # Lists, Dropdowns, Badges
+  grouped_list: ^4.2.0
+  dropdown_search: ^3.0.1
+  badges: ^2.0.2
+  
+  # Icon 
+  fluttericon: ^2.0.0
+  
+  # Auth & Utils
+  google_sign_in: ^5.3.1  
+  device_preview: any
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
