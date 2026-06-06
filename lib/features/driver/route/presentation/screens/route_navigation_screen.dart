@@ -1093,7 +1093,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         }
       }
 
-      final previousStopIndex = _currentStopIndex;
+      // Get the ID of the student we were targeting before the fetch
+      final String? previousStudentId = (_stops.isNotEmpty && _currentStopIndex < _stops.length)
+          ? _stops[_currentStopIndex].id
+          : null;
 
       setState(() {
         _stops = stops;
@@ -1112,18 +1115,23 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         return;
       }
 
+      _sortPendingStopsByDistance();
+
+      // Get the ID of the current student after updating stops and sorting
+      final String? currentStudentId = (_stops.isNotEmpty && _currentStopIndex < _stops.length)
+          ? _stops[_currentStopIndex].id
+          : null;
+
       // Auto-advance: if the current student changed (e.g. marked boarded from supervisor screen),
       // reset navigation state so the UI smoothly transitions to the new target.
-      if (silent && previousStopIndex != _currentStopIndex && _currentStopIndex < _stops.length) {
-        debugPrint('🔄 [Navigation] Auto-advancing from stop $previousStopIndex to $_currentStopIndex');
+      if (silent && previousStudentId != null && currentStudentId != null && previousStudentId != currentStudentId) {
+        debugPrint('🔄 [Navigation] Auto-advancing from student $previousStudentId to $currentStudentId');
         setState(() {
           _hasNotified = false;
           _isMovingToStop = false;
           _isArrived = false;
         });
       }
-
-      _sortPendingStopsByDistance();
 
       // Restore active timer state if the student is currently waiting in morning trip
       if (isMorning && _currentStopIndex < _stops.length) {
@@ -1357,11 +1365,13 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
       // Show user-friendly error message
       String errorMsg = e.toString().replaceFirst('Exception: ', '');
-      if (errorMsg.contains('Too Many Attempts') || errorMsg.contains('429')) {
+      final isRateLimit = errorMsg.contains('Too Many Attempts') || errorMsg.contains('429');
+
+      if (isRateLimit) {
         errorMsg = isArabic
             ? 'تم إرسال التنبيه مسبقاً. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.'
             : 'Notification already sent. Please wait a moment before trying again.';
-      } else if (errorMsg.contains('فشل إرسال الإشعار')) {
+      } else {
         errorMsg = isArabic
             ? 'تعذر إرسال التنبيه لولي الأمر. تحقق من الاتصال وحاول مجدداً.'
             : 'Could not notify the parent. Check your connection and try again.';
@@ -1384,10 +1394,17 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         ),
       );
 
-      // Even if notification fails, allow driver to continue (mark as notified)
-      setState(() {
-        _hasNotified = true;
-      });
+      // If it was just a rate limit error (429), it means the notification was already sent
+      // successfully very recently, so we treat it as notified and start the timer if morning.
+      if (isRateLimit) {
+        final isMorning = _routeRepository.currentTripType == 'morning';
+        if (isMorning) {
+          _startWaitingTimer(currentStudent);
+        }
+        setState(() {
+          _hasNotified = true;
+        });
+      }
     }
   }
 
