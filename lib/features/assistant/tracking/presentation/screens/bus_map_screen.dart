@@ -394,11 +394,17 @@ class _TrackingMapState extends State<_TrackingMap> {
   final Map<String, BitmapDescriptor> _markers = {};
   final Map<String, BitmapDescriptor> _markerCache = {};
   GoogleMapController? _mapController;
-  String? _lastRouteKey;
   List<LatLng> _routePoints = [];
   bool _isFetchingRoute = false;
 
+  bool _followBus = true;
+  bool _isProgrammaticMove = false;
+  DateTime? _lastRouteFetchTime;
+  LatLng? _lastFetchBusPosition;
+  String? _lastTargetStudentId;
+
   void _centerMapOnLatLng(LatLng position) {
+    _isProgrammaticMove = true;
     _mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(position, 16.5),
     );
@@ -414,29 +420,68 @@ class _TrackingMapState extends State<_TrackingMap> {
   @override
   void didUpdateWidget(covariant _TrackingMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.students != widget.students ||
-        oldWidget.busPosition.lat != widget.busPosition.lat ||
-        oldWidget.busPosition.lng != widget.busPosition.lng) {
+    
+    // If coordinates changed and auto-tracking is enabled, update camera
+    if (_followBus && 
+        (oldWidget.busPosition.lat != widget.busPosition.lat ||
+         oldWidget.busPosition.lng != widget.busPosition.lng)) {
+      _centerMapOnLatLng(LatLng(widget.busPosition.lat, widget.busPosition.lng));
+    }
+
+    if (oldWidget.students != widget.students) {
       _loadMarkers();
     }
     _fetchRouteIfNeeded();
   }
 
-  String _generateRouteKey() {
-    final busLat = widget.busPosition.lat.toStringAsFixed(4);
-    final busLng = widget.busPosition.lng.toStringAsFixed(4);
-    final direction = widget.trip?.suggestedTripType ?? 'to_school';
-    final studentIds = widget.students
-        .map((s) => '${s.id}_${s.status.name}_${s.latitude ?? 0}')
-        .join(',');
-    return '$busLat,$busLng|$direction|$studentIds';
-  }
-
   void _fetchRouteIfNeeded() {
-    final newKey = _generateRouteKey();
-    if (newKey == _lastRouteKey) return;
-    _lastRouteKey = newKey;
-    _fetchRoute();
+    final isToHome = widget.trip?.suggestedTripType == 'to_home';
+    final activeStudents = widget.students.where((student) {
+      if (student.status == BusStudentStatus.absent) return false;
+      final double? lat = isToHome
+          ? (student.backLatitude ?? student.latitude ?? student.forthLatitude)
+          : (student.forthLatitude ?? student.latitude ?? student.backLatitude);
+      return lat != null && lat != 0.0;
+    }).toList();
+
+    // Determine target stop student
+    BusStudentEntity? currentTargetStudent;
+    if (widget.busPosition.targetLat != null && widget.busPosition.targetLng != null) {
+      final targetLatLng = LatLng(widget.busPosition.targetLat!, widget.busPosition.targetLng!);
+      for (final s in activeStudents) {
+        if (_isStudentActiveTarget(s, targetLatLng, isToHome)) {
+          currentTargetStudent = s;
+          break;
+        }
+      }
+    }
+    
+    final currentTargetId = currentTargetStudent?.id ?? 'school_or_fallback';
+    final now = DateTime.now();
+
+    final bool targetChanged = currentTargetId != _lastTargetStudentId;
+
+    double distanceMoved = 0.0;
+    if (_lastFetchBusPosition != null) {
+      distanceMoved = LocationUtils.calculateDistance(
+        widget.busPosition.lat,
+        widget.busPosition.lng,
+        _lastFetchBusPosition!.latitude,
+        _lastFetchBusPosition!.longitude,
+      );
+    }
+
+    // Only fetch new route from Google if destination changed, or bus has moved > 80m and 25s elapsed
+    final bool shouldFetch = _lastRouteFetchTime == null ||
+        targetChanged ||
+        (distanceMoved > 80.0 && now.difference(_lastRouteFetchTime!).inSeconds > 25);
+
+    if (shouldFetch) {
+      _lastTargetStudentId = currentTargetId;
+      _lastFetchBusPosition = LatLng(widget.busPosition.lat, widget.busPosition.lng);
+      _lastRouteFetchTime = now;
+      _fetchRoute();
+    }
   }
 
   Future<void> _fetchRoute() async {
@@ -773,26 +818,6 @@ class _TrackingMapState extends State<_TrackingMap> {
         _markers.clear();
         _markers.addAll(newMarkers);
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          final properMarkers = <Marker>{};
-          for (final id in newMarkers.keys) {
-            final student = widget.students.firstWhere((s) => s.id == id);
-            final loc = _getStudentLocation(student, isToHome);
-            if (loc != null) {
-              properMarkers.add(Marker(
-                markerId: MarkerId(id),
-                position: loc,
-              ));
-            }
-          }
-          properMarkers.add(Marker(
-            markerId: const MarkerId('bus_current'),
-            position: LatLng(widget.busPosition.lat, widget.busPosition.lng),
-          ));
-          _fitBounds(properMarkers);
-        }
-      });
     }
   }
 
@@ -816,6 +841,10 @@ class _TrackingMapState extends State<_TrackingMap> {
     }
 
     if (minLat != null) {
+      _isProgrammaticMove = true;
+      setState(() {
+        _followBus = false;
+      });
       _mapController!.animateCamera(
         CameraUpdate.newLatLngBounds(
           LatLngBounds(
@@ -913,8 +942,22 @@ class _TrackingMapState extends State<_TrackingMap> {
             myLocationEnabled: true,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
+            onCameraMoveStarted: () {
+              if (!_isProgrammaticMove && _followBus) {
+                setState(() {
+                  _followBus = false;
+                });
+              }
+            },
+            onCameraIdle: () {
+              _isProgrammaticMove = false;
+            },
             onMapCreated: (controller) {
               _mapController = controller;
+              // Fit initial bounds once the map is created
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _fitBounds(markers);
+              });
             },
           ),
         ),
@@ -930,11 +973,11 @@ class _TrackingMapState extends State<_TrackingMap> {
                 icon: Icons.my_location_rounded,
                 tooltip: 'تركيز على الحافلة',
                 onPressed: () {
-                  _mapController?.animateCamera(
-                    CameraUpdate.newLatLngZoom(
-                      LatLng(widget.busPosition.lat, widget.busPosition.lng),
-                      16,
-                    ),
+                  setState(() {
+                    _followBus = true;
+                  });
+                  _centerMapOnLatLng(
+                    LatLng(widget.busPosition.lat, widget.busPosition.lng),
                   );
                 },
               ),

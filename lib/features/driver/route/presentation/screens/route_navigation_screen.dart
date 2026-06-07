@@ -75,6 +75,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   ReverbService? _reverbService;
   StreamSubscription<Position>? _gpsSubscription;
   DateTime? _lastUpdateLocationTime;
+  DateTime? _lastUiUpdateTime;
   Timer? _statusPollingTimer;
   Timer? _locationTimer;
   int _simStep = 0;
@@ -793,18 +794,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         );
       }
       
-      /* 
-      // Smart Mock: If GPS is off in debug mode, use school location as starting point to show the blue line
-      if (kDebugMode && _currentPosition == null) {
-        debugPrint('🛠️ [GPS] Using School Location as Mock Position for Debugging');
-        if (mounted) {
-          setState(() {
-            _currentPosition = _routeRepository.schoolLocation ?? const LatLng(13.9407, 43.7873);
-          });
-          _fetchRoadFollowingRoute();
-        }
-      }
-      */
       return;
     }
 
@@ -853,7 +842,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           : position.longitude;
       final newPos = LatLng(simulatedLat, simulatedLng);
       
-      // Only trigger updates if moved > 15m or current position was null
+      // Calculate distance from previous UI location
       double distance = 0;
       if (_currentPosition != null) {
         distance = Geolocator.distanceBetween(
@@ -863,6 +852,31 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           newPos.longitude
         );
       }
+
+      // 1. Send update to server (heartbeat) based on AppConfig configuration
+      final now = DateTime.now();
+      if (_lastUpdateLocationTime == null || 
+          now.difference(_lastUpdateLocationTime!).inSeconds >= AppConfig.locationUploadThrottleSeconds) {
+        _lastUpdateLocationTime = now;
+        _routeRepository.updateLocation(
+          latitude: simulatedLat,
+          longitude: simulatedLng,
+          speed: position.speed,
+          accuracy: position.accuracy,
+          heading: position.heading,
+          targetLat: _currentTarget?.latitude,
+          targetLng: _currentTarget?.longitude,
+        );
+      }
+
+      // 2. Control and filter UI rebuilds (only trigger if moved > 5m or 2.5s elapsed)
+      final bool shouldUpdateUi = _currentPosition == null || 
+                                  distance > 5.0 || 
+                                  _isFirstLock || 
+                                  (_lastUiUpdateTime == null || now.difference(_lastUiUpdateTime!).inMilliseconds > 2500);
+
+      if (!shouldUpdateUi) return;
+      _lastUiUpdateTime = now;
 
       setState(() {
         _currentPosition = newPos;
@@ -885,22 +899,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           );
         });
         if (_isFirstLock) _isFirstLock = false;
-      }
-
-      // Throttle server uploads: send updates at most once every configured seconds to drastically conserve battery and data!
-      final now = DateTime.now();
-      if (_lastUpdateLocationTime == null || 
-          now.difference(_lastUpdateLocationTime!).inSeconds >= AppConfig.locationUploadThrottleSeconds) {
-        _lastUpdateLocationTime = now;
-        _routeRepository.updateLocation(
-          latitude: simulatedLat,
-          longitude: simulatedLng,
-          speed: position.speed,
-          accuracy: position.accuracy,
-          heading: position.heading,
-          targetLat: _currentTarget?.latitude,
-          targetLng: _currentTarget?.longitude,
-        );
       }
 
       bool isOff = _checkIfOffRoute(newPos);

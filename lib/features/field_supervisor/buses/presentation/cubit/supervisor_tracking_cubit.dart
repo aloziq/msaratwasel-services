@@ -8,6 +8,7 @@ import 'package:msaratwasel_services/features/driver/route/domain/entities/stude
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'package:msaratwasel_services/core/utils/location_utils.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 abstract class SupervisorTrackingState {}
@@ -79,6 +80,10 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
   StreamSubscription? _locationSubscription;
   StreamSubscription? _connectivitySubscription;
   Timer? _pollingTimer;
+
+  DateTime? _lastRouteFetchTime;
+  LatLng? _lastFetchBusPosition;
+  LatLng? _lastTargetPosition;
 
   SupervisorTrackingCubit({required this.busId}) : super(SupervisorTrackingInitial());
 
@@ -334,6 +339,37 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
     }
 
     if (target == null || (target.latitude == 0 && target.longitude == 0)) return;
+
+    final now = DateTime.now();
+
+    // Check if target changed
+    final bool targetChanged = _lastTargetPosition == null ||
+        (_lastTargetPosition!.latitude - target.latitude).abs() > 0.0001 ||
+        (_lastTargetPosition!.longitude - target.longitude).abs() > 0.0001;
+
+    // Check distance moved since last route fetch
+    double distanceMoved = 0.0;
+    if (_lastFetchBusPosition != null) {
+      distanceMoved = LocationUtils.calculateDistance(
+        origin.latitude,
+        origin.longitude,
+        _lastFetchBusPosition!.latitude,
+        _lastFetchBusPosition!.longitude,
+      );
+    }
+
+    // Only request Google Directions API if destination changed, or bus has moved > 80m and 25s elapsed
+    final bool shouldFetch = _lastRouteFetchTime == null ||
+        targetChanged ||
+        (distanceMoved > 80.0 && now.difference(_lastRouteFetchTime!).inSeconds > 25);
+
+    if (!shouldFetch) {
+      return;
+    }
+
+    _lastRouteFetchTime = now;
+    _lastFetchBusPosition = origin;
+    _lastTargetPosition = target;
 
     try {
       final dio = Dio(); // Use fresh Dio for external API
