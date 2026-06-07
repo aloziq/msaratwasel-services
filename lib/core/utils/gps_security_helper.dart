@@ -154,8 +154,8 @@ class GpsSecurityHelper {
         ),
         content: Text(
           isArabic
-              ? 'يجمع تطبيق "مسارات واصل للخدمات" بيانات الموقع لتمكين تتبع حافلة المدرسة والرحلة وتحديث مسارك لأولياء الأمور والإدارة في الوقت الفعلي، حتى عندما يكون التطبيق مغلقاً أو غير مستخدم بنشاط.'
-              : 'Masarat Wasel Services collects location data to enable school bus tracking and trip route updates for parents and administration in real-time, even when the app is closed or not actively in use.',
+              ? 'يستخدم تطبيق "مسارات واصل للخدمات" بيانات الموقع أثناء الرحلات النشطة فقط لتتبع الحافلة وتحديث موقع السائق لأولياء الأمور والإدارة في الوقت الفعلي، حتى عندما يكون التطبيق في الخلفية أو الشاشة مقفلة. ويتم إيقاف التتبع تلقائياً عند انتهاء الرحلة.'
+              : 'Masarat Wasel Services collects location data only during active trips to track the bus and update the driver\'s location for parents and administration in real-time, even when the app is in the background or the screen is locked. Tracking stops automatically when the trip ends.',
           style: const TextStyle(fontSize: 14, height: 1.4),
         ),
         actions: [
