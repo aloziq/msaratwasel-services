@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'package:msaratwasel_services/core/presentation/widgets/directional_icon.dart';
 import 'package:msaratwasel_services/config/theme/app_colors.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
-import 'package:msaratwasel_services/core/network/api_config.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/app_sliver_header.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/data/field_supervisor_remote_datasource.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/presentation/widgets/supervisor_drawer.dart';
 import 'package:msaratwasel_services/features/field_supervisor/home/utils/supervisor_navigation.dart';
-import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
-import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_state.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 
 /// Reports screen with completed trips, issues, delays, violations.
@@ -221,6 +217,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewAllTrips,
                             color: const Color(0xFF16A34A),
                             isDark: isDark,
+                            onTap: () => context.push(AppRoutes.supervisorTrips),
                           ),
                           _ReportTile(
                             icon: Icons.report_problem,
@@ -228,6 +225,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewAllIssues,
                             color: AppColors.error,
                             isDark: isDark,
+                            onTap: () => context.push(AppRoutes.supervisorAlerts),
                           ),
                           _ReportTile(
                             icon: Icons.timer_off,
@@ -235,6 +233,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewAllDelays,
                             color: const Color(0xFFEC4899),
                             isDark: isDark,
+                            onTap: () => context.push(AppRoutes.supervisorDelays),
                           ),
                           _ReportTile(
                             icon: Icons.gavel,
@@ -242,6 +241,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewAllViolations,
                             color: const Color(0xFFF59E0B),
                             isDark: isDark,
+                            onTap: () => context.push(AppRoutes.supervisorInspection),
                           ),
                           _ReportTile(
                             icon: Icons.explore,
@@ -249,6 +249,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             subtitle: l10n.viewFieldTrips,
                             color: const Color(0xFF10B981),
                             isDark: isDark,
+                            onTap: () => context.push(AppRoutes.supervisorTrips),
                           ),
                         ]),
                       ),
@@ -380,12 +381,14 @@ class _ReportTile extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.isDark,
+    this.onTap,
   });
   final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
   final bool isDark;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -401,6 +404,7 @@ class _ReportTile extends StatelessWidget {
         ),
       ),
       child: ListTile(
+        onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),

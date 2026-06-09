@@ -78,7 +78,14 @@ class _FleetTrackingBodyState extends State<_FleetTrackingBody> {
                   zoomControlsEnabled: false,
                   mapToolbarEnabled: false,
                   compassEnabled: false,
-                  onMapCreated: (controller) => _mapController = controller,
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                    if (buses.isNotEmpty) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _fitAllBuses(buses);
+                      });
+                    }
+                  },
                   onTap: (_) =>
                       context.read<FleetTrackingCubit>().clearSelection(),
                 ),
@@ -227,15 +234,21 @@ class _FleetTrackingBodyState extends State<_FleetTrackingBody> {
       if (bus.lng > maxLng) maxLng = bus.lng;
     }
 
-    _mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(minLat, minLng),
-          northeast: LatLng(maxLat, maxLng),
+    if (minLat == maxLat && minLng == maxLng) {
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(minLat, minLng), 14),
+      );
+    } else {
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+            southwest: LatLng(minLat, minLng),
+            northeast: LatLng(maxLat, maxLng),
+          ),
+          80,
         ),
-        80,
-      ),
-    );
+      );
+    }
   }
 }
 

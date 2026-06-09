@@ -394,98 +394,106 @@ class _NewInspectionSheetState extends State<_NewInspectionSheet> {
     super.initState();
     // Initialize checklist from API items
     for (final item in widget.inspectionItems) {
-      _checklistResults[item['id'] as int] = false;
+      final id = int.tryParse(item['id']?.toString() ?? '') ?? 0;
+      if (id != 0) {
+        _checklistResults[id] = false;
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            widget.l10n.newInspection,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: widget.isDark ? Colors.white : AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          DropdownButtonFormField<int>(
-            initialValue: _selectedBusId,
-            decoration: InputDecoration(
-              labelText: widget.l10n.selectBus,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 20),
+            Text(
+              widget.l10n.newInspection,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: widget.isDark ? Colors.white : AppColors.textPrimary,
               ),
             ),
-            items: widget.buses
-                .map((bus) => DropdownMenuItem<int>(
-                      value: bus['id'] as int,
-                      child: Text(bus['bus_code'] ?? 'حافلة ${bus['id']}'),
-                    ))
-                .toList(),
-            onChanged: (value) => setState(() => _selectedBusId = value),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            widget.l10n.inspectionChecklist,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: widget.isDark ? Colors.white70 : AppColors.textSecondary,
+            const SizedBox(height: 20),
+            DropdownButtonFormField<int>(
+              value: _selectedBusId,
+              decoration: InputDecoration(
+                labelText: widget.l10n.selectBus,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              items: widget.buses
+                  .map((bus) {
+                    final busId = int.tryParse(bus['id']?.toString() ?? '') ?? 0;
+                    return DropdownMenuItem<int>(
+                      value: busId,
+                      child: Text((bus['bus_code'] ?? bus['bus_number'] ?? 'حافلة $busId').toString()),
+                    );
+                  })
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedBusId = value),
             ),
-          ),
-          const SizedBox(height: 12),
-          if (widget.inspectionItems.isEmpty)
-            Text('لا توجد بنود فحص', style: TextStyle(color: AppColors.textSecondary))
-          else
-            ...widget.inspectionItems.map((item) {
-              final itemId = item['id'] as int;
-              return CheckboxListTile(
-                value: _checklistResults[itemId] ?? false,
-                onChanged: (value) {
-                  setState(() => _checklistResults[itemId] = value ?? false);
-                },
-                title: Text(item['name'] ?? ''),
-                dense: true,
-                controlAffinity: ListTileControlAffinity.leading,
-              );
-            }),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: _isSubmitting ? null : _submit,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 20),
+            Text(
+              widget.l10n.inspectionChecklist,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: widget.isDark ? Colors.white70 : AppColors.textSecondary,
               ),
             ),
-            child: _isSubmitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Text(widget.l10n.saveInspection),
-          ),
-        ],
+            const SizedBox(height: 12),
+            if (widget.inspectionItems.isEmpty)
+              Text('لا توجد بنود فحص', style: TextStyle(color: AppColors.textSecondary))
+            else
+              ...widget.inspectionItems.map((item) {
+                final itemId = int.tryParse(item['id']?.toString() ?? '') ?? 0;
+                return CheckboxListTile(
+                  value: _checklistResults[itemId] ?? false,
+                  onChanged: (value) {
+                    setState(() => _checklistResults[itemId] = value ?? false);
+                  },
+                  title: Text((item['name'] ?? '').toString()),
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                );
+              }),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _isSubmitting ? null : _submit,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text(widget.l10n.saveInspection),
+            ),
+          ],
+        ),
       ),
     );
   }

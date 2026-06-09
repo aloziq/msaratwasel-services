@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const bool isLocal = false; // تم التغيير إلى false لاستخدام الاستضافة الحية (الإنتاج)
+  static const bool isLocal = true; // تم التغيير إلى true لربط التطبيق بالسيرفر المحلي أثناء التطوير
 
   // رابط السيرفر المحلي (تأكد من IP جهازك إذا كنت تختبر على هاتف حقيقي بدلاً من 10.0.2.2)
   static const String _localDomain = "http://192.168.8.188:8001";

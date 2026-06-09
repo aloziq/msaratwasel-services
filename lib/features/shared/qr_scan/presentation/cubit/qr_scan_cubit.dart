@@ -17,15 +17,16 @@ class QRScanCubit extends Cubit<QRScanState> {
   QRScanCubit(this._markAttendanceUseCase) : super(QRScanInitial());
 
   void onCodeScanned(String code) {
-    emit(QRScanSuccess(code));
+    emit(QRScanSuccess(code.trim()));
   }
 
   Future<void> markAttendanceViaQr(String studentId, String classId) async {
-    debugPrint('[QRScanCubit] 🔄 markAttendanceViaQr called with studentId: $studentId, classId: $classId');
+    final cleanStudentId = studentId.trim();
+    debugPrint('[QRScanCubit] 🔄 markAttendanceViaQr called with cleanStudentId: $cleanStudentId, classId: $classId');
     emit(QRScanLoading());
     try {
       final result = await _markAttendanceUseCase(
-        studentId,
+        cleanStudentId,
         AttendanceStatus.present,
         viaQr: true,
       );
@@ -35,8 +36,8 @@ class QRScanCubit extends Cubit<QRScanState> {
           emit(QRScanError(l));
         },
         (r) {
-          debugPrint('[QRScanCubit] ✅ markAttendanceViaQr success for: $studentId');
-          emit(QRScanAttendanceSuccess(studentId));
+          debugPrint('[QRScanCubit] ✅ markAttendanceViaQr success for: $cleanStudentId');
+          emit(QRScanAttendanceSuccess(cleanStudentId));
         },
       );
     } catch (e, stack) {
@@ -47,6 +48,7 @@ class QRScanCubit extends Cubit<QRScanState> {
   }
 
   Future<void> markSmartTripAttendanceViaQr(String code) async {
+    final cleanCode = code.trim();
     emit(QRScanLoading());
     try {
       final busId = getIt<SharedPreferences>().getString('USER_BUS_ID') ?? '';
@@ -56,7 +58,7 @@ class QRScanCubit extends Cubit<QRScanState> {
       }
 
       final response = await ApiClient.instance.post('/bus/$busId/scan-qr', data: {
-        'code': code,
+        'code': cleanCode,
       });
 
       if (response.statusCode == 200 || response.statusCode == 201) {

@@ -725,7 +725,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
 
   void _startStatusPolling() {
-    _statusPollingTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+    // تم ربطه بـ AppConfig لتقليل استهلاك الشبكة وضغط السيرفر.
+    // بدلاً من التحديث كل 15 ثانية، يتم استخدام التحديث الدوري بفترات أطول (دقيقتين) كأمان فقط
+    // لأن التطبيق يعتمد أساساً على الاستقبال اللحظي عبر الـ Socket (Reverb) عند حدوث أي تعديل.
+    _statusPollingTimer = Timer.periodic(const Duration(seconds: AppConfig.statusPollingIntervalSeconds), (timer) {
       if (mounted) {
         _fetchRouteData(silent: true);
       }
@@ -912,7 +915,9 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         }
       } else {
         _consecutiveOffRouteUpdates = 0;
-        if (distance > 15 || _activeRoutePoints.isEmpty) {
+        // تعديل: تم ربطه بـ AppConfig لمنع إرسال طلبات متكررة ومكلفة لجوجل (Directions API) كل 15 متراً.
+        // يتم طلب المسار الجديد فقط عند تخطي عتبة المسافة المحددة في الإعدادات أو عند خلو المسار النشط.
+        if (distance > AppConfig.googleDirectionsDistanceThreshold || _activeRoutePoints.isEmpty) {
           _fetchRoadFollowingRoute();
         } else {
           _updatePolylines();

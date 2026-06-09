@@ -644,11 +644,11 @@ class _NewDelaySheetState extends State<_NewDelaySheet> {
 
     setState(() => _isSubmitting = true);
 
-    final int? busId = _delayType == 'bus' ? (_selectedBus?['id'] as int?) : null;
+    final int? busId = _delayType == 'bus' ? int.tryParse(_selectedBus?['id']?.toString() ?? '') : null;
 
     final result = await FieldSupervisorRemoteDataSource.storeDelay(
       type: _delayType,
-      studentId: _selectedStudent?['id'] as int?,
+      studentId: int.tryParse(_selectedStudent?['id']?.toString() ?? ''),
       busId: busId,
       durationMinutes: duration,
       reason: _selectedReason,

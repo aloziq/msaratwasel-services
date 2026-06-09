@@ -44,6 +44,7 @@ class _EndTripContentState extends State<_EndTripContent> {
   final BarcodeScanner _barcodeScanner = BarcodeScanner();
   bool _isProcessingFrame = false;
   bool _isStopping = false;
+  bool _isQrProcessing = false;
   CameraState? _cameraState;
   String? _currentVideoPath;
 
@@ -110,68 +111,82 @@ class _EndTripContentState extends State<_EndTripContent> {
 
     if (cubit.state is EndTripInitial) {
       if (upperCode.contains('FRONT')) {
-        debugPrint('Valid Front QR found!');
+        if (_isQrProcessing) return;
+        _isQrProcessing = true;
+
+        debugPrint('Valid Front QR found! Starting recording...');
         HapticFeedback.heavyImpact();
-        cubit.scanFrontQr(code);
-        Future.delayed(const Duration(milliseconds: 50), () async {
-          try {
-            if (_cameraState != null && _cameraState is VideoCameraState) {
-              await (_cameraState as VideoCameraState).startRecording();
-            }
-          } catch (e) {
-            debugPrint('Start Video Error: $e');
+
+        try {
+          if (_cameraState != null && _cameraState is VideoCameraState) {
+            await (_cameraState as VideoCameraState).startRecording();
+            cubit.scanFrontQr(code);
+          } else {
+            debugPrint('Camera is not ready in VideoCameraState');
+            _showFlashMessage("الكاميرا ليست جاهزة للبدء.");
+            _isQrProcessing = false;
           }
-        });
+        } catch (e) {
+          debugPrint('Start Video Error: $e');
+          _showFlashMessage("خطأ في بدء التسجيل: $e");
+          _isQrProcessing = false;
+        }
       } else {
+        // تجاهل الأكواد غير المطابقة بصمت لتجنب إظهار رسائل خطأ مزعجة أثناء التحرك
         debugPrint('Invalid QR for start: $code');
-        _showFlashMessage(l10n.invalidFrontQr);
       }
     } else if (cubit.state is EndTripRecording) {
       if (upperCode.contains('BACK')) {
-        if (_isStopping) return;
+        if (_isStopping || _isQrProcessing) return;
+        _isQrProcessing = true;
         _isStopping = true;
-        
+
         debugPrint('Valid Back QR found! Stopping stream and recording...');
         HapticFeedback.heavyImpact();
-        
-        // Schedule outside of the analysis callback to prevent deadlock
-        Future.delayed(const Duration(milliseconds: 100), () async {
-          try {
-            if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
-               await (_cameraState as VideoRecordingCameraState).stopRecording();
-               
-               // Wait for the OS to finish writing the file to disk
-               await Future.delayed(const Duration(milliseconds: 800));
-               
-               final String videoPath = _currentVideoPath ?? '';
-               
-               if (videoPath.isEmpty) {
-                 debugPrint('Error: video path is empty');
-                 _isStopping = false;
-                 _showFlashMessage(l10n.videoSavedError);
-                 return;
-               }
-               
-               final file = File(videoPath);
-               if (!await file.exists() || await file.length() < 1024) {
-                 debugPrint('Error: video file is missing or too small');
-                 _isStopping = false;
-                 _showFlashMessage(l10n.videoFileInvalidError);
-                 return;
-               }
-               
-               debugPrint('Video file ready: $videoPath');
-               cubit.scanBackQr(code, videoPath);
-               _startCompressionAndUpload(videoPath, cubit);
-            }
-          } catch (e) {
-            debugPrint('Error stopping recording: $e');
-            _isStopping = false;
+
+        try {
+          if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
+             await (_cameraState as VideoRecordingCameraState).stopRecording();
+             
+             // Wait for the OS to finish writing the file to disk
+             await Future.delayed(const Duration(milliseconds: 800));
+             
+             final String videoPath = _currentVideoPath ?? '';
+             
+             if (videoPath.isEmpty) {
+               debugPrint('Error: video path is empty');
+               _isStopping = false;
+               _isQrProcessing = false;
+               _showFlashMessage(l10n.videoSavedError);
+               return;
+             }
+             
+             final file = File(videoPath);
+             if (!await file.exists() || await file.length() < 1024) {
+               debugPrint('Error: video file is missing or too small');
+               _isStopping = false;
+               _isQrProcessing = false;
+               _showFlashMessage(l10n.videoFileInvalidError);
+               return;
+             }
+             
+             debugPrint('Video file ready: $videoPath');
+             cubit.scanBackQr(code, videoPath);
+             _startCompressionAndUpload(videoPath, cubit);
+          } else {
+             debugPrint('Camera is not in VideoRecordingCameraState');
+             _isStopping = false;
+             _isQrProcessing = false;
+             _showFlashMessage("الكاميرا لا تقوم بالتسجيل حالياً.");
           }
-        });
+        } catch (e) {
+          debugPrint('Error stopping recording: $e');
+          _isStopping = false;
+          _isQrProcessing = false;
+        }
       } else {
+        // تجاهل الأكواد الأخرى أثناء حركة الباص وصعوده بصمت دون إزعاج السائق برسائل خطأ
         debugPrint('Invalid QR for end: $code');
-        _showFlashMessage(l10n.invalidBackQr);
       }
     }
   }
@@ -249,7 +264,7 @@ class _EndTripContentState extends State<_EndTripContent> {
                   autoStart: true,
                 ),
                 onImageForAnalysis: (image) async {
-                  if (_isProcessingFrame || _isStopping || !mounted) return;
+                  if (_isProcessingFrame || _isStopping || _isQrProcessing || !mounted) return;
                   
                   final cubit = context.read<EndTripCubit>();
                   if (cubit.state is EndTripSuccess || cubit.state is EndTripUploading || cubit.state is EndTripCompressing) {

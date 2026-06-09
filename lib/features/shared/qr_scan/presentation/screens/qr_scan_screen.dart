@@ -23,7 +23,10 @@ class QRScanScreen extends StatefulWidget {
 }
 
 class _QRScanScreenState extends State<QRScanScreen> {
-  final MobileScannerController controller = MobileScannerController();
+  final MobileScannerController controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    detectionTimeoutMs: 30000,
+  );
   final AudioPlayer _audioPlayer = AudioPlayer();
   Color? overlayColor;
   bool isProcessing = false;
@@ -219,8 +222,8 @@ class _QRScanScreenState extends State<QRScanScreen> {
                       
                       final List<Barcode> barcodes = capture.barcodes;
                       for (final barcode in barcodes) {
-                        if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
-                          final String code = barcode.rawValue!;
+                        if (barcode.rawValue != null && barcode.rawValue!.trim().isNotEmpty) {
+                          final String code = barcode.rawValue!.trim();
                           
                           // Debounce consecutive same-code scans to prevent spam
                           if (code == lastScannedCode) return;
@@ -255,14 +258,23 @@ class _QRScanScreenState extends State<QRScanScreen> {
                               );
                               return;
                             }
+                            setState(() {
+                              isProcessing = true;
+                            });
                             context.read<QRScanCubit>().markSmartTripAttendanceViaQr(code);
                           } else if (widget.classId != null) {
+                            setState(() {
+                              isProcessing = true;
+                            });
                             debugPrint('[QRScan] 🚀 Calling markAttendanceViaQr with code: $code, classId: ${widget.classId}');
                             context.read<QRScanCubit>().markAttendanceViaQr(
                                   code,
                                   widget.classId ?? '',
                                 );
                           } else {
+                            setState(() {
+                              isProcessing = true;
+                            });
                             context.read<QRScanCubit>().onCodeScanned(code);
                           }
                         }

@@ -730,7 +730,9 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
       setState(() {
         _buses = buses;
         _students = students;
-        if (_buses.isNotEmpty) _selectedBusId = _buses.first['id'];
+        if (_buses.isNotEmpty) {
+          _selectedBusId = int.tryParse(_buses.first['id']?.toString() ?? '');
+        }
         _isLoadingData = false;
       });
     }
@@ -919,17 +921,20 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
                     hint: const Text('-- اختر الحافلة --'),
                     items: _buses
                         .map(
-                          (bus) => DropdownMenuItem<int>(
-                            value: bus['id'],
-                            child: Text(
-                              bus['bus_code'] ?? 'حافلة ${bus['id']}',
-                              style: TextStyle(
-                                color: widget.isDark
-                                    ? Colors.white
-                                    : AppColors.textPrimary,
+                          (bus) {
+                            final busId = int.tryParse(bus['id']?.toString() ?? '') ?? 0;
+                            return DropdownMenuItem<int>(
+                              value: busId,
+                              child: Text(
+                                (bus['bus_code'] ?? 'حافلة $busId').toString(),
+                                style: TextStyle(
+                                  color: widget.isDark
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          }
                         )
                         .toList(),
                     onChanged: (val) => setState(() => _selectedBusId = val),
@@ -1186,7 +1191,7 @@ class _NewIncidentSheetState extends State<_NewIncidentSheet> {
                         itemCount: _students.length,
                         itemBuilder: (context, index) {
                           final student = _students[index];
-                          final id = student['id'] as int;
+                          final id = int.tryParse(student['id']?.toString() ?? '') ?? 0;
                           final isSelected = _selectedStudentIds.contains(id);
                           return CheckboxListTile(
                             title: Text(

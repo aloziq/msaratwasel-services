@@ -228,7 +228,8 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
 
   void _startPolling() {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    // تم التعديل للاعتماد على التحديث الدوري المتباعد كأمان إضافي فقط لتجنب الضغط على السيرفر
+    _pollingTimer = Timer.periodic(const Duration(seconds: AppConfig.statusPollingIntervalSeconds), (timer) {
       if (!isClosed) {
         init(silent: true);
       }

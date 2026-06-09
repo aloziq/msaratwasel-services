@@ -21,7 +21,7 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
   bool _followBus = true;
   bool _isProgrammaticMove = false;
   bool _isMapMode = true; // Switch between Map mode and Student List mode
-  bool _initialBoundsFitted = false;
+  bool _isFirstLock = true;
   final Map<String, BitmapDescriptor> _customMarkers = {};
 
   @override
@@ -82,16 +82,15 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
         body: BlocConsumer<SupervisorTrackingCubit, SupervisorTrackingState>(
           listener: (context, state) {
             if (state is SupervisorTrackingLoaded) {
-              if (_followBus && state.busPosition != null) {
-                _moveCamera(state.busPosition!);
+              if (state.busPosition != null) {
+                if (_isFirstLock) {
+                  _isFirstLock = false;
+                  _moveCamera(state.busPosition!, zoom: 16.0);
+                } else if (_followBus) {
+                  _moveCamera(state.busPosition!);
+                }
               }
               _loadCustomMarkers(state);
-              if (!_initialBoundsFitted) {
-                _initialBoundsFitted = true;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _fitRouteBounds(state);
-                });
-              }
             }
           },
           builder: (context, state) {
@@ -803,10 +802,14 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
     return polylines;
   }
 
-  Future<void> _moveCamera(LatLng position) async {
+  Future<void> _moveCamera(LatLng position, {double? zoom}) async {
     final controller = await _mapController.future;
     _isProgrammaticMove = true;
-    controller.animateCamera(CameraUpdate.newLatLng(position));
+    if (zoom != null) {
+      controller.animateCamera(CameraUpdate.newLatLngZoom(position, zoom));
+    } else {
+      controller.animateCamera(CameraUpdate.newLatLng(position));
+    }
   }
 
   Future<void> _fitRouteBounds(SupervisorTrackingLoaded state) async {
@@ -839,16 +842,20 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
       if (p.longitude > maxLng) maxLng = p.longitude;
     }
 
-    final bounds = LatLngBounds(
-      southwest: LatLng(minLat, minLng),
-      northeast: LatLng(maxLat, maxLng),
-    );
-
     _isProgrammaticMove = true;
     setState(() {
       _followBus = false;
     });
-    controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+
+    if (minLat == maxLat && minLng == maxLng) {
+      controller.animateCamera(CameraUpdate.newLatLngZoom(LatLng(minLat, minLng), 15));
+    } else {
+      final bounds = LatLngBounds(
+        southwest: LatLng(minLat, minLng),
+        northeast: LatLng(maxLat, maxLng),
+      );
+      controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+    }
   }
 
   Widget _buildStudentAvatar(StudentStop stop, int index, Color statusColor) {

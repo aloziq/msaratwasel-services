@@ -179,9 +179,9 @@ class _BusMapScreenState extends State<BusMapScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1A73E8).withOpacity(0.05),
+                              color: const Color(0xFF1A73E8).withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFF1A73E8).withOpacity(0.1)),
+                              border: Border.all(color: const Color(0xFF1A73E8).withValues(alpha: 0.1)),
                             ),
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,

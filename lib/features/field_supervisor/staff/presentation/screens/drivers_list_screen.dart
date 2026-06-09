@@ -38,19 +38,19 @@ class _DriversListScreenState extends State<DriversListScreen>
     if (mounted) {
       setState(() {
         _drivers = (data['drivers'] ?? []).map<_StaffData>((d) => _StaffData(
-          d['name'] ?? '',
+          (d['name'] ?? '').toString(),
           'سائق',
           d['is_active'] == true,
-          d['bus_code'] ?? '-',
-          d['phone'] ?? '',
+          (d['bus_code'] ?? '-').toString(),
+          (d['phone'] ?? '').toString(),
         )).toList();
 
         _supervisors = (data['supervisors'] ?? []).map<_StaffData>((s) => _StaffData(
-          s['name'] ?? '',
+          (s['name'] ?? '').toString(),
           'مشرفة',
           s['is_active'] == true,
-          s['bus_code'] ?? '-',
-          s['phone'] ?? '',
+          (s['bus_code'] ?? '-').toString(),
+          (s['phone'] ?? '').toString(),
         )).toList();
 
         _isLoading = false;
@@ -182,6 +182,42 @@ class _StaffList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (staff.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.people_outline,
+                size: 64,
+                color: isDark ? Colors.white30 : Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'لا توجد بيانات مسجلة حالياً',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white70 : Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'سيتم عرض الطاقم هنا فور تعيينهم على النظام',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white38 : Colors.grey[500],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       itemCount: staff.length,
