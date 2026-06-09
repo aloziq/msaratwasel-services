@@ -139,10 +139,25 @@ class _BusMapScreenState extends State<BusMapScreen> {
         child: Builder(
           builder: (context) {
             return Scaffold(
-              body: BlocBuilder<BusTrackingCubit, BusTrackingState>(
-                builder: (context, state) {
-                // Error state
-                if (state is BusTrackingError) {
+              body: BlocBuilder<BusTripCubit, BusTripState>(
+                builder: (context, tripState) {
+                  if (tripState is BusTripInitial || tripState is BusTripLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (tripState is BusTripLoaded) {
+                    final status = tripState.trip.tripStatus;
+                    if (status == 'finished' || status == 'idle' || status == null) {
+                      return const Center(
+                        child: CircularProgressIndicator(), // Show loading while BlocListener redirects
+                      );
+                    }
+                  }
+
+                  return BlocBuilder<BusTrackingCubit, BusTrackingState>(
+                    builder: (context, state) {
+                    // Error state
+                    if (state is BusTrackingError) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -362,6 +377,8 @@ class _BusMapScreenState extends State<BusMapScreen> {
                       ),
                     ],
                   );
+                },
+              );
                 },
               ),
             );

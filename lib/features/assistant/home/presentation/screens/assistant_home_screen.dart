@@ -169,7 +169,7 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
                           _buildNoTripCard(context, 'لا توجد رحلة نشطة حالياً'),
                           const SizedBox(height: AppSpacing.xl),
                         ],
-                        _buildQuickActions(context),
+                        _buildQuickActions(context, state),
                         // Add bottom padding for scrolling
                         const SizedBox(height: 100),
                       ]),
@@ -514,7 +514,7 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, BusTripState state) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -556,7 +556,26 @@ class _AssistantHomeScreenState extends State<AssistantHomeScreen> {
               icon: PhosphorIconsFill.mapPin,
               label: 'تتبع الحافلة',
               color: const Color(0xFF10B981), // Emerald
-              onTap: () => context.push(AppRoutes.busMap),
+              onTap: () {
+                bool canTrack = false;
+                if (state is BusTripLoaded) {
+                  final status = state.trip.tripStatus;
+                  if (status != null && status != 'finished' && status != 'idle') {
+                    canTrack = true;
+                  }
+                }
+                
+                if (canTrack) {
+                  context.push(AppRoutes.busMap);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('لا توجد رحلة نشطة حالياً لتتبعها.'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              },
               delay: 500,
             ),
             _ActionCard(
