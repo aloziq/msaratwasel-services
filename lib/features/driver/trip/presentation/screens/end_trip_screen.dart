@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:camerawesome/camerawesome_plugin.dart';
+import 'package:camerawesome/pigeon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
-import 'package:video_compress/video_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
@@ -105,91 +105,7 @@ class _EndTripContentState extends State<_EndTripContent> {
     }
   }
 
-  Future<void> _handleBarcodeDetection(String code, EndTripCubit cubit, AppLocalizations l10n) async {
-    final upperCode = code.toUpperCase();
-    debugPrint('QR Detected: $code');
-
-    if (cubit.state is EndTripInitial) {
-      if (upperCode.contains('FRONT')) {
-        if (_isQrProcessing) return;
-        _isQrProcessing = true;
-
-        debugPrint('Valid Front QR found! Starting recording...');
-        HapticFeedback.heavyImpact();
-
-        try {
-          if (_cameraState != null && _cameraState is VideoCameraState) {
-            await (_cameraState as VideoCameraState).startRecording();
-            cubit.scanFrontQr(code);
-          } else {
-            debugPrint('Camera is not ready in VideoCameraState');
-            _showFlashMessage("الكاميرا ليست جاهزة للبدء.");
-            _isQrProcessing = false;
-          }
-        } catch (e) {
-          debugPrint('Start Video Error: $e');
-          _showFlashMessage("خطأ في بدء التسجيل: $e");
-          _isQrProcessing = false;
-        }
-      } else {
-        // تجاهل الأكواد غير المطابقة بصمت لتجنب إظهار رسائل خطأ مزعجة أثناء التحرك
-        debugPrint('Invalid QR for start: $code');
-      }
-    } else if (cubit.state is EndTripRecording) {
-      if (upperCode.contains('BACK')) {
-        if (_isStopping || _isQrProcessing) return;
-        _isQrProcessing = true;
-        _isStopping = true;
-
-        debugPrint('Valid Back QR found! Stopping stream and recording...');
-        HapticFeedback.heavyImpact();
-
-        try {
-          if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
-             await (_cameraState as VideoRecordingCameraState).stopRecording();
-             
-             // Wait for the OS to finish writing the file to disk
-             await Future.delayed(const Duration(milliseconds: 800));
-             
-             final String videoPath = _currentVideoPath ?? '';
-             
-             if (videoPath.isEmpty) {
-               debugPrint('Error: video path is empty');
-               _isStopping = false;
-               _isQrProcessing = false;
-               _showFlashMessage(l10n.videoSavedError);
-               return;
-             }
-             
-             final file = File(videoPath);
-             if (!await file.exists() || await file.length() < 1024) {
-               debugPrint('Error: video file is missing or too small');
-               _isStopping = false;
-               _isQrProcessing = false;
-               _showFlashMessage(l10n.videoFileInvalidError);
-               return;
-             }
-             
-             debugPrint('Video file ready: $videoPath');
-             cubit.scanBackQr(code, videoPath);
-             _startCompressionAndUpload(videoPath, cubit);
-          } else {
-             debugPrint('Camera is not in VideoRecordingCameraState');
-             _isStopping = false;
-             _isQrProcessing = false;
-             _showFlashMessage("الكاميرا لا تقوم بالتسجيل حالياً.");
-          }
-        } catch (e) {
-          debugPrint('Error stopping recording: $e');
-          _isStopping = false;
-          _isQrProcessing = false;
-        }
-      } else {
-        // تجاهل الأكواد الأخرى أثناء حركة الباص وصعوده بصمت دون إزعاج السائق برسائل خطأ
-        debugPrint('Invalid QR for end: $code');
-      }
-    }
-  }
+  
 
   Future<void> _startCompressionAndUpload(
     String path,
@@ -198,30 +114,11 @@ class _EndTripContentState extends State<_EndTripContent> {
     if (path.isEmpty) return;
     
     try {
-      // Notify UI that compression is starting
-      cubit.startCompressing();
-      
-      final MediaInfo? info = await VideoCompress.compressVideo(
-        path,
-        quality: VideoQuality.MediumQuality,
-        deleteOrigin: false, // Keep origin as fallback
-      );
-
-      final String finalPath;
-      if (info?.path != null && info!.filesize != null && info.filesize! > 0) {
-        finalPath = info.path!;
-        // Now safe to delete origin
-        try { await File(path).delete(); } catch (_) {}
-      } else {
-        // Fallback to original if compression failed
-        debugPrint('Compression failed or empty result, using original file');
-        finalPath = path;
-      }
-      
-      await cubit.finalizeUpload(finalPath);
+      // الرفع المباشر للفيديو وتجنب ضغطه برمجياً لمنع انهيار تطبيق الأندرويد بسبب الذاكرة والموارد
+      debugPrint('Uploading raw video directly to secure connection: $path');
+      await cubit.finalizeUpload(path);
     } catch (e) {
-      debugPrint('Compression error: $e');
-      // Fallback: upload original without compression
+      debugPrint('Direct upload fallback error: $e');
       await cubit.finalizeUpload(path);
     }
   }
@@ -244,9 +141,15 @@ class _EndTripContentState extends State<_EndTripContent> {
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Camera Preview via CameraAwesome
               CameraAwesomeBuilder.custom(
                 saveConfig: SaveConfig.video(
+                  videoOptions: VideoOptions(
+                    enableAudio: false,
+                    quality: VideoRecordingQuality.sd,
+                    android: AndroidVideoOptions(
+                      fallbackStrategy: QualityFallbackStrategy.lower,
+                    ),
+                  ),
                   pathBuilder: (sensors) async {
                     final Directory extDir = await getTemporaryDirectory();
                     final dirPath = '${extDir.path}/camerawesome';
@@ -279,7 +182,43 @@ class _EndTripContentState extends State<_EndTripContent> {
                       if (barcodes.isNotEmpty && mounted) {
                         final String? code = barcodes.first.rawValue;
                         if (code != null) {
-                          await _handleBarcodeDetection(code, cubit, l10n);
+                          final upperCode = code.toUpperCase();
+                          
+                          // 1. مسح كود البداية FRONT لبدء التسجيل تلقائياً
+                          if (cubit.state is EndTripInitial && upperCode.contains('FRONT')) {
+                            if (_isQrProcessing) return;
+                            _isQrProcessing = true;
+                            HapticFeedback.heavyImpact();
+                            if (_cameraState != null && _cameraState is VideoCameraState) {
+                              await (_cameraState as VideoCameraState).startRecording();
+                              cubit.scanFrontQr(code);
+                              _isQrProcessing = false;
+                            }
+                          }
+                          
+                          // 2. مسح كود النهاية BACK لإيقاف التسجيل وحفظ الفيديو والرفع تلقائياً فوراً
+                          else if (cubit.state is EndTripRecording && upperCode.contains('BACK')) {
+                            _isQrProcessing = true;
+                            _isStopping = true;
+                            HapticFeedback.heavyImpact();
+                            
+                            if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
+                              await (_cameraState as VideoRecordingCameraState).stopRecording();
+                              await Future.delayed(const Duration(milliseconds: 800));
+                              
+                              final String videoPath = _currentVideoPath ?? '';
+                              if (videoPath.isNotEmpty) {
+                                final file = File(videoPath);
+                                if (await file.exists() && await file.length() > 1024) {
+                                  cubit.prepareScanBack(videoPath);
+                                  cubit.scanBackQr(code);
+                                  _startCompressionAndUpload(videoPath, cubit);
+                                }
+                              }
+                            }
+                            _isStopping = false;
+                            _isQrProcessing = false;
+                          }
                         }
                       }
                     }
@@ -321,6 +260,9 @@ class _EndTripContentState extends State<_EndTripContent> {
     if (state is EndTripRecording) {
       title = l10n.recordVideo;
       desc = l10n.recordVideoDesc;
+    } else if (state is EndTripScanningBack) {
+      title = "مسح باركود النهاية (BACK)";
+      desc = "يرجى مسح باركود الحافلة الخلفي لتوثيق خلو الحافلة وإنهاء الرحلة.";
     } else if (state is EndTripCompressing) {
       title = l10n.processingVideoTitle;
       desc = l10n.processingVideoDesc;
@@ -341,7 +283,7 @@ class _EndTripContentState extends State<_EndTripContent> {
                 Row(
                   children: [
                     const CustomMenuButton(),
-                    if (_cameraState != null && (state is EndTripInitial || state is EndTripRecording)) ...[
+                    if (_cameraState != null && (state is EndTripInitial || state is EndTripRecording || state is EndTripScanningBack)) ...[
                       const SizedBox(width: 10),
                       Container(
                         decoration: const BoxDecoration(
@@ -476,19 +418,18 @@ class _EndTripContentState extends State<_EndTripContent> {
               if (state is EndTripRecording) ...[
                 const SizedBox(height: 10),
                 PremiumButton(
-                  text: l10n.stopRecordingManual,
+                  text: "إنهاء الرحلة (يدوياً)",
                   onTap: () async {
                     HapticFeedback.heavyImpact();
                     try {
                       if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
                         await (_cameraState as VideoRecordingCameraState).stopRecording();
                         
-                        // ✅ FIX: Wait for file to be written
+                        // Wait for file to be written
                         await Future.delayed(const Duration(milliseconds: 800));
                         
                         final String videoPath = _currentVideoPath ?? '';
                         
-                        // ✅ FIX: Validate file before upload
                         if (videoPath.isEmpty) {
                           _showFlashMessage(l10n.videoSavedError);
                           return;
@@ -500,7 +441,9 @@ class _EndTripContentState extends State<_EndTripContent> {
                         }
 
                         final cubit = context.read<EndTripCubit>();
-                        cubit.scanBackQr('MANUAL-BACK', videoPath);
+                        // إرسال الكود اليدوي مباشرة لإنهاء الرحلة فوراً ودون تعقيد
+                        cubit.prepareScanBack(videoPath);
+                        cubit.scanBackQr("MANUAL-BACK");
                         _startCompressionAndUpload(videoPath, cubit);
                       }
                     } catch (e) {

@@ -46,9 +46,13 @@ class EndTripCubit extends Cubit<EndTripState> {
     emit(EndTripRecording());
   }
 
-  void scanBackQr(String code, String videoPath) {
-    _backData = code;
+  void prepareScanBack(String videoPath) {
     _videoPath = videoPath;
+    emit(EndTripScanningBack());
+  }
+
+  void scanBackQr(String code) {
+    _backData = code;
     submitTripEnd();
   }
 
