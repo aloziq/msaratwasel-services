@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:camerawesome/pigeon.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:vibration/vibration.dart';
 
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
@@ -42,6 +44,7 @@ class _EndTripContent extends StatefulWidget {
 
 class _EndTripContentState extends State<_EndTripContent> {
   final BarcodeScanner _barcodeScanner = BarcodeScanner();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isProcessingFrame = false;
   bool _isStopping = false;
   bool _isQrProcessing = false;
@@ -51,7 +54,36 @@ class _EndTripContentState extends State<_EndTripContent> {
   @override
   void dispose() {
     _barcodeScanner.close();
+    _audioPlayer.dispose();
     super.dispose();
+  }
+
+  Future<void> _playSuccessSound() async {
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.play(AssetSource('sounds/success.mp3'));
+    } catch (e) {
+      debugPrint('Error playing success sound: $e');
+    }
+  }
+
+  Future<void> _triggerVibration() async {
+    try {
+      final hasVibrator = await Vibration.hasVibrator();
+      if (hasVibrator == true) {
+        final hasCustom = await Vibration.hasCustomVibrationsSupport();
+        if (hasCustom == true) {
+          await Vibration.vibrate(duration: 500, amplitude: 255);
+        } else {
+          await Vibration.vibrate(duration: 500);
+        }
+      } else {
+        await HapticFeedback.vibrate();
+      }
+    } catch (e) {
+      debugPrint('Error triggering vibration: $e');
+      HapticFeedback.vibrate();
+    }
   }
 
   DateTime? _lastFlashTime;
@@ -188,11 +220,44 @@ class _EndTripContentState extends State<_EndTripContent> {
                           if (cubit.state is EndTripInitial && upperCode.contains('FRONT')) {
                             if (_isQrProcessing) return;
                             _isQrProcessing = true;
-                            HapticFeedback.heavyImpact();
+                            _triggerVibration();
+                            _playSuccessSound();
                             if (_cameraState != null && _cameraState is VideoCameraState) {
                               await (_cameraState as VideoCameraState).startRecording();
                               cubit.scanFrontQr(code);
                               _isQrProcessing = false;
+                              
+                              if (mounted) {
+                                final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(Icons.videocam_rounded, color: Colors.white, size: 22),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            isAr
+                                                ? 'بدأ تسجيل الفيديو، يرجى التوجه ومسح الكود الخلفي للحافلة لإنهاء الرحلة'
+                                                : 'Video recording started. Please scan the rear bus code to end the trip',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.blueAccent,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    margin: const EdgeInsets.all(16),
+                                    duration: const Duration(seconds: 4),
+                                  ),
+                                );
+                              }
                             }
                           }
                           
@@ -200,7 +265,8 @@ class _EndTripContentState extends State<_EndTripContent> {
                           else if (cubit.state is EndTripRecording && upperCode.contains('BACK')) {
                             _isQrProcessing = true;
                             _isStopping = true;
-                            HapticFeedback.heavyImpact();
+                            _triggerVibration();
+                            _playSuccessSound();
                             
                             if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
                               await (_cameraState as VideoRecordingCameraState).stopRecording();
@@ -420,7 +486,8 @@ class _EndTripContentState extends State<_EndTripContent> {
                 PremiumButton(
                   text: "إنهاء الرحلة (يدوياً)",
                   onTap: () async {
-                    HapticFeedback.heavyImpact();
+                    _triggerVibration();
+                    _playSuccessSound();
                     try {
                       if (_cameraState != null && _cameraState is VideoRecordingCameraState) {
                         await (_cameraState as VideoRecordingCameraState).stopRecording();

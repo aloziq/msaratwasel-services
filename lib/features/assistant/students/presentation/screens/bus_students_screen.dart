@@ -358,6 +358,25 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                                     );
                                     return;
                                   }
+
+                                  final cubitState = context.read<BusTripCubit>().state;
+                                  final direction = (cubitState is BusTripLoaded)
+                                      ? cubitState.trip.suggestedTripType
+                                      : 'to_school';
+                                  if (direction == 'to_school') {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          Localizations.localeOf(context).languageCode == 'ar'
+                                              ? 'الحافلة لم تصل بعد الى منزل الطالب ولم يتم تشغيل عداد الوقت بعد'
+                                              : 'The bus has not yet arrived at the student\'s home and the timer has not started yet',
+                                        ),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
                                   setState(() {
                                     _isSelectionMode = true;
                                     _selectedStudentIds.add(student.id);
@@ -899,8 +918,35 @@ class _StudentCard extends StatelessWidget {
       );
     }
 
+    if (isToSchool && (student.status == BusStudentStatus.atHome || student.status == BusStudentStatus.unknown)) {
+      return ElevatedButton.icon(
+        icon: const Icon(PhosphorIconsFill.bus, size: 16),
+        label: Text(l10n.boardedBus),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.grey,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          minimumSize: const Size(0, 36),
+        ),
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                Localizations.localeOf(context).languageCode == 'ar'
+                    ? 'الحافلة لم تصل بعد الى منزل الطالب ولم يتم تشغيل عداد الوقت بعد'
+                    : 'The bus has not yet arrived at the student\'s home and the timer has not started yet',
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        },
+      );
+    }
+
     // الطالب في نقطة البداية → زر الركوب
-    final canBoard = (isToSchool && student.status == BusStudentStatus.atHome)
+    final canBoard = (isToSchool && student.status == BusStudentStatus.waiting)
         || (!isToSchool && student.status == BusStudentStatus.atSchool);
 
     if (canBoard) {
@@ -942,6 +988,24 @@ class _StudentCard extends StatelessWidget {
         ? cubitState.trip.suggestedTripType
         : 'to_school';
     final isToSchool = direction == 'to_school';
+
+    if (isToSchool && (student.status == BusStudentStatus.atHome || student.status == BusStudentStatus.unknown)) {
+      return IconButton(
+        icon: const Icon(PhosphorIconsRegular.dotsThreeVertical),
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                Localizations.localeOf(context).languageCode == 'ar'
+                    ? 'الحافلة لم تصل بعد الى منزل الطالب ولم يتم تشغيل عداد الوقت بعد'
+                    : 'The bus has not yet arrived at the student\'s home and the timer has not started yet',
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        },
+      );
+    }
 
     return PopupMenuButton<BusStudentStatus>(
       icon: const Icon(PhosphorIconsRegular.dotsThreeVertical),

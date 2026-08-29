@@ -1473,17 +1473,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       debugPrint('🔄 [ADVANCE]   isAbsent: ${currentStudent.isAbsent}');
 
       if (isMorning) {
-        // In morning: boarded, absent, or waiting (parent notified, driver can proceed)
+        // In morning: boarded or absent.
         // The supervisor handles marking boarding separately.
         isResolved = currentStudent.isBoarded || currentStudent.isAbsent;
         debugPrint('🔄 [ADVANCE] Morning validation: isBoarded=${currentStudent.isBoarded} || isAbsent=${currentStudent.isAbsent} → isResolved=$isResolved');
-
-        // If the driver already notified the parent (student is 'waiting'),
-        // they can advance — the boarding will be confirmed by supervisor.
-        if (!isResolved && _hasNotified) {
-          isResolved = true;
-          debugPrint('🔄 [ADVANCE] ✅ Allowing advance because _hasNotified=true');
-        }
       } else {
         // In afternoon, they start at school, so we skip validation if they haven't departed school yet.
         if (!_hasDepartedSchool) {
@@ -1514,8 +1507,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                 Expanded(
                   child: Text(
                     isArabic 
-                      ? 'لا يمكن الانتقال! يرجى تحديد حالة الطالب (${currentStudent.nameAr}) أولاً من صفحة "طلابي" أو من المشرفة.' 
-                      : 'Cannot advance! Please determine status for ${currentStudent.nameEn} first from "My Students" or the supervisor.',
+                      ? 'يجب تغيير حالة الطالب الحالي قبل الانتقال الى الطالب التالي' 
+                      : 'You must change the status of the current student before moving to the next student',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -1531,20 +1524,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
             ),
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: isArabic ? 'تحديث' : 'Refresh',
-              textColor: Colors.white,
-              onPressed: () async {
-                setState(() {
-                  _hasNotified = false;
-                  _isMovingToStop = false;
-                  _isArrived = false;
-                  _isActionLoading = false;
-                });
-                _sortPendingStopsByDistance();
-                _fetchRoadFollowingRoute();
-              },
-            ),
           ),
         );
         return;
