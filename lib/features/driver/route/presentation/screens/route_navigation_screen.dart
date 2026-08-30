@@ -24,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/utils/gps_security_helper.dart';
+import 'package:msaratwasel_services/core/utils/app_snack_bar.dart';
 import 'package:msaratwasel_services/config/app_config.dart';
 
 import '../../domain/entities/student_stop.dart';
@@ -1088,7 +1089,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       int initialIndex = 0;
 
       if (isMorning) {
-        initialIndex = stops.indexWhere((s) => !s.isBoarded && !s.isAbsent);
+        initialIndex = stops.indexWhere((s) => !s.isBoarded && !s.isAbsent && !s.isDroppedOff);
       } else {
         initialIndex = stops.indexWhere((s) => !s.isDroppedOff && !s.isAbsent);
         // Auto-detect if school departure already happened:
@@ -1186,7 +1187,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     
     for (var stop in _stops) {
       bool isResolved = isMorning 
-        ? (stop.isBoarded || stop.isAbsent)
+        ? (stop.isBoarded || stop.isAbsent || stop.isDroppedOff)
         : (stop.isDroppedOff || stop.isAbsent);
         
       if (isResolved) {
@@ -1473,10 +1474,10 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       debugPrint('🔄 [ADVANCE]   isAbsent: ${currentStudent.isAbsent}');
 
       if (isMorning) {
-        // In morning: boarded or absent.
+        // In morning: boarded, dropped off at school, or absent.
         // The supervisor handles marking boarding separately.
-        isResolved = currentStudent.isBoarded || currentStudent.isAbsent;
-        debugPrint('🔄 [ADVANCE] Morning validation: isBoarded=${currentStudent.isBoarded} || isAbsent=${currentStudent.isAbsent} → isResolved=$isResolved');
+        isResolved = currentStudent.isBoarded || currentStudent.isAbsent || currentStudent.isDroppedOff;
+        debugPrint('🔄 [ADVANCE] Morning validation: isBoarded=${currentStudent.isBoarded} || isAbsent=${currentStudent.isAbsent} || isDroppedOff=${currentStudent.isDroppedOff} → isResolved=$isResolved');
       } else {
         // In afternoon, they start at school, so we skip validation if they haven't departed school yet.
         if (!_hasDepartedSchool) {
@@ -1494,37 +1495,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
       if (!isResolved) {
         debugPrint('❌ [ADVANCE] BLOCKED! Student not resolved. Showing error snackbar.');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(
-                  PhosphorIconsFill.warningCircle,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    isArabic 
-                      ? 'يجب تغيير حالة الطالب الحالي قبل الانتقال الى الطالب التالي' 
-                      : 'You must change the status of the current student before moving to the next student',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            duration: const Duration(seconds: 4),
-          ),
+        AppSnackBar.showError(
+          context,
+          isArabic 
+            ? 'يجب تغيير حالة الطالب الحالي قبل الانتقال الى الطالب التالي' 
+            : 'You must change the status of the current student before moving to the next student',
         );
         return;
       }
@@ -1566,7 +1541,21 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               ],
             ),
           );
-          if (confirmed == true && mounted) context.push(AppRoutes.driverEndTrip);
+          if (confirmed == true && mounted) {
+            await _fetchRouteData(silent: true);
+            if (!mounted) return;
+            final stillOnBoard = _stops.where((s) => s.isBoarded && !s.isDroppedOff && !s.isAbsent).toList();
+            if (stillOnBoard.isNotEmpty) {
+              AppSnackBar.showError(
+                context,
+                isArabic
+                    ? 'يجب تسجيل نزول جميع الطلاب في المدرسة أولاً (${stillOnBoard.length} طالب لا يزال في الحافلة)'
+                    : 'All boarded students must be marked as dropped off at school first (${stillOnBoard.length} remaining)',
+              );
+              return;
+            }
+            context.push(AppRoutes.driverEndTrip);
+          }
         }
       } else {
         if (!_hasDepartedSchool) {

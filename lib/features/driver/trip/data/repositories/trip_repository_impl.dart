@@ -52,6 +52,30 @@ class TripRepositoryImpl implements TripRepository {
   }
 
   @override
+  Future<void> checkTripReadiness() async {
+    final busId = _busId;
+    if (busId == null) throw Exception('لم يتم تعيين حافلة لك.');
+
+    try {
+      final response = await ApiClient.instance.get('/bus/$busId/check-trip-readiness');
+      if (response.statusCode != 200) {
+        throw Exception(response.data['message'] ?? 'لا يمكن إنهاء الرحلة حالياً.');
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response!.data != null && e.response!.data is Map) {
+        final serverMsg = e.response!.data['message'];
+        if (serverMsg != null && serverMsg.toString().isNotEmpty) {
+          throw Exception(serverMsg);
+        }
+      }
+      if (e.response?.statusCode == 404) {
+        throw Exception('المسار غير موجود على السيرفر، يرجى التأكد من رفع كود الباك إند إلى السيرفر.');
+      }
+      throw Exception('تعذر الاتصال بالخادم للتحقق من حالة الرحلة.');
+    }
+  }
+
+  @override
   Future<void> updateStudentStatus(
     String studentId, {
     bool? isAbsent,

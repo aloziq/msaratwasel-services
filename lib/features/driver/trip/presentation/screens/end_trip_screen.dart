@@ -16,6 +16,7 @@ import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/custom_menu_button.dart';
 import 'package:msaratwasel_services/core/presentation/widgets/premium_button.dart';
 import 'package:msaratwasel_services/core/di/injection.dart';
+import 'package:msaratwasel_services/core/utils/app_snack_bar.dart';
 import 'package:msaratwasel_services/features/driver/trip/presentation/manager/end_trip_cubit.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import 'package:msaratwasel_services/features/shared/auth/presentation/cubit/auth_cubit.dart';
@@ -220,6 +221,23 @@ class _EndTripContentState extends State<_EndTripContent> {
                           if (cubit.state is EndTripInitial && upperCode.contains('FRONT')) {
                             if (_isQrProcessing) return;
                             _isQrProcessing = true;
+
+                            // ✅ التحقق أولاً من نزول جميع الطلاب قبل السماح ببدء التسجيل
+                            try {
+                              await cubit.checkTripReadiness();
+                            } catch (e) {
+                              _isQrProcessing = false;
+                              _triggerVibration();
+                              if (mounted) {
+                                final msg = e.toString().replaceAll('Exception:', '').trim();
+                                AppSnackBar.showError(
+                                  context,
+                                  msg.isNotEmpty ? msg : 'لا يمكن بدء إنهاء الرحلة، يرجى التأكد من نزول جميع الطلاب أولاً.',
+                                );
+                              }
+                              return;
+                            }
+
                             _triggerVibration();
                             _playSuccessSound();
                             if (_cameraState != null && _cameraState is VideoCameraState) {
@@ -229,35 +247,15 @@ class _EndTripContentState extends State<_EndTripContent> {
                               
                               if (mounted) {
                                 final isAr = Localizations.localeOf(context).languageCode == 'ar';
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        const Icon(Icons.videocam_rounded, color: Colors.white, size: 22),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            isAr
-                                                ? 'بدأ تسجيل الفيديو، يرجى التوجه ومسح الكود الخلفي للحافلة لإنهاء الرحلة'
-                                                : 'Video recording started. Please scan the rear bus code to end the trip',
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.blueAccent,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    margin: const EdgeInsets.all(16),
-                                    duration: const Duration(seconds: 4),
-                                  ),
+                                AppSnackBar.showInfo(
+                                  context,
+                                  isAr
+                                      ? 'بدأ تسجيل الفيديو، يرجى التوجه ومسح الكود الخلفي للحافلة لإنهاء الرحلة'
+                                      : 'Video recording started. Please scan the rear bus code to end the trip',
                                 );
                               }
+                            } else {
+                              _isQrProcessing = false;
                             }
                           }
                           
@@ -573,14 +571,9 @@ class _EndTripContentState extends State<_EndTripContent> {
     // Stop background location service as trip is finished
     LocationService.stop();
     
-    // Note: We can assume trip type based on context or state if stored
-    // For now, a generic but professional message covers both as requested
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("✅ تمت الرحلة بنجاح. تم حفظ وتوثيق حالة الحافلة خالية."),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
-      ),
+    AppSnackBar.showSuccess(
+      context,
+      "تمت الرحلة بنجاح. تم حفظ وتوثيق حالة الحافلة خالية.",
     );
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthAuthenticated) {
@@ -595,8 +588,6 @@ class _EndTripContentState extends State<_EndTripContent> {
   }
 
   void _showError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
+    AppSnackBar.showError(context, message);
   }
 }

@@ -265,7 +265,7 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                 }
               }
 
-              final remaining = state.stops.where((s) => state.tripType == 'morning' ? (!s.isBoarded && !s.isAbsent) : (!s.isDroppedOff && !s.isAbsent)).length;
+              final remaining = state.stops.where((s) => state.tripType == 'morning' ? (!s.isBoarded && !s.isAbsent && !s.isDroppedOff) : (!s.isDroppedOff && !s.isAbsent)).length;
               final etaText = remaining == 0 ? 'وصلت الحافلة' : 'على بعد ${remaining * 3} دقائق';
 
               return Stack(
@@ -1164,7 +1164,7 @@ class _BottomTrackingInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remainingCount = state.stops.where((s) => state.tripType == 'morning' ? (!s.isBoarded && !s.isAbsent) : (!s.isDroppedOff && !s.isAbsent)).length;
+    final remainingCount = state.stops.where((s) => state.tripType == 'morning' ? (!s.isBoarded && !s.isAbsent && !s.isDroppedOff) : (!s.isDroppedOff && !s.isAbsent)).length;
     final boardedCount = state.stops.where((s) => s.isBoarded).length;
     final absentCount = state.stops.where((s) => s.isAbsent).length;
 

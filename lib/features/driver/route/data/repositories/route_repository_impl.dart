@@ -75,21 +75,25 @@ class RouteRepositoryImpl implements RouteRepository {
       final List<dynamic> passengersJson = response.data['passengers'] ?? [];
 
       return passengersJson.map((json) {
-        final isOnBus = json['isOnBus'] == true;
-        final isWaiting = json['isWaiting'] == true;
-        final lastEvent = json['lastEvent'];
-
+        final rawStatus = json['status']?.toString() ?? '';
         final isMorning = _currentTripType == 'morning';
         final expectedDirection = isMorning ? 'to_school' : 'to_home';
+        final lastEvent = json['lastEvent'];
+
         final isDroppedOff =
-            lastEvent != null &&
-            lastEvent['type'] == 'alighting' &&
-            lastEvent['direction'] == expectedDirection;
+            (lastEvent != null &&
+                lastEvent['type'] == 'alighting' &&
+                lastEvent['direction'] == expectedDirection) ||
+            (isMorning && (rawStatus == 'atSchool' || rawStatus == 'dropped')) ||
+            (!isMorning && (rawStatus == 'atHome' || rawStatus == 'dropped'));
+
+        final isOnBus = json['isOnBus'] == true || rawStatus == 'onBus' || rawStatus == 'boarded';
+        final isWaiting = json['isWaiting'] == true || rawStatus == 'waiting';
 
         // In afternoon trips, 'waiting' means the student is still on the bus
         // (driver pressed "near house" but student hasn't gotten off yet)
         final effectivelyBoarded =
-            isOnBus || (!isMorning && isWaiting && !isDroppedOff);
+            (isOnBus || (!isMorning && isWaiting)) && !isDroppedOff;
 
         debugPrint(
           '👤 [REPO] Passenger: ${json['name']}, status: ${json['status']}, '

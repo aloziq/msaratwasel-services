@@ -41,6 +41,10 @@ class EndTripCubit extends Cubit<EndTripState> {
 
   void restart() => emit(EndTripInitial());
 
+  Future<void> checkTripReadiness() async {
+    await _repository.checkTripReadiness();
+  }
+
   void scanFrontQr(String code) {
     _frontData = code;
     emit(EndTripRecording());

@@ -8,8 +8,10 @@ import 'package:msaratwasel_services/config/theme/app_spacing.dart';
 import 'package:msaratwasel_services/config/routes/app_routes.dart';
 import 'package:msaratwasel_services/l10n/generated/app_localizations.dart';
 import '../../../core/domain/entities/bus_student_entity.dart';
+import '../../../core/domain/entities/bus_trip_entity.dart';
 import '../../../core/presentation/cubit/bus_trip_cubit.dart';
 import '../../../../../core/presentation/widgets/adaptive_sliver_app_bar.dart';
+import '../../../../../core/utils/app_snack_bar.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/network/api_config.dart';
@@ -246,17 +248,32 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                           icon: const Icon(PhosphorIconsRegular.qrCode),
                           onPressed: () => _openQrScanner(context),
                         ),
-                      if (_isSelectionMode)
+                      if (isTripActive)
                         IconButton(
-                          icon: const Icon(Icons.select_all_rounded),
+                          icon: Icon(
+                            _isSelectionMode ? Icons.close_rounded : Icons.select_all_rounded,
+                            color: _isSelectionMode ? Colors.redAccent : null,
+                          ),
+                          tooltip: _isSelectionMode ? 'إلغاء التحديد' : 'تحديد الكل',
                           onPressed: () {
                             setState(() {
-                              final allIds = trip.students.map((e) => e.id).toSet();
-                              if (_selectedStudentIds.length == allIds.length) {
+                              if (_isSelectionMode) {
                                 _selectedStudentIds.clear();
                                 _isSelectionMode = false;
                               } else {
-                                _selectedStudentIds.addAll(allIds);
+                                final direction = trip.suggestedTripType ?? 'to_school';
+                                final isToSchool = direction == 'to_school';
+                                final targetStudents = isToSchool
+                                    ? trip.students.where((e) => e.status == BusStudentStatus.onBus)
+                                    : trip.students.where((e) => e.status == BusStudentStatus.atSchool || e.status == BusStudentStatus.unknown);
+                                
+                                final targetIds = targetStudents.map((e) => e.id).toSet();
+                                if (targetIds.isEmpty) {
+                                  _selectedStudentIds.addAll(trip.students.map((e) => e.id));
+                                } else {
+                                  _selectedStudentIds.addAll(targetIds);
+                                }
+                                _isSelectionMode = true;
                               }
                             });
                           },
@@ -268,65 +285,13 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                   SliverToBoxAdapter(
                     child: _buildTripSummary(context, trip),
                   ),
-                  if (_isSelectionMode && isTripActive)
-                   SliverToBoxAdapter(
-                     child: Padding(
-                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                       child: Row(
-                         children: [
-                           Expanded(
-                             child: ElevatedButton.icon(
-                               onPressed: () {
-                                 if (_selectedStudentIds.isNotEmpty) {
-                                   context.read<BusTripCubit>().groupBoard(
-                                     _selectedStudentIds.toList(),
-                                     trip.suggestedDirection ?? 'to_school',
-                                   );
-                                   setState(() {
-                                     _isSelectionMode = false;
-                                     _selectedStudentIds.clear();
-                                   });
-                                 }
-                               },
-                               icon: const Icon(Icons.arrow_circle_up_rounded, size: 20),
-                               label: const Text('ركوب للكل', style: TextStyle(fontSize: 13)),
-                               style: ElevatedButton.styleFrom(
-                                 backgroundColor: Colors.blue,
-                                 foregroundColor: Colors.white,
-                                 minimumSize: const Size(double.infinity, 45),
-                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                               ),
-                             ),
-                           ),
-                           const SizedBox(width: AppSpacing.sm),
-                           Expanded(
-                             child: ElevatedButton.icon(
-                               onPressed: () {
-                                 if (_selectedStudentIds.isNotEmpty) {
-                                   context.read<BusTripCubit>().groupAlight(
-                                     _selectedStudentIds.toList(),
-                                     trip.suggestedDirection ?? 'to_school',
-                                   );
-                                   setState(() {
-                                     _isSelectionMode = false;
-                                     _selectedStudentIds.clear();
-                                   });
-                                 }
-                               },
-                               icon: const Icon(PhosphorIconsFill.checkCircle, size: 20),
-                               label: const Text('نزول للكل', style: TextStyle(fontSize: 13)),
-                               style: ElevatedButton.styleFrom(
-                                 backgroundColor: Colors.green,
-                                 foregroundColor: Colors.white,
-                                 minimumSize: const Size(double.infinity, 45),
-                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                               ),
-                             ),
-                           ),
-                         ],
-                       ),
-                     ).animate().fadeIn().slideY(begin: -0.2),
-                   ),
+                  if (isTripActive)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                        child: _buildBatchActionHeader(context, trip),
+                      ),
+                    ),
                   SliverToBoxAdapter(
                     child: _buildSearchAndFilter(context, isDark),
                   ),
@@ -363,13 +328,17 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
                                   final direction = (cubitState is BusTripLoaded)
                                       ? cubitState.trip.suggestedTripType
                                       : 'to_school';
-                                  if (direction == 'to_school') {
+                                  final bool allPickupsCompleted = (cubitState is BusTripLoaded)
+                                      ? !cubitState.trip.students.any((s) => s.status == BusStudentStatus.atHome || s.status == BusStudentStatus.waiting || s.status == BusStudentStatus.unknown)
+                                      : false;
+
+                                  if (direction == 'to_school' && !allPickupsCompleted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           Localizations.localeOf(context).languageCode == 'ar'
-                                              ? 'الحافلة لم تصل بعد الى منزل الطالب ولم يتم تشغيل عداد الوقت بعد'
-                                              : 'The bus has not yet arrived at the student\'s home and the timer has not started yet',
+                                              ? 'لا يمكن استخدام التحديد الجماعي حتى يتم المرور على جميع الطلاب وتحديد حالتهم أولاً'
+                                              : 'Cannot use bulk selection until all students on route are processed',
                                         ),
                                         backgroundColor: Colors.orange,
                                       ),
@@ -417,6 +386,212 @@ class _BusStudentsScreenState extends State<BusStudentsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildBatchActionHeader(BuildContext context, BusTripEntity trip) {
+    final direction = trip.suggestedTripType ?? 'to_school';
+    final isToSchool = direction == 'to_school';
+    final bool allPickupsCompleted = !trip.students.any((s) => s.status == BusStudentStatus.atHome || s.status == BusStudentStatus.waiting || s.status == BusStudentStatus.unknown);
+    final onBusStudents = trip.students.where((s) => s.status == BusStudentStatus.onBus).toList();
+    final atSchoolStudents = trip.students.where((s) => s.status == BusStudentStatus.atSchool || s.status == BusStudentStatus.unknown).toList();
+
+    if (_isSelectionMode) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: (isToSchool ? Colors.green : Colors.blue).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: (isToSchool ? Colors.green : Colors.blue).withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  final targetIds = isToSchool 
+                      ? onBusStudents.map((e) => e.id).toSet()
+                      : atSchoolStudents.map((e) => e.id).toSet();
+                  if (_selectedStudentIds.containsAll(targetIds) && targetIds.isNotEmpty) {
+                    _selectedStudentIds.clear();
+                  } else {
+                    _selectedStudentIds.addAll(targetIds.isNotEmpty ? targetIds : trip.students.map((e) => e.id));
+                  }
+                });
+              },
+              icon: const Icon(Icons.select_all_rounded, size: 18),
+              label: Text(
+                _selectedStudentIds.isNotEmpty ? 'إلغاء الكل' : 'تحديد الكل',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: isToSchool ? Colors.green[800] : Colors.blue[800],
+                side: BorderSide(color: (isToSchool ? Colors.green : Colors.blue).withValues(alpha: 0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                minimumSize: const Size(0, 40),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  if (_selectedStudentIds.isNotEmpty) {
+                    if (isToSchool) {
+                      context.read<BusTripCubit>().groupAlight(
+                        _selectedStudentIds.toList(),
+                        'to_school',
+                      );
+                    } else {
+                      context.read<BusTripCubit>().groupBoard(
+                        _selectedStudentIds.toList(),
+                        'to_home',
+                      );
+                    }
+                    setState(() {
+                      _isSelectionMode = false;
+                      _selectedStudentIds.clear();
+                    });
+                  }
+                },
+                icon: Icon(
+                  isToSchool ? PhosphorIconsFill.checkCircle : Icons.arrow_circle_up_rounded,
+                  size: 18,
+                ),
+                label: Text(
+                  isToSchool 
+                      ? 'نزول للمحددين (${_selectedStudentIds.length})'
+                      : 'ركوب للمحددين (${_selectedStudentIds.length})',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isToSchool ? Colors.green : Colors.blue,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.close, size: 20, color: Colors.grey),
+              onPressed: () {
+                setState(() {
+                  _isSelectionMode = false;
+                  _selectedStudentIds.clear();
+                });
+              },
+            ),
+          ],
+        ),
+      ).animate().fadeIn().slideY(begin: -0.2);
+    }
+
+    if (isToSchool && allPickupsCompleted && onBusStudents.isNotEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.green.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isSelectionMode = true;
+                  _selectedStudentIds.addAll(onBusStudents.map((e) => e.id));
+                });
+              },
+              icon: const Icon(Icons.select_all_rounded, size: 18),
+              label: const Text('تحديد الكل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.green[800],
+                side: BorderSide(color: Colors.green.withValues(alpha: 0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                minimumSize: const Size(0, 42),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final studentIds = onBusStudents.map((e) => e.id).toList();
+                  context.read<BusTripCubit>().groupAlight(studentIds, 'to_school');
+                },
+                icon: const Icon(PhosphorIconsFill.checkCircle, size: 18),
+                label: Text(
+                  'نزول للكل (${onBusStudents.length})',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 42),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ).animate().fadeIn().slideY(begin: -0.2);
+    }
+
+    if (!isToSchool && atSchoolStudents.isNotEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isSelectionMode = true;
+                  _selectedStudentIds.addAll(atSchoolStudents.map((e) => e.id));
+                });
+              },
+              icon: const Icon(Icons.select_all_rounded, size: 18),
+              label: const Text('تحديد الكل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.blue[800],
+                side: BorderSide(color: Colors.blue.withValues(alpha: 0.3)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                minimumSize: const Size(0, 42),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final studentIds = atSchoolStudents.map((e) => e.id).toList();
+                  context.read<BusTripCubit>().groupBoard(studentIds, 'to_home');
+                },
+                icon: const Icon(Icons.arrow_circle_up_rounded, size: 18),
+                label: Text(
+                  'ركوب للكل (${atSchoolStudents.length})',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 42),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ).animate().fadeIn().slideY(begin: -0.2);
+    }
+
+    return const SizedBox.shrink();
   }
 
   Widget _buildSearchAndFilter(BuildContext context, bool isDark) {
@@ -653,6 +828,12 @@ class _StudentCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final statusColor = _getStatusColor(student.status);
 
+    final cubitState = context.read<BusTripCubit>().state;
+    final direction = (cubitState is BusTripLoaded)
+        ? cubitState.trip.suggestedTripType
+        : 'to_school';
+    final isToSchool = direction == 'to_school';
+
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -735,11 +916,10 @@ class _StudentCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               student.schoolId,
-                              style: theme.textTheme.bodySmall,
                             ),
                           ],
                         ),
-                        if (student.status == BusStudentStatus.waiting)
+                        if (isToSchool && student.status == BusStudentStatus.waiting)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: _WaitingTimer(
@@ -802,11 +982,9 @@ class _StudentCard extends StatelessWidget {
                               },
                             );
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('بيانات التواصل مع ولي الأمر غير متوفرة حالياً'),
-                                backgroundColor: Colors.orange,
-                              ),
+                            AppSnackBar.showWarning(
+                              context,
+                              'بيانات التواصل مع ولي الأمر غير متوفرة حالياً',
                             );
                           }
                         },
@@ -896,8 +1074,45 @@ class _StudentCard extends StatelessWidget {
       );
     }
 
+    final bool allPickupsCompleted = (cubitState is BusTripLoaded)
+        ? !cubitState.trip.students.any((s) => s.status == BusStudentStatus.atHome || s.status == BusStudentStatus.waiting || s.status == BusStudentStatus.unknown)
+        : false;
+
     // الطالب على الباص → زر النزول (وصل المدرسة / وصل المنزل)
     if (student.status == BusStudentStatus.onBus) {
+      if (isToSchool && !allPickupsCompleted) {
+        // لا يزال الباص في مرحلة جمع الطلاب، لا يفتح زر النزول إلى المدرسة
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+          ),
+          child: InkWell(
+            onTap: () {
+              AppSnackBar.showWarning(
+                context,
+                Localizations.localeOf(context).languageCode == 'ar'
+                    ? 'لا يمكن تسجيل النزول إلى المدرسة حتى يتم المرور على جميع الطلاب وتحديد حالتهم أولاً'
+                    : 'Cannot mark arrival at school until all students on route are processed',
+              );
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(PhosphorIconsFill.bus, size: 14, color: Colors.orange),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.onBus,
+                  style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
       final label = isToSchool ? l10n.reachedSchool : 'وصل المنزل';
       final icon = isToSchool ? PhosphorIconsFill.buildings : PhosphorIconsFill.house;
       return ElevatedButton.icon(
@@ -931,15 +1146,11 @@ class _StudentCard extends StatelessWidget {
           minimumSize: const Size(0, 36),
         ),
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                Localizations.localeOf(context).languageCode == 'ar'
-                    ? 'الحافلة لم تصل بعد الى منزل الطالب ولم يتم تشغيل عداد الوقت بعد'
-                    : 'The bus has not yet arrived at the student\'s home and the timer has not started yet',
-              ),
-              backgroundColor: Colors.orange,
-            ),
+          AppSnackBar.showWarning(
+            context,
+            Localizations.localeOf(context).languageCode == 'ar'
+                ? 'الحافلة لم تصل بعد الى منزل الطالب ولم يتم تشغيل عداد الوقت بعد'
+                : 'The bus has not yet arrived at the student\'s home and the timer has not started yet',
           );
         },
       );
@@ -993,29 +1204,38 @@ class _StudentCard extends StatelessWidget {
       return IconButton(
         icon: const Icon(PhosphorIconsRegular.dotsThreeVertical),
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                Localizations.localeOf(context).languageCode == 'ar'
-                    ? 'الحافلة لم تصل بعد الى منزل الطالب ولم يتم تشغيل عداد الوقت بعد'
-                    : 'The bus has not yet arrived at the student\'s home and the timer has not started yet',
-              ),
-              backgroundColor: Colors.orange,
-            ),
+          AppSnackBar.showWarning(
+            context,
+            Localizations.localeOf(context).languageCode == 'ar'
+                ? 'الحافلة لم تصل بعد الى منزل الطالب ولم يتم تشغيل عداد الوقت بعد'
+                : 'The bus has not yet arrived at the student\'s home and the timer has not started yet',
           );
         },
       );
     }
 
+    final bool allPickupsCompleted = (cubitState is BusTripLoaded)
+        ? !cubitState.trip.students.any((s) => s.status == BusStudentStatus.atHome || s.status == BusStudentStatus.waiting || s.status == BusStudentStatus.unknown)
+        : false;
+
     return PopupMenuButton<BusStudentStatus>(
       icon: const Icon(PhosphorIconsRegular.dotsThreeVertical),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       onSelected: (status) {
+        if (isToSchool && status == BusStudentStatus.atSchool && !allPickupsCompleted) {
+          AppSnackBar.showWarning(
+            context,
+            Localizations.localeOf(context).languageCode == 'ar'
+                ? 'لا يمكن تسجيل النزول إلى المدرسة حتى يتم المرور على جميع الطلاب وتحديد حالتهم أولاً'
+                : 'Cannot mark arrival at school until all students on route are processed',
+          );
+          return;
+        }
         context.read<BusTripCubit>().updateStudentStatus(student.id, status);
       },
       itemBuilder: (context) => [
         PopupMenuItem(value: BusStudentStatus.onBus, child: Text(l10n.onBus)),
-        if (isToSchool)
+        if (isToSchool && allPickupsCompleted)
           PopupMenuItem(value: BusStudentStatus.atSchool, child: Text(l10n.atSchool)),
         if (!isToSchool)
           PopupMenuItem(value: BusStudentStatus.atHome, child: Text(l10n.atHome)),
