@@ -385,15 +385,17 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       if (response.statusCode == 200 && response.data['status'] == 'OK') {
         final route = response.data['routes'][0];
         final points = _decodePolyline(route['overview_polyline']['points']);
-        print("🚦 [Route] Success: Found ${points.length} points");
-        
-        emit(loaded.copyWith(polylinePoints: points));
+        if (!isClosed) {
+          emit(loaded.copyWith(polylinePoints: points));
+        }
       } else {
         print("🚦 [Route] Error details: ${response.data['error_message'] ?? 'No message'}");
       }
     } catch (e) {
       // Fallback: straight line
-      emit(loaded.copyWith(polylinePoints: [origin, target]));
+      if (!isClosed) {
+        emit(loaded.copyWith(polylinePoints: [origin, target]));
+      }
     }
   }
 

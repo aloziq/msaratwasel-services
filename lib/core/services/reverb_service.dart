@@ -18,6 +18,7 @@ class ReverbService {
 
   final int _userId;
   final Dio _dio;
+  final WebSocketChannel Function(Uri uri)? _channelFactory;
   
   final _eventController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get eventStream => _eventController.stream;
@@ -36,8 +37,10 @@ class ReverbService {
     required int userId,
     required Dio dio,
     Function(Map<String, dynamic>)? onMessageReceived,
+    WebSocketChannel Function(Uri uri)? channelFactory,
   }) : _userId = userId,
-       _dio = dio {
+       _dio = dio,
+       _channelFactory = channelFactory {
     if (onMessageReceived != null) {
       eventStream.listen(onMessageReceived);
     }
@@ -52,7 +55,9 @@ class ReverbService {
       final wsUrl = '$protocol://$_reverbHost:$_reverbPort/app/$_reverbKey';
       developer.log('🔌 Connecting to Reverb: $wsUrl', name: 'REVERB');
 
-      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      _channel = _channelFactory != null
+          ? _channelFactory(Uri.parse(wsUrl))
+          : WebSocketChannel.connect(Uri.parse(wsUrl));
 
       _channel!.stream.listen(
         _handleMessage,

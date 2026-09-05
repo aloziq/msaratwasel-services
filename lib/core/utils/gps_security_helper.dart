@@ -21,9 +21,11 @@ class GpsSecurityHelper {
             children: [
               const Icon(Icons.gps_off_rounded, color: Colors.red, size: 28),
               const SizedBox(width: 8),
-              Text(
-                isArabic ? 'خدمة الموقع مغلقة' : 'GPS Service Disabled',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  isArabic ? 'خدمة الموقع مغلقة' : 'GPS Service Disabled',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -73,9 +75,11 @@ class GpsSecurityHelper {
             children: [
               const Icon(Icons.security_rounded, color: Colors.orange, size: 28),
               const SizedBox(width: 8),
-              Text(
-                isArabic ? 'إذن الموقع مطلوب' : 'Location Permission Required',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  isArabic ? 'إذن الموقع مطلوب' : 'Location Permission Required',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -146,9 +150,11 @@ class GpsSecurityHelper {
           children: [
             const Icon(Icons.location_on_rounded, color: Color(0xFF2563EB), size: 28),
             const SizedBox(width: 8),
-            Text(
-              isArabic ? 'استخدام الموقع في الخلفية' : 'Background Location Usage',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Expanded(
+              child: Text(
+                isArabic ? 'استخدام الموقع في الخلفية' : 'Background Location Usage',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
           ],
         ),

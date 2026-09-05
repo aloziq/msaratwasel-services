@@ -35,6 +35,8 @@ class DriverHomeTripConfirmed extends DriverHomeState {
   List<Object?> get props => [trips, confirmedTripId];
 }
 
+class DriverHomeNoBus extends DriverHomeState {}
+
 class DriverHomeError extends DriverHomeState {
   final String message;
   const DriverHomeError(this.message);
@@ -79,7 +81,16 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
     } catch (e) {
       if (isClosed) return;
       debugPrint('DriverHomeCubit: loadDashboard error: $e');
-      emit(DriverHomeError(e.toString()));
+      final err = e.toString();
+      if (err.contains('حافلة') ||
+          err.contains('403') ||
+          err.contains('404') ||
+          err.contains('School not found') ||
+          err.contains('No bus')) {
+        emit(DriverHomeNoBus());
+      } else {
+        emit(DriverHomeError(e.toString()));
+      }
     }
   }
 
@@ -233,9 +244,7 @@ class DriverHomeCubit extends Cubit<DriverHomeState> {
   void _initConnectivityListener() {
     _connectivitySubscription?.cancel();
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
-      final List<ConnectivityResult> resultsList = results is List<ConnectivityResult>
-          ? results
-          : [results as ConnectivityResult];
+      final List<ConnectivityResult> resultsList = results;
 
       final hasConnection = resultsList.any((result) => result != ConnectivityResult.none);
 

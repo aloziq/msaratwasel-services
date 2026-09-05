@@ -12,7 +12,11 @@ import '../responsive/api_language_interceptor.dart';
 import '../../features/shared/auth/presentation/cubit/auth_cubit.dart';
 
 class ApiClient {
+  @visibleForTesting
+  static Dio? testDio;
+
   static Dio get instance {
+    if (testDio != null) return testDio!;
     final dio = Dio(
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,

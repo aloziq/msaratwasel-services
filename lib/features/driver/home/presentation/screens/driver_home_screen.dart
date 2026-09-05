@@ -525,7 +525,16 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
                             .animate()
                             .fadeIn(delay: 200.ms)
                             .slideY(begin: 0.1, end: 0);
+                      } else if (state is DriverHomeNoBus) {
+                        return _buildNoBusCard(context);
                       } else if (state is DriverHomeError) {
+                        if (state.message.contains('حافلة') ||
+                            state.message.contains('403') ||
+                            state.message.contains('404') ||
+                            state.message.contains('School not found') ||
+                            state.message.contains('No bus')) {
+                          return _buildNoBusCard(context);
+                        }
                         return Center(
                           child: Text(
                             state.message.replaceAll('Exception: ', ''),
@@ -730,6 +739,51 @@ class _DriverHomeContentState extends State<_DriverHomeContent> {
             "سيتم عرض رحلاتك هنا بمجرد تخصيصها لك.",
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoBusCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: isDark
+            ? theme.colorScheme.surface.withValues(alpha: 0.8)
+            : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24.0),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : theme.colorScheme.primary.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              PhosphorIconsFill.bus,
+              color: Colors.amber,
+              size: 48,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            "لم يتم إسناد حافلة لك بعد",
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),

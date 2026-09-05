@@ -3,10 +3,13 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:msaratwasel_services/config/app_config.dart';
 
 class DirectionService {
-  final PolylinePoints _polylinePoints = PolylinePoints(apiKey: AppConfig.googleMapsApiKey);
+  final PolylinePoints _polylinePoints;
   
   // Simple in-memory cache for encoded polylines
   final Map<String, List<LatLng>> _cache = {};
+
+  DirectionService({PolylinePoints? polylinePoints})
+      : _polylinePoints = polylinePoints ?? PolylinePoints(apiKey: AppConfig.googleMapsApiKey);
 
   Future<List<LatLng>> getRouteBetweenCoordinates(
     LatLng origin,

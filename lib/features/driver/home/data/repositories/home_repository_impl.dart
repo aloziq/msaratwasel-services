@@ -93,6 +93,9 @@ class HomeRepositoryImpl implements HomeRepository {
       final response = await ApiClient.instance.get('driver/my-trips');
       if (response.statusCode == 200) {
         final data = response.data;
+        if (data is Map && data['has_bus'] == false) {
+          throw Exception('لم يتم إسناد حافلة لك بعد.');
+        }
         final trips = data['trips'] as List<dynamic>? ?? [];
         return trips
             .map(
@@ -102,8 +105,17 @@ class HomeRepositoryImpl implements HomeRepository {
       }
       throw Exception('Failed to load trips');
     } on DioException catch (e) {
-      final message =
-          e.response?.data?['message'] ?? e.message ?? 'Network error';
+      final statusCode = e.response?.statusCode;
+      final serverMsg =
+          e.response?.data?['message'] ?? e.response?.data?['error'];
+      if (statusCode == 403 ||
+          statusCode == 404 ||
+          (serverMsg != null &&
+              (serverMsg.toString().contains('حافلة') ||
+                  serverMsg.toString().contains('School not found')))) {
+        throw Exception('لم يتم إسناد حافلة لك بعد.');
+      }
+      final message = serverMsg ?? e.message ?? 'Network error';
       throw Exception('Failed to load trips: $message');
     } catch (e) {
       throw Exception('Unexpected error: ${e.toString()}');

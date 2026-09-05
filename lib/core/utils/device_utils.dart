@@ -3,8 +3,10 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 
 class DeviceUtils {
+  static DeviceInfoPlugin? testDeviceInfo;
+
   static Future<String> getDeviceName() async {
-    final deviceInfo = DeviceInfoPlugin();
+    final deviceInfo = testDeviceInfo ?? DeviceInfoPlugin();
     
     try {
       if (kIsWeb) {
@@ -30,7 +32,7 @@ class DeviceUtils {
   }
 
   static Future<String?> getDeviceId() async {
-    final deviceInfo = DeviceInfoPlugin();
+    final deviceInfo = testDeviceInfo ?? DeviceInfoPlugin();
     try {
       if (kIsWeb) {
         final webInfo = await deviceInfo.webBrowserInfo;

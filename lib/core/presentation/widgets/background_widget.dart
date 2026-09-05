@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -87,6 +88,7 @@ class _AnimatedOrb extends StatefulWidget {
 class _AnimatedOrbState extends State<_AnimatedOrb>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Timer? _delayTimer;
 
   @override
   void initState() {
@@ -99,7 +101,7 @@ class _AnimatedOrbState extends State<_AnimatedOrb>
     if (widget.delay == Duration.zero) {
       _controller.repeat(reverse: true);
     } else {
-      Future.delayed(widget.delay, () {
+      _delayTimer = Timer(widget.delay, () {
         if (mounted) _controller.repeat(reverse: true);
       });
     }
@@ -107,6 +109,7 @@ class _AnimatedOrbState extends State<_AnimatedOrb>
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
