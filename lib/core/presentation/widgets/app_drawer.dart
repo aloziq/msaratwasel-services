@@ -17,6 +17,7 @@ import 'package:msaratwasel_services/features/teacher/teacher/domain/entities/cl
 import 'package:msaratwasel_services/features/teacher/teacher/domain/usecases/get_teacher_classrooms_usecase.dart';
 import 'package:msaratwasel_services/core/presentation/extensions/user_role_extension.dart';
 import 'package:msaratwasel_services/core/network/api_config.dart';
+import 'package:msaratwasel_services/features/driver/route/domain/repositories/route_repository.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -338,6 +339,31 @@ class _AppDrawerState extends State<AppDrawer> {
           onTap: () async {
             final hasGps = await GpsSecurityHelper.checkLocationServices(context);
             if (!hasGps) return;
+
+            final routeRepo = getIt<RouteRepository>();
+            final tripStatus = routeRepo.currentTripStatus;
+            if (tripStatus.isNotEmpty && tripStatus != 'in_progress' && tripStatus != 'idle') {
+              if (context.mounted) {
+                Navigator.pop(context);
+                final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+                final isAwaiting = tripStatus == 'awaiting_confirmation';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isAwaiting
+                        ? (isArabic
+                            ? 'الرحلة في انتظار تأكيد المشرفة، لا يمكن فتح الملاحة حتى تبدأ الرحلة.'
+                            : 'Trip is awaiting supervisor confirmation.')
+                        : (isArabic
+                            ? 'لا توجد رحلة قيد التشغيل حالياً. يرجى بدء الرحلة أولاً.'
+                            : 'No active trip in progress.')),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+              return;
+            }
+
             if (context.mounted) {
               Navigator.pop(context);
               context.push(AppRoutes.driverRoute);

@@ -101,16 +101,61 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   bool _isGpsDisabled = false;
   Timer? _gpsCheckTimer;
 
-  @override
-  void initState() {
-    super.initState();
-    gmaps.DirectionsService.init("AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs");
-    _fetchRouteData();
+  bool _servicesStarted = false;
+
+  void _startActiveTripServices() {
+    if (_servicesStarted) return;
+    _servicesStarted = true;
     _startRealGPS();
     _initReverb();
     _startStatusPolling();
     _startGpsCheckTimer();
+  }
+
+  void _cancelAllTimersAndSubscriptions() {
+    _statusPollingTimer?.cancel();
+    _statusPollingTimer = null;
+    _gpsCheckTimer?.cancel();
+    _gpsCheckTimer = null;
+    _locationTimer?.cancel();
+    _locationTimer = null;
+    _waitingTimer?.cancel();
+    _waitingTimer = null;
+    _gpsSubscription?.cancel();
+    _gpsSubscription = null;
+    _connectivitySubscription?.cancel();
+    _connectivitySubscription = null;
+    _reverbService?.dispose();
+    _reverbService = null;
+    _servicesStarted = false;
+  }
+
+  void _exitToHome(String message) {
+    if (!mounted || _isFinished) return;
+    _isFinished = true;
+    _cancelAllTimersAndSubscriptions();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.driverHome);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    gmaps.DirectionsService.init("AIzaSyA2ZcFQqhauhU3l-Rj36fbRYomIO7L-ahs");
     _initConnectivityListener();
+    _fetchRouteData();
   }
 
   void _initConnectivityListener() {
@@ -1056,34 +1101,39 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
       final isArabic = Localizations.localeOf(context).languageCode == 'ar';
       final tripStatus = _routeRepository.currentTripStatus;
-      if (tripStatus != 'in_progress' &&
-          tripStatus != 'awaiting_confirmation' &&
-          tripStatus != 'awaiting_video') {
-        debugPrint('⚠️ [Navigation] Trip status is $tripStatus.');
-        
-        // We don't automatically push to EndTrip if the trip is already completely finished.
-        // It will just show the snackbar below and close the navigation screen.
-        
-        // Don't pop if we're already navigating away
-        if (_isFinished) return;
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isArabic 
-              ? '✅ لا توجد رحلة نشطة حالياً. تم إغلاق صفحة الملاحة.' 
-              : '✅ No active trip. Navigation screen closed.'
-            ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        if (context.canPop()) {
-          context.pop();
+      if (tripStatus != 'in_progress') {
+        debugPrint('⚠️ [Navigation] Trip status is not in_progress ($tripStatus). Exiting to driverHome.');
+        String message;
+        if (tripStatus == 'awaiting_confirmation') {
+          message = isArabic
+              ? 'الرحلة في انتظار تأكيد المشرفة، لا يمكن فتح الملاحة حتى يتم تأكيد وبدء الرحلة.'
+              : 'Trip is awaiting supervisor confirmation. Navigation cannot be opened yet.';
+        } else if (tripStatus == 'pending') {
+          message = isArabic
+              ? 'الرحلة لم تبدأ بعد، يرجى بدء الرحلة من الشاشة الرئيسية أولاً.'
+              : 'Trip has not started yet. Please start the trip from the home screen first.';
+        } else if (tripStatus == 'awaiting_video') {
+          message = isArabic
+              ? 'الرحلة في انتظار فحص الحافلة والإنهاء، يرجى التوجه لإنهاء الرحلة.'
+              : 'Trip is awaiting end-of-trip video inspection.';
         } else {
-          context.go(AppRoutes.driverHome);
+          message = isArabic
+              ? 'لا توجد رحلة جارية حالياً. تم الرجوع للشاشة الرئيسية.'
+              : 'No active trip in progress. Returned to home.';
         }
+        _exitToHome(message);
         return;
       }
+
+      if (stops.isEmpty && _routeRepository.schoolLocation == null) {
+        _exitToHome(isArabic
+            ? 'لا يوجد مسار أو طلاب مخصصين لهذه الرحلة.'
+            : 'No route or students assigned for this trip.');
+        return;
+      }
+
+      // Genuine in-progress trip confirmed: start GPS, Reverb, and polling services
+      _startActiveTripServices();
 
       final isMorning = _routeRepository.currentTripType == 'morning';
       int initialIndex = 0;
@@ -1170,6 +1220,22 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     } catch (e) {
       debugPrint('❌ [Navigation] Error fetching route data: $e');
       if (!mounted) return;
+
+      final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+      final errStr = e.toString().toLowerCase();
+      final isNoTrip = errStr.contains('404') ||
+          errStr.contains('لا توجد رحلة') ||
+          errStr.contains('no active trip') ||
+          errStr.contains('لا يوجد باص') ||
+          errStr.contains('no bus');
+
+      if (isNoTrip || _stops.isEmpty) {
+        _exitToHome(isArabic
+            ? 'لا توجد رحلة جارية حالياً لهذا الباص.'
+            : 'No active trip in progress for this bus.');
+        return;
+      }
+
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -1222,13 +1288,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
   @override
   void dispose() {
-    _statusPollingTimer?.cancel();
-    _gpsSubscription?.cancel();
-    _reverbService?.dispose();
-    _locationTimer?.cancel();
-    _waitingTimer?.cancel();
-    _gpsCheckTimer?.cancel();
-    _connectivitySubscription?.cancel();
+    _cancelAllTimersAndSubscriptions();
     super.dispose();
   }
 
@@ -1686,9 +1746,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                 ),
               ),
             )
-          : (_routeRepository.currentTripStatus != 'in_progress' &&
-             _routeRepository.currentTripStatus != 'awaiting_confirmation' &&
-             _routeRepository.currentTripStatus != 'awaiting_video')
+          : (_routeRepository.currentTripStatus != 'in_progress')
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -1722,9 +1780,13 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        isArabic 
-                            ? 'لا توجد رحلة قيد التشغيل في الوقت الحالي. يرجى بدء الرحلة من الشاشة الرئيسية أولاً.'
-                            : 'There is no active trip at the moment. Please start a trip from the home screen first.',
+                        _routeRepository.currentTripStatus == 'awaiting_confirmation'
+                            ? (isArabic
+                                ? 'الرحلة حالياً بانتظار تأكيد المشرفة. لا يمكن تشغيل الملاحة قبل تأكيد وبدء الرحلة.'
+                                : 'Trip is awaiting supervisor confirmation.')
+                            : (isArabic 
+                                ? 'لا توجد رحلة قيد التشغيل في الوقت الحالي. يرجى بدء الرحلة من الشاشة الرئيسية أولاً.'
+                                : 'There is no active trip at the moment. Please start a trip from the home screen first.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -1739,11 +1801,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                         text: isArabic ? 'العودة للرئيسية' : 'Back to Home',
                         icon: PhosphorIconsBold.house,
                         onTap: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go(AppRoutes.driverHome);
-                          }
+                          _exitToHome(isArabic ? 'تم الرجوع للرئيسية' : 'Returned to Home');
                         },
                       ),
                       const SizedBox(height: 16),
@@ -1761,7 +1819,23 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               ),
             )
           : _stops.isEmpty
-          ? const Center(child: Text('لا يوجد طلاب في هذه الرحلة'))
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isArabic ? 'لا يوجد طلاب في هذه الرحلة' : 'No students in this trip',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _exitToHome(isArabic ? 'تم الرجوع للرئيسية' : 'Returned to Home'),
+                    icon: const Icon(PhosphorIconsBold.house),
+                    label: Text(isArabic ? 'العودة للرئيسية' : 'Back to Home'),
+                  ),
+                ],
+              ),
+            )
           : Stack(
               children: [
                 // 1. Google Map Background

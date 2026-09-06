@@ -48,6 +48,8 @@ import '../../features/driver/maintenance/presentation/screens/fuel_refill_scree
 import '../../features/driver/maintenance/presentation/screens/maintenance_request_screen.dart';
 import '../../features/driver/maintenance/presentation/screens/maintenance_logs_screen.dart';
 import '../../features/driver/trip/presentation/screens/end_trip_screen.dart';
+import '../../features/driver/trip/presentation/screens/end_trip_choice_screen.dart';
+import '../../features/driver/trip/presentation/screens/manual_end_trip_screen.dart';
 import 'package:msaratwasel_services/features/driver/trip/presentation/screens/trip_history_page.dart';
 import 'app_routes.dart';
 
@@ -298,7 +300,17 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.driverEndTrip,
             name: 'driverEndTrip',
+            builder: (context, state) => const EndTripChoiceScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverEndTripBarcode,
+            name: 'driverEndTripBarcode',
             builder: (context, state) => const EndTripScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverEndTripManual,
+            name: 'driverEndTripManual',
+            builder: (context, state) => const ManualEndTripScreen(),
           ),
           GoRoute(
             path: AppRoutes.driverStudents,

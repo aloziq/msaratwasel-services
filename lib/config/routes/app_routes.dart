@@ -44,6 +44,8 @@ abstract class AppRoutes {
   static const driverMaintenanceRequest = '/driver/maintenance/request';
   static const driverMaintenanceLogs = '/driver/maintenance/logs';
   static const driverEndTrip = '/driver/end-trip';
+  static const driverEndTripBarcode = '/driver/end-trip/barcode';
+  static const driverEndTripManual = '/driver/end-trip/manual';
   static const driverStudents = '/driver/students';
   static const driverTrips = '/driver/trips';
 
