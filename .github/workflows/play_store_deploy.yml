@@ -76,5 +76,5 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
           packageName: com.msaratwasel.services
-          track: ${{ steps.track.outputs.selected_track }}
+          tracks: ${{ steps.track.outputs.selected_track }}
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
