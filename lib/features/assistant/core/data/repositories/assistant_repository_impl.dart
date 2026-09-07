@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../../core/network/api_client.dart';
+import '../../../../../core/network/network_error_handler.dart';
 import '../../domain/entities/bus_student_entity.dart';
 import '../../domain/entities/bus_trip_entity.dart';
 import '../models/bus_student_model.dart';
@@ -27,16 +28,16 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
 
       final response = await ApiClient.instance.get('/bus/$busId/passengers');
-      
+
       if (response.statusCode == 200) {
         final data = response.data;
         final passengers = (data['passengers'] as List)
             .map((e) => BusStudentModel.fromJson(e))
             .toList();
-            
+
         final busData = data['bus'];
         final driverData = data['driver'] as Map<String, dynamic>?;
-        
+
         return Right(
           BusTripModel(
             id: busData['trip_id']?.toString() ?? 'trip-$busId',
@@ -46,9 +47,12 @@ class AssistantRepositoryImpl implements AssistantRepository {
             driverPhoto: driverData?['photo']?.toString(),
             assistantName: '-',
             students: passengers,
-            startTime: DateTime.now(), 
+            startTime: DateTime.now(),
             suggestedDirection: busData['suggested_direction']?.toString(),
-            suggestedTripType: (busData['trip_type']?.toString() == 'afternoon' || busData['trip_type']?.toString() == 'back') ? 'to_home' : 'to_school',
+            suggestedTripType: (busData['trip_type']?.toString() == 'afternoon' ||
+                    busData['trip_type']?.toString() == 'back')
+                ? 'to_home'
+                : 'to_school',
             tripStatus: busData['trip_status']?.toString(),
             schoolLatitude: double.tryParse(busData['school_lat']?.toString() ?? ''),
             schoolLongitude: double.tryParse(busData['school_lng']?.toString() ?? ''),
@@ -57,7 +61,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
       return const Left('فشل في جلب بيانات الرحلة');
     } catch (e) {
-      return Left('خطأ في الاتصال: $e');
+      return Left(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -79,19 +83,13 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
       return Left(response.data['message'] ?? 'فشل تأكيد الرحلة');
     } catch (e) {
-      if (e is DioException) {
-        final data = e.response?.data;
-        if (data != null) {
-          String errorBody = data.toString();
-          // Extract the title tag if it's an HTML response
-          final titleMatch = RegExp(r'<title>(.*?)</title>', caseSensitive: false, dotAll: true).firstMatch(errorBody);
-          if (titleMatch != null && titleMatch.groupCount >= 1) {
-             return Left('خطأ 500: ${titleMatch.group(1)?.trim()}');
-          }
-          return Left('خطأ 500 من السيرفر: ${errorBody.length > 150 ? errorBody.substring(0, 150) : errorBody}');
+      if (e is DioException && e.response?.data != null) {
+        final serverMsg = e.response?.data?['message']?.toString();
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          return Left(serverMsg);
         }
       }
-      return Left('خطأ في الاتصال: $e');
+      return Left(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -121,16 +119,17 @@ class AssistantRepositoryImpl implements AssistantRepository {
 
       if (status == BusStudentStatus.onBus) {
         endpoint = '/bus/$busId/mark-boarded';
-        // Use provided direction or ask backend? Defaulting to morning if null.
-        finalDirection = direction ?? 'to_school'; 
-      } else if (status == BusStudentStatus.atSchool || status == BusStudentStatus.atHome) {
+        finalDirection = direction ?? 'to_school';
+      } else if (status == BusStudentStatus.atSchool ||
+          status == BusStudentStatus.atHome) {
         endpoint = '/bus/$busId/mark-dropped';
-        finalDirection = direction ?? (status == BusStudentStatus.atSchool ? 'to_school' : 'to_home');
+        finalDirection = direction ??
+            (status == BusStudentStatus.atSchool ? 'to_school' : 'to_home');
       } else if (status == BusStudentStatus.absent) {
         endpoint = '/bus/$busId/mark-absent';
         finalDirection = direction ?? 'to_school';
       } else {
-        return const Right(null); 
+        return const Right(null);
       }
 
       final response = await ApiClient.instance.post(
@@ -148,7 +147,13 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
       return Left(response.data['message'] ?? 'حدث خطأ غير متوقع');
     } catch (e) {
-      return Left('تعذر تحديث الحالة: ${e.toString()}');
+      if (e is DioException && e.response?.data != null) {
+        final serverMsg = e.response?.data?['message']?.toString();
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          return Left(serverMsg);
+        }
+      }
+      return Left(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -176,7 +181,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
       return Left(response.data['message'] ?? 'فشل التحديث الجماعي');
     } catch (e) {
-      return Left('خطأ في التحديث الجماعي: $e');
+      return Left(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -204,7 +209,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
       return Left(response.data['message'] ?? 'فشل التحديث الجماعي');
     } catch (e) {
-      return Left('خطأ في التحديث الجماعي: $e');
+      return Left(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -228,7 +233,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
       return Left(response.data['message'] ?? 'فشل تقديم البلاغ');
     } catch (e) {
-      return Left('خطأ في الاتصال: $e');
+      return Left(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -252,7 +257,7 @@ class AssistantRepositoryImpl implements AssistantRepository {
       }
       return Left(response.data['message'] ?? 'فشل تقديم الفحص');
     } catch (e) {
-      return Left('خطأ في الاتصال: $e');
+      return Left(NetworkErrorHandler.getMessage(e));
     }
   }
 

@@ -919,7 +919,7 @@ class _StudentCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        if (isToSchool && student.status == BusStudentStatus.waiting)
+                        if (student.status == BusStudentStatus.waiting)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: _WaitingTimer(
@@ -1113,11 +1113,44 @@ class _StudentCard extends StatelessWidget {
         );
       }
 
-      final label = isToSchool ? l10n.reachedSchool : 'وصل المنزل';
-      final icon = isToSchool ? PhosphorIconsFill.buildings : PhosphorIconsFill.house;
+      if (!isToSchool) {
+        // رحلة العودة: الطالب على الباص لكن السائق لم يضغط "قرب المنزل" بعد
+        // ← لا يُسمح بتسجيل الوصول حتى تتغير الحالة إلى waiting
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+          ),
+          child: InkWell(
+            onTap: () {
+              AppSnackBar.showWarning(
+                context,
+                Localizations.localeOf(context).languageCode == 'ar'
+                    ? 'انتظر حتى يضغط السائق على "قرب المنزل" أولاً'
+                    : 'Wait for the driver to tap "Near House" first',
+              );
+            },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(PhosphorIconsFill.bus, size: 14, color: Colors.grey),
+                SizedBox(width: 6),
+                Text(
+                  'في الطريق',
+                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // رحلة الذهاب: زر وصل المدرسة (فعّال)
       return ElevatedButton.icon(
-        icon: Icon(icon, size: 16),
-        label: Text(label),
+        icon: Icon(PhosphorIconsFill.buildings, size: 16),
+        label: Text(l10n.reachedSchool),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green,
           foregroundColor: Colors.white,
@@ -1128,7 +1161,27 @@ class _StudentCard extends StatelessWidget {
         ),
         onPressed: () => context.read<BusTripCubit>().updateStudentStatus(
           student.id,
-          isToSchool ? BusStudentStatus.atSchool : BusStudentStatus.atHome,
+          BusStudentStatus.atSchool,
+        ),
+      );
+    }
+
+    // رحلة العودة: السائق أرسل إشعار "قرب المنزل" → زر وصل المنزل (فعّال)
+    if (!isToSchool && student.status == BusStudentStatus.waiting) {
+      return ElevatedButton.icon(
+        icon: const Icon(PhosphorIconsFill.house, size: 16),
+        label: const Text('وصل المنزل'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          minimumSize: const Size(0, 36),
+        ),
+        onPressed: () => context.read<BusTripCubit>().updateStudentStatus(
+          student.id,
+          BusStudentStatus.atHome,
         ),
       );
     }
@@ -1237,7 +1290,8 @@ class _StudentCard extends StatelessWidget {
         PopupMenuItem(value: BusStudentStatus.onBus, child: Text(l10n.onBus)),
         if (isToSchool && allPickupsCompleted)
           PopupMenuItem(value: BusStudentStatus.atSchool, child: Text(l10n.atSchool)),
-        if (!isToSchool)
+        // رحلة العودة: خيار «وصل المنزل» فقط عندما السائق أرسل «قرب المنزل» (حالة waiting)
+        if (!isToSchool && student.status == BusStudentStatus.waiting)
           PopupMenuItem(value: BusStudentStatus.atHome, child: Text(l10n.atHome)),
         PopupMenuItem(value: BusStudentStatus.absent, child: Text(l10n.absent)),
       ],

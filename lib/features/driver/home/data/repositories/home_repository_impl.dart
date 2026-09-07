@@ -1,10 +1,10 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../../core/network/api_client.dart';
+import '../../../../../core/network/network_error_handler.dart';
 import '../../domain/entities/trip_status.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../models/trip_status_model.dart';
@@ -78,12 +78,8 @@ class HomeRepositoryImpl implements HomeRepository {
         );
       }
       throw Exception('Failed to load trip status');
-    } on DioException catch (e) {
-      final message =
-          e.response?.data?['message'] ?? e.message ?? 'Network error';
-      throw Exception('Failed to load status: $message');
     } catch (e) {
-      throw Exception('Unexpected error: ${e.toString()}');
+      throw Exception(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -104,21 +100,8 @@ class HomeRepositoryImpl implements HomeRepository {
             .toList();
       }
       throw Exception('Failed to load trips');
-    } on DioException catch (e) {
-      final statusCode = e.response?.statusCode;
-      final serverMsg =
-          e.response?.data?['message'] ?? e.response?.data?['error'];
-      if (statusCode == 403 ||
-          statusCode == 404 ||
-          (serverMsg != null &&
-              (serverMsg.toString().contains('حافلة') ||
-                  serverMsg.toString().contains('School not found')))) {
-        throw Exception('لم يتم إسناد حافلة لك بعد.');
-      }
-      final message = serverMsg ?? e.message ?? 'Network error';
-      throw Exception('Failed to load trips: $message');
     } catch (e) {
-      throw Exception('Unexpected error: ${e.toString()}');
+      throw Exception(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -164,15 +147,9 @@ class HomeRepositoryImpl implements HomeRepository {
       debugPrint(
         'HomeRepositoryImpl: Trip started successfully for busId: $busId',
       );
-    } on DioException catch (e) {
-      debugPrint('HomeRepositoryImpl: DioException in startTrip: ${e.message}');
-      debugPrint('HomeRepositoryImpl: Response data: ${e.response?.data}');
-      final message =
-          e.response?.data?['message'] ?? e.message ?? 'Network error';
-      throw Exception('Failed to start trip: $message');
     } catch (e) {
-      debugPrint('HomeRepositoryImpl: Unexpected error in startTrip: $e');
-      throw Exception('Failed to start trip: ${e.toString()}');
+      debugPrint('HomeRepositoryImpl: Error in startTrip: $e');
+      throw Exception(NetworkErrorHandler.getMessage(e));
     }
   }
 
@@ -192,12 +169,8 @@ class HomeRepositoryImpl implements HomeRepository {
         throw Exception(response.data['message'] ?? 'Failed to confirm trip');
       }
       debugPrint('HomeRepositoryImpl: Trip confirmed successfully');
-    } on DioException catch (e) {
-      final message =
-          e.response?.data?['message'] ?? e.message ?? 'Network error';
-      throw Exception('Failed to confirm trip: $message');
     } catch (e) {
-      throw Exception('Failed to confirm trip: ${e.toString()}');
+      throw Exception(NetworkErrorHandler.getMessage(e));
     }
   }
 }

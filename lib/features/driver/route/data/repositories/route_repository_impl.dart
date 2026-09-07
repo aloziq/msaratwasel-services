@@ -4,6 +4,7 @@ import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
 import '../../../../../core/network/api_client.dart';
+import '../../../../../core/network/network_error_handler.dart';
 import '../models/student_stop_model.dart';
 import '../../domain/entities/student_stop.dart';
 import '../../domain/repositories/route_repository.dart';
@@ -121,12 +122,8 @@ class RouteRepositoryImpl implements RouteRepository {
               0,
         );
       }).toList();
-    } on DioException catch (e) {
-      final message =
-          e.response?.data?['message'] ?? e.message ?? 'Network error';
-      throw Exception('فشل جلب قائمة الطلاب: $message');
     } catch (e) {
-      throw Exception('فشل جلب قائمة الطلاب: ${e.toString()}');
+      throw Exception(NetworkErrorHandler.getMessage(e));
     }
   }
 

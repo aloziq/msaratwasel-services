@@ -1413,11 +1413,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       // 1. Notify Parent
       await _routeRepository.notifyParentNearHouse(studentId: currentStudent.id);
 
-      // 2. Start Timer (only in morning trip)
-      final isMorning = _routeRepository.currentTripType == 'morning';
-      if (isMorning) {
-        _startWaitingTimer(currentStudent);
-      }
+      // 2. Start Timer for both morning and afternoon trips
+      _startWaitingTimer(currentStudent);
 
       // 3. Mark as notified to change button to "Next Destination"
       setState(() {
@@ -1462,12 +1459,9 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       );
 
       // If it was just a rate limit error (429), it means the notification was already sent
-      // successfully very recently, so we treat it as notified and start the timer if morning.
+      // successfully very recently, so we treat it as notified and start the timer.
       if (isRateLimit) {
-        final isMorning = _routeRepository.currentTripType == 'morning';
-        if (isMorning) {
-          _startWaitingTimer(currentStudent);
-        }
+        _startWaitingTimer(currentStudent);
         setState(() {
           _hasNotified = true;
         });
@@ -1544,10 +1538,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           isResolved = true;
           debugPrint('🔄 [ADVANCE] Afternoon: not departed school yet, skipping validation');
         } else {
-          // In afternoon: boarded (still on bus or waiting) means we can drop them off.
-          // droppedOff or absent means already resolved.
-          isResolved = currentStudent.isDroppedOff || currentStudent.isAbsent || currentStudent.isBoarded;
-          debugPrint('🔄 [ADVANCE] Afternoon validation: droppedOff=${currentStudent.isDroppedOff} || absent=${currentStudent.isAbsent} || boarded=${currentStudent.isBoarded} → isResolved=$isResolved');
+          // In afternoon after departure: student must be atHome (isDroppedOff) or absent.
+          // A student still in 'waiting' state means driver pressed near house but supervisor
+          // hasn't confirmed yet — block the driver from advancing.
+          isResolved = currentStudent.isDroppedOff || currentStudent.isAbsent;
+          debugPrint('🔄 [ADVANCE] Afternoon validation: droppedOff=${currentStudent.isDroppedOff} || absent=${currentStudent.isAbsent} → isResolved=$isResolved');
         }
       }
 
@@ -1555,12 +1550,15 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
       if (!isResolved) {
         debugPrint('❌ [ADVANCE] BLOCKED! Student not resolved. Showing error snackbar.');
-        AppSnackBar.showError(
-          context,
-          isArabic 
-            ? 'يجب تغيير حالة الطالب الحالي قبل الانتقال الى الطالب التالي' 
-            : 'You must change the status of the current student before moving to the next student',
-        );
+        // Show specific message depending on the trip direction
+        final errorMsg = isArabic
+            ? (!isMorning && _hasDepartedSchool && currentStudent.isWaiting
+                ? 'انتظر حتى تؤكد المشرفة وصول الطالب إلى المنزل'
+                : 'يجب تغيير حالة الطالب الحالي قبل الانتقال الى الطالب التالي')
+            : (!isMorning && _hasDepartedSchool && currentStudent.isWaiting
+                ? 'Wait for the supervisor to confirm the student arrived home'
+                : 'You must change the status of the current student before moving to the next student');
+        AppSnackBar.showError(context, errorMsg);
         return;
       }
     }
@@ -1626,21 +1624,13 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           _sortPendingStopsByDistance();
           _fetchRoadFollowingRoute();
         } else if (_currentStopIndex < _stops.length) {
-          // Mark the current student as dropped off before advancing
-          final studentToDrop = _stops[_currentStopIndex];
-          if (!studentToDrop.isDroppedOff && !studentToDrop.isAbsent) {
-            try {
-              await _routeRepository.markStudentDropped(studentId: studentToDrop.id);
-              debugPrint('✅ [Navigation] Auto-marked student ${studentToDrop.nameAr} as dropped off');
-            } catch (e) {
-              debugPrint('⚠️ [Navigation] Failed to mark student dropped: $e');
-            }
-          }
+          // In afternoon, the supervisor marks the student as atHome.
+          // The driver should NOT auto-drop; instead just advance the index.
+          // (Validation above ensures the student is already dropped off by supervisor)
           setState(() {
             _hasNotified = false;
             _isMovingToStop = false;
             _isActionLoading = false;
-            // Kept active points to prevent flickering while fetching
           });
           await _fetchRouteData(silent: true);
           // Check if all students are now dropped off — if so, end the trip
