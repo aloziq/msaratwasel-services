@@ -15,6 +15,7 @@ class StudentStop {
   final bool isWaiting;
   final String? waitingSince;
   final int waitingElapsedSeconds;
+  final int stopOrder;
 
   const StudentStop({
     required this.id,
@@ -31,6 +32,7 @@ class StudentStop {
     this.isWaiting = false,
     this.waitingSince,
     this.waitingElapsedSeconds = 0,
+    this.stopOrder = 0,
   });
 
   StudentStop copyWith({
@@ -40,6 +42,7 @@ class StudentStop {
     bool? isWaiting,
     String? waitingSince,
     int? waitingElapsedSeconds,
+    int? stopOrder,
   }) {
     return StudentStop(
       id: id,
@@ -56,6 +59,7 @@ class StudentStop {
       isWaiting: isWaiting ?? this.isWaiting,
       waitingSince: waitingSince ?? this.waitingSince,
       waitingElapsedSeconds: waitingElapsedSeconds ?? this.waitingElapsedSeconds,
+      stopOrder: stopOrder ?? this.stopOrder,
     );
   }
 }

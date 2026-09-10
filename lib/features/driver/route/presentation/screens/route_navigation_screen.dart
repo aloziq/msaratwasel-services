@@ -67,6 +67,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   bool _hasNotified = false; // Whether parent has been notified for the current stop
   bool _isMovingToStop = false; // Whether the driver has started moving to the current stop
   bool _isFinished = false; // When the trip phase logic finishes
+  bool _hasOptimizedTripSequence = false; // Whether Google optimization has run for this trip
 
   // Waiting Timer Logic
   Timer? _waitingTimer;
@@ -961,12 +962,24 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         }
       } else {
         _consecutiveOffRouteUpdates = 0;
-        // تعديل: تم ربطه بـ AppConfig لمنع إرسال طلبات متكررة ومكلفة لجوجل (Directions API) كل 15 متراً.
-        // يتم طلب المسار الجديد فقط عند تخطي عتبة المسافة المحددة في الإعدادات أو عند خلو المسار النشط.
-        if (distance > AppConfig.googleDirectionsDistanceThreshold || _activeRoutePoints.isEmpty) {
+        // Do NOT call Google Directions API during normal on-route movement.
+        // Google route is only fetched when active points are empty (init/target switch) or when 2 consecutive off-route updates occur.
+        if (_activeRoutePoints.isEmpty) {
           _fetchRoadFollowingRoute();
         } else {
           _updatePolylines();
+          if (_currentTarget != null) {
+            final distToTargetKm = Geolocator.distanceBetween(
+              newPos.latitude,
+              newPos.longitude,
+              _currentTarget!.latitude,
+              _currentTarget!.longitude,
+            ) / 1000.0;
+            if (_remainingDistanceKm != null && distToTargetKm < _remainingDistanceKm!) {
+              _remainingDistanceKm = distToTargetKm;
+              _remainingTimeMin = (distToTargetKm / 25.0 * 60).ceil().clamp(1, 120);
+            }
+          }
         }
       }
     });
@@ -1021,7 +1034,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
 
     try {
       final url = Uri.parse(
-        "https://maps.googleapis.com/maps/api/directions/json?origin=$originStr&destination=$destStr&key=${AppConfig.googleMapsApiKey}&mode=driving",
+        "https://maps.googleapis.com/maps/api/directions/json?origin=$originStr&destination=$destStr&departure_time=now&key=${AppConfig.googleMapsApiKey}&mode=driving",
       );
       final response = await http.get(url).timeout(const Duration(seconds: 8));
       
@@ -1172,7 +1185,11 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         return;
       }
 
-      _sortPendingStopsByDistance();
+      if (!_hasOptimizedTripSequence && stops.isNotEmpty) {
+        await _optimizeStopsWithGoogleAtTripStart(stops);
+      } else {
+        _sortPendingStopsByDistance();
+      }
 
       // Get the ID of the current student after updating stops and sorting
       final String? currentStudentId = (_stops.isNotEmpty && _currentStopIndex < _stops.length)
@@ -1243,6 +1260,87 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     }
   }
 
+  Future<void> _optimizeStopsWithGoogleAtTripStart(List<StudentStop> initialStops) async {
+    if (_hasOptimizedTripSequence) return;
+
+    // Check if school admin already set a custom stop order (> 0)
+    final hasSchoolCustomOrder = initialStops.any((s) => s.stopOrder > 0);
+    if (hasSchoolCustomOrder) {
+      debugPrint('🚌 [RouteNavigation] Using school custom stop order.');
+      _hasOptimizedTripSequence = true;
+      _sortPendingStopsByDistance();
+      return;
+    }
+
+    final validStops = initialStops.where((s) =>
+      s.location.latitude != 0.0 && s.location.longitude != 0.0 && !s.isAbsent
+    ).toList();
+
+    if (validStops.length < 2) {
+      _hasOptimizedTripSequence = true;
+      _sortPendingStopsByDistance();
+      return;
+    }
+
+    try {
+      final isMorning = _routeRepository.currentTripType == 'morning';
+      final schoolLoc = _routeRepository.schoolLocation;
+
+      final originStr = isMorning && _currentPosition != null
+          ? "${_currentPosition!.latitude},${_currentPosition!.longitude}"
+          : (schoolLoc != null ? "${schoolLoc.latitude},${schoolLoc.longitude}" : "${validStops.first.location.latitude},${validStops.first.location.longitude}");
+
+      final destStr = isMorning && schoolLoc != null
+          ? "${schoolLoc.latitude},${schoolLoc.longitude}"
+          : "${validStops.last.location.latitude},${validStops.last.location.longitude}";
+
+      final waypointsStr = "optimize:true|" + validStops.map((s) => "${s.location.latitude},${s.location.longitude}").join('|');
+
+      final url = Uri.parse(
+        "https://maps.googleapis.com/maps/api/directions/json?origin=$originStr&destination=$destStr&waypoints=$waypointsStr&departure_time=now&key=${AppConfig.googleMapsApiKey}&mode=driving",
+      );
+
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'OK' && data['routes'] != null && (data['routes'] as List).isNotEmpty) {
+          final List<dynamic> waypointOrder = data['routes'][0]['waypoint_order'] ?? [];
+          if (waypointOrder.isNotEmpty) {
+            List<StudentStop> reordered = [];
+            for (var idx in waypointOrder) {
+              if (idx is int && idx < validStops.length) {
+                reordered.add(validStops[idx]);
+              }
+            }
+            for (var s in validStops) {
+              if (!reordered.contains(s)) reordered.add(s);
+            }
+            for (var s in initialStops) {
+              if (!reordered.contains(s)) reordered.add(s);
+            }
+
+            if (mounted) {
+              setState(() {
+                _stops = reordered;
+                _currentStopIndex = isMorning 
+                    ? _stops.indexWhere((s) => !s.isBoarded && !s.isAbsent && !s.isDroppedOff)
+                    : _stops.indexWhere((s) => !s.isDroppedOff && !s.isAbsent);
+                if (_currentStopIndex == -1) _currentStopIndex = _stops.length;
+                _initMapData();
+              });
+              debugPrint('🚀 [RouteNavigation] Successfully locked Google optimized stop sequence for trip!');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [RouteNavigation] Google route optimization at start failed, falling back to default order: $e');
+    } finally {
+      _hasOptimizedTripSequence = true;
+      _sortPendingStopsByDistance();
+    }
+  }
+
   void _sortPendingStopsByDistance() {
     if (_currentPosition == null || _stops.isEmpty) return;
 
@@ -1263,21 +1361,9 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       }
     }
     
-    // Sort pending by distance from current location, prioritizing waiting students
-    pending.sort((a, b) {
-      if (a.isWaiting && !b.isWaiting) return -1;
-      if (!a.isWaiting && b.isWaiting) return 1;
-
-      double distA = Geolocator.distanceBetween(
-        _currentPosition!.latitude, _currentPosition!.longitude,
-        a.location.latitude, a.location.longitude
-      );
-      double distB = Geolocator.distanceBetween(
-        _currentPosition!.latitude, _currentPosition!.longitude,
-        b.location.latitude, b.location.longitude
-      );
-      return distA.compareTo(distB);
-    });
+    // Maintain the fixed sequential order of pending stops.
+    // We strictly DO NOT sort by straight-line aerial distance,
+    // preserving the genuine road routing sequence throughout the trip.
     
     setState(() {
       _stops = [...processed, ...pending];

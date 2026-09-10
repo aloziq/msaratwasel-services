@@ -5,12 +5,10 @@ class AppConfig {
   static const bool enableLocationSimulation = false;
 
   // مسافة الفلترة (بالمتر) قبل التقاط إشارة موقع جديدة من الـ GPS
-  // القيمة الموصى بها: 0 للتجربة والمحاكاة، و 15-20 للتشغيل الفعلي في الإنتاج
-  static const int locationDistanceFilter = 15;
+  static const int locationDistanceFilter = 8;
 
   // فترة خنق التحديث (بالثواني) قبل إرسال إحداثيات الباص الجديدة للسيرفر
-  // القيمة الموصى بها: 3 للتجربة والمحاكاة، و 8 للتشغيل الفعلي لتقليل الضغط
-  static const int locationUploadThrottleSeconds = 8;
+  static const int locationUploadThrottleSeconds = 4;
 
   // المسافة الأدنى (بالمتر) التي يجب أن يقطعها الباص قبل طلب إعادة تخطيط المسار الأزرق من جوجل
   static const int googleDirectionsDistanceThreshold = 100;

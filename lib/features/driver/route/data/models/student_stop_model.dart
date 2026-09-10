@@ -17,6 +17,7 @@ class StudentStopModel extends StudentStop {
     super.isWaiting = false,
     super.waitingSince,
     super.waitingElapsedSeconds = 0,
+    super.stopOrder = 0,
   });
 
   factory StudentStopModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +39,7 @@ class StudentStopModel extends StudentStop {
       isWaiting: json['isWaiting'] as bool? ?? false,
       waitingSince: json['waitingSince'] as String?,
       waitingElapsedSeconds: json['waitingElapsedSeconds'] as int? ?? 0,
+      stopOrder: json['stop_order'] as int? ?? 0,
     );
   }
 
@@ -57,6 +59,7 @@ class StudentStopModel extends StudentStop {
       'isWaiting': isWaiting,
       'waitingSince': waitingSince,
       'waitingElapsedSeconds': waitingElapsedSeconds,
+      'stop_order': stopOrder,
     };
   }
 }
