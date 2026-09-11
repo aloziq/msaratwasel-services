@@ -230,6 +230,9 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
               final polylines = _getPolylines(state);
 
               String nextStopName = '';
+              final String resolvedSchoolName = (state.schoolName != null && state.schoolName!.trim().isNotEmpty)
+                  ? state.schoolName!.trim()
+                  : 'المدرسة';
               final target = state.targetPosition;
               if (target != null && target.latitude != 0.0 && target.longitude != 0.0) {
                 try {
@@ -242,7 +245,7 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                   if (state.schoolPosition != null &&
                       (state.schoolPosition!.latitude - target.latitude).abs() < 0.00015 &&
                       (state.schoolPosition!.longitude - target.longitude).abs() < 0.00015) {
-                    nextStopName = 'المدرسة';
+                    nextStopName = resolvedSchoolName;
                   } else {
                     nextStopName = 'الوجهة المحددة';
                   }
@@ -253,7 +256,7 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
                     final nextStop = state.stops.firstWhere((s) => !s.isBoarded && !s.isAbsent);
                     nextStopName = nextStop.nameAr;
                   } catch (_) {
-                    nextStopName = 'المدرسة';
+                    nextStopName = resolvedSchoolName;
                   }
                 } else {
                   try {
@@ -745,12 +748,15 @@ class _SupervisorTrackingScreenState extends State<SupervisorTrackingScreen> {
 
     // 2. School Marker
     if (state.schoolPosition != null) {
+      final String schoolTitle = (state.schoolName != null && state.schoolName!.trim().isNotEmpty)
+          ? state.schoolName!.trim()
+          : 'المدرسة';
       markers.add(
         Marker(
           markerId: const MarkerId('school'),
           position: state.schoolPosition!,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-          infoWindow: const InfoWindow(title: 'المدرسة'),
+          infoWindow: InfoWindow(title: schoolTitle),
         ),
       );
     }

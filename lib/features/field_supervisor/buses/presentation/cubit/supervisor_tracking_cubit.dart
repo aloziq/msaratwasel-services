@@ -28,6 +28,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
   final String busNumber;
   final List<LatLng> polylinePoints;
   final bool hasActiveTrip;
+  final String? schoolName;
 
   SupervisorTrackingLoaded({
     required this.stops,
@@ -40,6 +41,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
     required this.busNumber,
     this.polylinePoints = const [],
     this.hasActiveTrip = true,
+    this.schoolName,
   });
 
   SupervisorTrackingLoaded copyWith({
@@ -53,6 +55,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
     String? busNumber,
     List<LatLng>? polylinePoints,
     bool? hasActiveTrip,
+    String? schoolName,
   }) {
     return SupervisorTrackingLoaded(
       stops: stops ?? this.stops,
@@ -65,6 +68,7 @@ class SupervisorTrackingLoaded extends SupervisorTrackingState {
       busNumber: busNumber ?? this.busNumber,
       polylinePoints: polylinePoints ?? this.polylinePoints,
       hasActiveTrip: hasActiveTrip ?? this.hasActiveTrip,
+      schoolName: schoolName ?? this.schoolName,
     );
   }
 }
@@ -190,6 +194,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
 
       // If bus location is missing, use school location as fallback to avoid "the sea"
       currentBusPos ??= schoolPos;
+      final String? schoolName = busInfo['school_name']?.toString() ?? busInfo['schoolName']?.toString();
 
       emit(SupervisorTrackingLoaded(
         stops: stops,
@@ -201,6 +206,7 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
         heading: heading,
         busNumber: busNumber,
         hasActiveTrip: hasActiveTrip,
+        schoolName: schoolName,
       ));
 
       // 3. Calculate initial route
@@ -384,7 +390,18 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
       
       if (response.statusCode == 200 && response.data['status'] == 'OK') {
         final route = response.data['routes'][0];
-        final points = _decodePolyline(route['overview_polyline']['points']);
+        final leg = route['legs'] != null && (route['legs'] as List).isNotEmpty ? route['legs'][0] : null;
+        List<LatLng> points = [];
+        if (leg != null && leg['steps'] != null && leg['steps'] is List) {
+          for (final step in leg['steps']) {
+            if (step['polyline'] != null && step['polyline']['points'] != null) {
+              points.addAll(_decodePolyline(step['polyline']['points']));
+            }
+          }
+        }
+        if (points.isEmpty && route['overview_polyline'] != null && route['overview_polyline']['points'] != null) {
+          points = _decodePolyline(route['overview_polyline']['points']);
+        }
         if (!isClosed) {
           emit(loaded.copyWith(polylinePoints: points));
         }

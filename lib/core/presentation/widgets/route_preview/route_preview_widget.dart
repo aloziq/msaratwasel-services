@@ -5,12 +5,14 @@ class RoutePreviewWidget extends StatefulWidget {
   final LatLng busLocation;
   final LatLng schoolLocation;
   final List<LatLng> studentLocations;
+  final String? schoolName;
 
   const RoutePreviewWidget({
     super.key,
     required this.busLocation,
     required this.schoolLocation,
     required this.studentLocations,
+    this.schoolName,
   });
 
   @override
@@ -45,7 +47,11 @@ class _RoutePreviewWidgetState extends State<RoutePreviewWidget> {
       markerId: const MarkerId('school_location'),
       position: widget.schoolLocation,
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-      infoWindow: const InfoWindow(title: 'المدرسة'),
+      infoWindow: InfoWindow(
+        title: (widget.schoolName != null && widget.schoolName!.trim().isNotEmpty)
+            ? widget.schoolName!.trim()
+            : 'المدرسة',
+      ),
     );
 
     // 3. إضافة علامات منازل الطلاب ورسم نقاط الخط الملاحي

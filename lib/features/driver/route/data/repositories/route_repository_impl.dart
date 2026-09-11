@@ -19,6 +19,7 @@ class RouteRepositoryImpl implements RouteRepository {
   String _currentTripType = 'morning';
   String _currentTripStatus = 'idle';
   LatLng? _schoolLocation;
+  String? _schoolName;
 
   @override
   String get currentTripType => _currentTripType;
@@ -28,6 +29,9 @@ class RouteRepositoryImpl implements RouteRepository {
 
   @override
   LatLng? get schoolLocation => _schoolLocation;
+
+  @override
+  String? get schoolName => _schoolName;
 
   // ✅ T-02: Route points now built from real student locations
   @override
@@ -71,6 +75,22 @@ class RouteRepositoryImpl implements RouteRepository {
       if (sLat != 0.0 || sLng != 0.0) {
         _schoolLocation = LatLng(sLat, sLng);
         debugPrint('🏫 [REPO] School Location: ($sLat, $sLng)');
+      }
+
+      final sName = busInfo['school_name']?.toString() ?? busInfo['school']?['name']?.toString();
+      if (sName != null && sName.trim().isNotEmpty) {
+        _schoolName = sName.trim();
+        debugPrint('🏫 [REPO] School Name: $_schoolName');
+      } else if (_schoolName == null || _schoolName!.isEmpty) {
+        try {
+          if (GetIt.I.isRegistered<SharedPreferences>()) {
+            final prefs = GetIt.I<SharedPreferences>();
+            final storedSchoolName = prefs.getString('USER_SCHOOL_NAME');
+            if (storedSchoolName != null && storedSchoolName.trim().isNotEmpty) {
+              _schoolName = storedSchoolName.trim();
+            }
+          }
+        } catch (_) {}
       }
 
       final List<dynamic> passengersJson = response.data['passengers'] ?? [];

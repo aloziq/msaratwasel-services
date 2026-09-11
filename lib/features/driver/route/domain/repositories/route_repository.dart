@@ -5,6 +5,7 @@ abstract class RouteRepository {
   String get currentTripType;
   String get currentTripStatus;
   LatLng? get schoolLocation;
+  String? get schoolName;
   Future<List<StudentStop>> getTripStops();
   Future<List<LatLng>> getRoutePoints();
   Future<void> markStudentBoarded({required String studentId});

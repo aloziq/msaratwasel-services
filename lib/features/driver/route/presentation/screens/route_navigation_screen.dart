@@ -99,6 +99,14 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
     return '${_remainingDistanceKm!.toStringAsFixed(1)} ${isArabic ? 'كم' : 'km'}';
   }
 
+  String _getSchoolName(bool isArabic) {
+    final repoName = _routeRepository.schoolName;
+    if (repoName != null && repoName.trim().isNotEmpty) {
+      return repoName.trim();
+    }
+    return isArabic ? 'المدرسة' : 'School';
+  }
+
   bool _isGpsDisabled = false;
   Timer? _gpsCheckTimer;
 
@@ -1045,10 +1053,19 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
           final route = data['routes'][0];
           final leg = route['legs'][0];
-          final points = PolylinePoints.decodePolyline(
-            route['overview_polyline']['points'],
-          );
-          
+
+          List<PointLatLng> points = [];
+          if (leg['steps'] != null && leg['steps'] is List) {
+            for (final step in leg['steps']) {
+              if (step['polyline'] != null && step['polyline']['points'] != null) {
+                points.addAll(PolylinePoints.decodePolyline(step['polyline']['points']));
+              }
+            }
+          }
+          if (points.isEmpty && route['overview_polyline'] != null && route['overview_polyline']['points'] != null) {
+            points = PolylinePoints.decodePolyline(route['overview_polyline']['points']);
+          }
+
           debugPrint("✅ [Navigation] Google route decoded: ${points.length} points");
 
           if (mounted) {
@@ -1430,7 +1447,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
             BitmapDescriptor.hueOrange,
           ),
           infoWindow: InfoWindow(
-            title: isArabic ? 'المدرسة' : 'School',
+            title: _getSchoolName(isArabic),
             snippet: isArabic ? 'الوجهة' : 'Destination',
           ),
         ),
@@ -1674,7 +1691,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
             builder: (context) => AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text(isArabic ? 'تأكيد الوصول' : 'Confirm Arrival'),
-              content: Text(isArabic ? 'هل وصلت بالفعل إلى المدرسة؟' : 'Have you actually arrived at the school?'),
+              content: Text(isArabic ? 'هل وصلت بالفعل إلى ${_getSchoolName(true)}؟' : 'Have you actually arrived at ${_getSchoolName(false)}?'),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context, false), child: Text(isArabic ? 'إلغاء' : 'Cancel')),
                 ElevatedButton(
@@ -1693,8 +1710,8 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
               AppSnackBar.showError(
                 context,
                 isArabic
-                    ? 'يجب تسجيل نزول جميع الطلاب في المدرسة أولاً (${stillOnBoard.length} طالب لا يزال في الحافلة)'
-                    : 'All boarded students must be marked as dropped off at school first (${stillOnBoard.length} remaining)',
+                    ? 'يجب تسجيل نزول جميع الطلاب في ${_getSchoolName(true)} أولاً (${stillOnBoard.length} طالب لا يزال في الحافلة)'
+                    : 'All boarded students must be marked as dropped off at ${_getSchoolName(false)} first (${stillOnBoard.length} remaining)',
               );
               return;
             }
@@ -1996,7 +2013,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                     ),
                                   ),
                                   Text(
-                                    isArabic ? 'المدرسة' : 'School',
+                                    _getSchoolName(isArabic),
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
@@ -2398,8 +2415,9 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       return isArabic ? 'تخطي الطالب (غائب)' : 'Skip Student (Absent)';
     }
     if (isSchoolState) {
-      if (isMorning) return isArabic ? '🏫 الوصول إلى المدرسة' : '🏫 Arrive at School';
-      return isArabic ? '🚀 مغادرة المدرسة' : '🚀 Depart School';
+      final schoolName = _getSchoolName(isArabic);
+      if (isMorning) return isArabic ? '🏫 الوصول إلى $schoolName' : '🏫 Arrive at $schoolName';
+      return isArabic ? '🚀 مغادرة $schoolName' : '🚀 Depart $schoolName';
     }
 
     if (_hasNotified) {

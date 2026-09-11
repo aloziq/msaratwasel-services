@@ -616,7 +616,18 @@ class _TrackingMapState extends State<_TrackingMap> {
 
       if (response.statusCode == 200 && response.data['status'] == 'OK') {
         final route = response.data['routes'][0];
-        final points = _decodePolyline(route['overview_polyline']['points']);
+        final leg = route['legs'] != null && (route['legs'] as List).isNotEmpty ? route['legs'][0] : null;
+        List<LatLng> points = [];
+        if (leg != null && leg['steps'] != null && leg['steps'] is List) {
+          for (final step in leg['steps']) {
+            if (step['polyline'] != null && step['polyline']['points'] != null) {
+              points.addAll(_decodePolyline(step['polyline']['points']));
+            }
+          }
+        }
+        if (points.isEmpty && route['overview_polyline'] != null && route['overview_polyline']['points'] != null) {
+          points = _decodePolyline(route['overview_polyline']['points']);
+        }
         if (mounted) {
           setState(() {
             _routePoints = points;
@@ -888,21 +899,25 @@ class _TrackingMapState extends State<_TrackingMap> {
       ),
     );
 
+    final langCode = Localizations.localeOf(context).languageCode;
+    final isArabic = langCode == 'ar';
+
     // Dynamic School Marker addition
     final schoolLat = widget.trip?.schoolLatitude;
     final schoolLng = widget.trip?.schoolLongitude;
+    final schoolName = (widget.trip?.schoolName != null && widget.trip!.schoolName!.trim().isNotEmpty)
+        ? widget.trip!.schoolName!.trim()
+        : (isArabic ? 'المدرسة' : 'School');
     if (schoolLat != null && schoolLng != null && schoolLat != 0.0 && schoolLng != 0.0) {
       markers.add(
         Marker(
           markerId: const MarkerId('school_destination'),
           position: LatLng(schoolLat, schoolLng),
-          infoWindow: const InfoWindow(title: 'المدرسة (الوجهة النهائية)'),
+          infoWindow: InfoWindow(title: '$schoolName (${isArabic ? 'الوجهة النهائية' : 'Final Destination'})'),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
         ),
       );
     }
-
-    final langCode = Localizations.localeOf(context).languageCode;
 
     final isToHome = widget.trip?.suggestedTripType == 'to_home';
 
@@ -1424,6 +1439,9 @@ class _BottomDetailsCard extends StatelessWidget {
                         schoolLng: context.read<BusTripCubit>().state is BusTripLoaded
                             ? (context.read<BusTripCubit>().state as BusTripLoaded).trip.schoolLongitude
                             : null,
+                        schoolName: context.read<BusTripCubit>().state is BusTripLoaded
+                            ? (context.read<BusTripCubit>().state as BusTripLoaded).trip.schoolName
+                            : null,
                         onStopTap: onStopTap,
                       ),
                     ],
@@ -1536,6 +1554,7 @@ class _StopsTimeline extends StatelessWidget {
   final String tripType;
   final double? schoolLat;
   final double? schoolLng;
+  final String? schoolName;
   final Function(LatLng position)? onStopTap;
 
   const _StopsTimeline({
@@ -1544,6 +1563,7 @@ class _StopsTimeline extends StatelessWidget {
     required this.tripType,
     this.schoolLat,
     this.schoolLng,
+    this.schoolName,
     this.onStopTap,
   });
 
@@ -1661,12 +1681,16 @@ class _StopsTimeline extends StatelessWidget {
                       ? _TimelineStopType.previous
                       : (isSchoolActive ? _TimelineStopType.current : _TimelineStopType.upcoming);
 
+                  final String resolvedSchoolName = (schoolName != null && schoolName!.trim().isNotEmpty)
+                      ? schoolName!.trim()
+                      : (langCode == 'ar' ? 'المدرسة' : 'School');
+
                   return _TimelineTile(
                     isFirst: false,
                     isLast: true,
                     type: schoolType,
-                    title: 'المدرسة (الوجهة النهائية)',
-                    subtitle: 'وصول الحافلة إلى مبنى المدرسة',
+                    title: '$resolvedSchoolName (${langCode == 'ar' ? 'الوجهة النهائية' : 'Final Destination'})',
+                    subtitle: langCode == 'ar' ? 'وصول الحافلة إلى مبنى $resolvedSchoolName' : 'Arrival at $resolvedSchoolName',
                     icon: Icons.school_rounded,
                     statusLabel: schoolType == _TimelineStopType.current 
                         ? 'المحطة الحالية 📍' 

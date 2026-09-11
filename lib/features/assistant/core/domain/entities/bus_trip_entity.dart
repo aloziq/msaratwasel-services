@@ -17,6 +17,7 @@ class BusTripEntity extends Equatable {
   final bool isCompleted;
   final double? schoolLatitude;
   final double? schoolLongitude;
+  final String? schoolName;
 
   const BusTripEntity({
     required this.id,
@@ -34,6 +35,7 @@ class BusTripEntity extends Equatable {
     this.tripStatus,
     this.schoolLatitude,
     this.schoolLongitude,
+    this.schoolName,
   });
 
   BusTripEntity copyWith({
@@ -52,6 +54,7 @@ class BusTripEntity extends Equatable {
     String? tripStatus,
     double? schoolLatitude,
     double? schoolLongitude,
+    String? schoolName,
   }) {
     return BusTripEntity(
       id: id ?? this.id,
@@ -69,6 +72,7 @@ class BusTripEntity extends Equatable {
       tripStatus: tripStatus ?? this.tripStatus,
       schoolLatitude: schoolLatitude ?? this.schoolLatitude,
       schoolLongitude: schoolLongitude ?? this.schoolLongitude,
+      schoolName: schoolName ?? this.schoolName,
     );
   }
 
@@ -89,5 +93,6 @@ class BusTripEntity extends Equatable {
     tripStatus,
     schoolLatitude,
     schoolLongitude,
+    schoolName,
   ];
 }
