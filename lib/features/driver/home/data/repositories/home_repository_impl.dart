@@ -50,6 +50,21 @@ class HomeRepositoryImpl implements HomeRepository {
       }
     } catch (_) {}
 
+    // Fallback to driver/my-trips check
+    try {
+      final response = await ApiClient.instance.get('driver/my-trips');
+      final data = response.data;
+      if (data is Map && data['bus'] != null && data['bus']['id'] != null) {
+        final busId = int.tryParse(data['bus']['id'].toString());
+        if (busId != null && busId > 0) {
+          _cachedBusId = busId;
+          final prefs = GetIt.instance<SharedPreferences>();
+          await prefs.setString('USER_BUS_ID', busId.toString());
+          return _cachedBusId;
+        }
+      }
+    } catch (_) {}
+
     return null;
   }
 
@@ -92,6 +107,19 @@ class HomeRepositoryImpl implements HomeRepository {
         if (data is Map && data['has_bus'] == false) {
           throw Exception('لم يتم إسناد حافلة لك بعد.');
         }
+
+        // Always synchronize cached bus ID from server response
+        if (data is Map && data['bus'] != null && data['bus']['id'] != null) {
+          final bId = int.tryParse(data['bus']['id'].toString());
+          if (bId != null && bId > 0) {
+            _cachedBusId = bId;
+            try {
+              final prefs = GetIt.instance<SharedPreferences>();
+              await prefs.setString('USER_BUS_ID', bId.toString());
+            } catch (_) {}
+          }
+        }
+
         final trips = data['trips'] as List<dynamic>? ?? [];
         return trips
             .map(
@@ -142,7 +170,11 @@ class HomeRepositoryImpl implements HomeRepository {
       );
 
       if (response.statusCode != 200) {
-        throw Exception(response.data['message'] ?? 'Failed to start trip');
+        throw Exception(
+          response.data['message'] ??
+              response.data['error'] ??
+              'Failed to start trip',
+        );
       }
       debugPrint(
         'HomeRepositoryImpl: Trip started successfully for busId: $busId',
@@ -166,7 +198,11 @@ class HomeRepositoryImpl implements HomeRepository {
       );
 
       if (response.statusCode != 200) {
-        throw Exception(response.data['message'] ?? 'Failed to confirm trip');
+        throw Exception(
+          response.data['message'] ??
+              response.data['error'] ??
+              'Failed to confirm trip',
+        );
       }
       debugPrint('HomeRepositoryImpl: Trip confirmed successfully');
     } catch (e) {

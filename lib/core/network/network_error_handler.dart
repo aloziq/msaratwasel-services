@@ -74,7 +74,8 @@ class NetworkErrorHandler {
   static String _handleBadResponse(DioException e) {
     final statusCode = e.response?.statusCode;
     // نحاول استخراج رسالة السيرفر أولاً
-    final serverMsg = e.response?.data?['message']?.toString();
+    final serverMsg = e.response?.data?['message']?.toString() ??
+        e.response?.data?['error']?.toString();
     if (serverMsg != null && serverMsg.isNotEmpty) {
       return serverMsg;
     }
