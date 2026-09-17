@@ -105,11 +105,13 @@ class RouteRepositoryImpl implements RouteRepository {
             (lastEvent != null &&
                 lastEvent['type'] == 'alighting' &&
                 lastEvent['direction'] == expectedDirection) ||
-            (isMorning && (rawStatus == 'atSchool' || rawStatus == 'dropped')) ||
-            (!isMorning && (rawStatus == 'atHome' || rawStatus == 'dropped'));
+            (isMorning && (rawStatus == 'atSchool' || rawStatus == 'dropped' || rawStatus == 'completed')) ||
+            (!isMorning && (rawStatus == 'atHome' || rawStatus == 'dropped' || rawStatus == 'completed'));
 
-        final isOnBus = json['isOnBus'] == true || rawStatus == 'onBus' || rawStatus == 'boarded';
+        final isOnBus = json['isOnBus'] == true || rawStatus == 'onBus' || rawStatus == 'boarded' || rawStatus == 'picked_up';
         final isWaiting = json['isWaiting'] == true || rawStatus == 'waiting';
+        final isSkipped = json['isSkipped'] == true || rawStatus == 'skipped';
+        final isAbsent = json['isAbsent'] == true || rawStatus == 'absent' || isSkipped;
 
         // In afternoon trips, 'waiting' means the student is still on the bus
         // (driver pressed "near house" but student hasn't gotten off yet)
@@ -120,6 +122,10 @@ class RouteRepositoryImpl implements RouteRepository {
           '👤 [REPO] Passenger: ${json['name']}, status: ${json['status']}, '
           'isWaiting: ${json['isWaiting']}, waitingSince: ${json['waitingSince']}, waitingElapsedSeconds: ${json['waitingElapsedSeconds']}',
         );
+
+        final stopOrderVal = json['stop_order'] is int 
+            ? json['stop_order'] as int 
+            : (int.tryParse(json['stop_order']?.toString() ?? '0') ?? 0);
 
         return StudentStopModel(
           id: json['id'].toString(),
@@ -134,12 +140,15 @@ class RouteRepositoryImpl implements RouteRepository {
               'https://ui-avatars.com/api/?name=${Uri.encodeComponent(json['name'] ?? 'User')}&background=random',
           isBoarded: effectivelyBoarded,
           isDroppedOff: isDroppedOff,
-          isAbsent: json['isAbsent'] == true || json['status'] == 'absent',
+          isAbsent: isAbsent,
           isWaiting: isWaiting,
+          isSkipped: isSkipped,
+          skipReason: json['skipReason']?.toString() ?? json['skip_reason']?.toString(),
           waitingSince: json['waitingSince']?.toString(),
           waitingElapsedSeconds:
               int.tryParse(json['waitingElapsedSeconds']?.toString() ?? '0') ??
               0,
+          stopOrder: stopOrderVal,
         );
       }).toList();
     } catch (e) {
@@ -232,6 +241,36 @@ class RouteRepositoryImpl implements RouteRepository {
       throw Exception('فشل تسجيل غياب الطالب: $message');
     } catch (e) {
       throw Exception('فشل تسجيل غياب الطالب');
+    }
+  }
+
+  @override
+  Future<void> skipStudentStop({
+    required String studentId,
+    required String reason,
+    String? notes,
+  }) async {
+    try {
+      if (_cachedBusId == null) {
+        final userResponse = await _dio.get('auth/user');
+        final data = userResponse.data['data'] ?? userResponse.data['user'];
+        _cachedBusId = data['bus_id'] ?? data['has_bus'];
+      }
+
+      await _dio.post(
+        'bus/$_cachedBusId/skip-stop',
+        data: {
+          'student_id': studentId,
+          'skip_reason': reason,
+          if (notes != null) 'notes': notes,
+        },
+      );
+    } on DioException catch (e) {
+      final message =
+          e.response?.data?['message'] ?? e.message ?? 'Network error';
+      throw Exception('فشل تخطي محطة الطالب: $message');
+    } catch (e) {
+      throw Exception('فشل تخطي محطة الطالب');
     }
   }
 

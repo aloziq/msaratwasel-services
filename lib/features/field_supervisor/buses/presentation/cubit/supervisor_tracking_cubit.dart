@@ -123,12 +123,13 @@ class SupervisorTrackingCubit extends Cubit<SupervisorTrackingState> {
         final isDroppedOff = (lastEvent != null &&
             lastEvent['type'] == 'alighting' &&
             lastEvent['direction'] == expectedDirection) ||
-            (isMorning && (rawStatus == 'atSchool' || rawStatus == 'dropped')) ||
-            (!isMorning && (rawStatus == 'atHome' || rawStatus == 'dropped'));
+            (isMorning && (rawStatus == 'atSchool' || rawStatus == 'dropped' || rawStatus == 'completed')) ||
+            (!isMorning && (rawStatus == 'atHome' || rawStatus == 'dropped' || rawStatus == 'completed'));
             
-        final isOnBus = (json['isOnBus'] == true || rawStatus == 'onBus' || rawStatus == 'boarded') && !isDroppedOff;
+        final isOnBus = (json['isOnBus'] == true || rawStatus == 'onBus' || rawStatus == 'boarded' || rawStatus == 'picked_up') && !isDroppedOff;
             
-        final isAbsent = json['isAbsent'] == true || rawStatus == 'absent';
+        final isSkipped = json['isSkipped'] == true || rawStatus == 'skipped';
+        final isAbsent = json['isAbsent'] == true || rawStatus == 'absent' || isSkipped;
 
         // Student location logic based on trip type
         var lat = isMorning ? json['forth_latitude'] : json['back_latitude'];

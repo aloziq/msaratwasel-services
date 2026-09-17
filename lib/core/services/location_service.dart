@@ -127,12 +127,7 @@ void onStart(ServiceInstance service) async {
 
     int simStep = 0;
 
-    Geolocator.getPositionStream(
-      locationSettings: LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: AppConfig.locationDistanceFilter,
-      ),
-    ).listen((Position position) async {
+    Future<void> sendLocationUpdate(Position position) async {
       try {
         final now = DateTime.now();
         // Throttler: Do not emit more frequently than configured seconds
@@ -173,7 +168,40 @@ void onStart(ServiceInstance service) async {
       } catch (e) {
         debugPrint('Background update error: $e');
       }
-    });
+    }
+
+    Geolocator.getPositionStream(
+      locationSettings: LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: AppConfig.locationDistanceFilter,
+      ),
+    ).listen(sendLocationUpdate);
+
+    if (AppConfig.enableLocationSimulation) {
+      Timer.periodic(
+        const Duration(seconds: AppConfig.locationUploadThrottleSeconds),
+        (_) async {
+          try {
+            final pos = await Geolocator.getLastKnownPosition() ??
+                Position(
+                  longitude: 46.6753,
+                  latitude: 24.7136,
+                  timestamp: DateTime.now(),
+                  accuracy: 5.0,
+                  altitude: 0.0,
+                  altitudeAccuracy: 0.0,
+                  heading: 0.0,
+                  headingAccuracy: 0.0,
+                  speed: 20.0,
+                  speedAccuracy: 0.0,
+                );
+            await sendLocationUpdate(pos);
+          } catch (e) {
+            debugPrint('Background simulation tick error: $e');
+          }
+        },
+      );
+    }
   } catch (e) {
     debugPrint('Background initialization error: $e');
   }

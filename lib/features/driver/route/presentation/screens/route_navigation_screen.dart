@@ -67,7 +67,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
   bool _hasNotified = false; // Whether parent has been notified for the current stop
   bool _isMovingToStop = false; // Whether the driver has started moving to the current stop
   bool _isFinished = false; // When the trip phase logic finishes
-  bool _hasOptimizedTripSequence = false; // Whether Google optimization has run for this trip
 
   // Waiting Timer Logic
   Timer? _waitingTimer;
@@ -883,12 +882,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       debugPrint('GPS: Error getting initial position: $e');
     }
 
-    _gpsSubscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: AppConfig.locationDistanceFilter,
-      ),
-    ).listen((Position position) {
+    void handlePositionUpdate(Position position) {
       if (!mounted) return;
       
       _simStep++;
@@ -970,8 +964,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         }
       } else {
         _consecutiveOffRouteUpdates = 0;
-        // Do NOT call Google Directions API during normal on-route movement.
-        // Google route is only fetched when active points are empty (init/target switch) or when 2 consecutive off-route updates occur.
         if (_activeRoutePoints.isEmpty) {
           _fetchRoadFollowingRoute();
         } else {
@@ -990,7 +982,43 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
           }
         }
       }
-    });
+    }
+
+    _gpsSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: AppConfig.locationDistanceFilter,
+      ),
+    ).listen(handlePositionUpdate);
+
+    // If simulation mode is enabled, run a periodic timer to advance position every N seconds
+    if (AppConfig.enableLocationSimulation) {
+      _locationTimer?.cancel();
+      _locationTimer = Timer.periodic(
+        const Duration(seconds: AppConfig.locationUploadThrottleSeconds),
+        (_) async {
+          if (!mounted) return;
+          try {
+            final basePos = await Geolocator.getLastKnownPosition() ??
+                Position(
+                  longitude: _currentPosition?.longitude ?? 46.6753,
+                  latitude: _currentPosition?.latitude ?? 24.7136,
+                  timestamp: DateTime.now(),
+                  accuracy: 5.0,
+                  altitude: 0.0,
+                  altitudeAccuracy: 0.0,
+                  heading: 0.0,
+                  headingAccuracy: 0.0,
+                  speed: 20.0,
+                  speedAccuracy: 0.0,
+                );
+            handlePositionUpdate(basePos);
+          } catch (e) {
+            debugPrint('⚠️ [Simulation] Error during simulated tick: $e');
+          }
+        },
+      );
+    }
   }
 
   DateTime? _lastRouteFetchTime;
@@ -1202,11 +1230,7 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         return;
       }
 
-      if (!_hasOptimizedTripSequence && stops.isNotEmpty) {
-        await _optimizeStopsWithGoogleAtTripStart(stops);
-      } else {
-        _sortPendingStopsByDistance();
-      }
+      _sortPendingStopsByDistance();
 
       // Get the ID of the current student after updating stops and sorting
       final String? currentStudentId = (_stops.isNotEmpty && _currentStopIndex < _stops.length)
@@ -1274,87 +1298,6 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
         _error = e.toString();
         _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _optimizeStopsWithGoogleAtTripStart(List<StudentStop> initialStops) async {
-    if (_hasOptimizedTripSequence) return;
-
-    // Check if school admin already set a custom stop order (> 0)
-    final hasSchoolCustomOrder = initialStops.any((s) => s.stopOrder > 0);
-    if (hasSchoolCustomOrder) {
-      debugPrint('🚌 [RouteNavigation] Using school custom stop order.');
-      _hasOptimizedTripSequence = true;
-      _sortPendingStopsByDistance();
-      return;
-    }
-
-    final validStops = initialStops.where((s) =>
-      s.location.latitude != 0.0 && s.location.longitude != 0.0 && !s.isAbsent
-    ).toList();
-
-    if (validStops.length < 2) {
-      _hasOptimizedTripSequence = true;
-      _sortPendingStopsByDistance();
-      return;
-    }
-
-    try {
-      final isMorning = _routeRepository.currentTripType == 'morning';
-      final schoolLoc = _routeRepository.schoolLocation;
-
-      final originStr = isMorning && _currentPosition != null
-          ? "${_currentPosition!.latitude},${_currentPosition!.longitude}"
-          : (schoolLoc != null ? "${schoolLoc.latitude},${schoolLoc.longitude}" : "${validStops.first.location.latitude},${validStops.first.location.longitude}");
-
-      final destStr = isMorning && schoolLoc != null
-          ? "${schoolLoc.latitude},${schoolLoc.longitude}"
-          : "${validStops.last.location.latitude},${validStops.last.location.longitude}";
-
-      final waypointsStr = "optimize:true|" + validStops.map((s) => "${s.location.latitude},${s.location.longitude}").join('|');
-
-      final url = Uri.parse(
-        "https://maps.googleapis.com/maps/api/directions/json?origin=$originStr&destination=$destStr&waypoints=$waypointsStr&departure_time=now&key=${AppConfig.googleMapsApiKey}&mode=driving",
-      );
-
-      final response = await http.get(url).timeout(const Duration(seconds: 10));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == 'OK' && data['routes'] != null && (data['routes'] as List).isNotEmpty) {
-          final List<dynamic> waypointOrder = data['routes'][0]['waypoint_order'] ?? [];
-          if (waypointOrder.isNotEmpty) {
-            List<StudentStop> reordered = [];
-            for (var idx in waypointOrder) {
-              if (idx is int && idx < validStops.length) {
-                reordered.add(validStops[idx]);
-              }
-            }
-            for (var s in validStops) {
-              if (!reordered.contains(s)) reordered.add(s);
-            }
-            for (var s in initialStops) {
-              if (!reordered.contains(s)) reordered.add(s);
-            }
-
-            if (mounted) {
-              setState(() {
-                _stops = reordered;
-                _currentStopIndex = isMorning 
-                    ? _stops.indexWhere((s) => !s.isBoarded && !s.isAbsent && !s.isDroppedOff)
-                    : _stops.indexWhere((s) => !s.isDroppedOff && !s.isAbsent);
-                if (_currentStopIndex == -1) _currentStopIndex = _stops.length;
-                _initMapData();
-              });
-              debugPrint('🚀 [RouteNavigation] Successfully locked Google optimized stop sequence for trip!');
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('⚠️ [RouteNavigation] Google route optimization at start failed, falling back to default order: $e');
-    } finally {
-      _hasOptimizedTripSequence = true;
-      _sortPendingStopsByDistance();
     }
   }
 
@@ -1753,6 +1696,181 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
       }
     } catch (e) {
       setState(() { _isActionLoading = false; });
+    }
+  }
+
+  Future<void> _skipCurrentStopDialog(StudentStop stop, bool isArabic) async {
+    final reasons = [
+      {'key': 'no_show', 'ar': 'لم يحضر الطالب في الوقت المحدد', 'en': 'Student did not show up'},
+      {'key': 'parent_called', 'ar': 'إشعار من ولي الأمر بعدم الحضور', 'en': 'Parent notified not attending'},
+      {'key': 'traffic_diversion', 'ar': 'تعذر الوصول لموقع الطالب بسبب الطريق', 'en': 'Road blocked / Inaccessible'},
+      {'key': 'other', 'ar': 'سبب آخر', 'en': 'Other reason'},
+    ];
+
+    String selectedReason = 'no_show';
+    final notesController = TextEditingController();
+
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(PhosphorIconsBold.skipForward, color: Colors.orange, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isArabic ? 'تخطي محطة الطالب' : 'Skip Student Stop',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            isArabic ? stop.nameAr : stop.nameEn,
+                            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  isArabic ? 'حدد سبب التخطي:' : 'Select skip reason:',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 10),
+                ...reasons.map((r) => RadioListTile<String>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(isArabic ? r['ar']! : r['en']!),
+                  value: r['key']!,
+                  groupValue: selectedReason,
+                  onChanged: (val) {
+                    if (val != null) setSheetState(() => selectedReason = val);
+                  },
+                )),
+                if (selectedReason == 'other') ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: notesController,
+                    decoration: InputDecoration(
+                      hintText: isArabic ? 'اكتب السبب هنا...' : 'Write reason here...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(isArabic ? 'إلغاء' : 'Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange[800],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(isArabic ? 'تأكيد التخطي' : 'Confirm Skip'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      setState(() { _isActionLoading = true; });
+      try {
+        await _routeRepository.skipStudentStop(
+          studentId: stop.id,
+          reason: selectedReason,
+          notes: notesController.text.trim().isNotEmpty ? notesController.text.trim() : null,
+        );
+
+        if (mounted) {
+          AppSnackBar.showSuccess(
+            context,
+            isArabic
+                ? 'تم تخطي محطة ${stop.nameAr} بنجاح'
+                : 'Stop for ${stop.nameEn} skipped successfully',
+          );
+        }
+
+        // Mark stop as absent / skipped locally
+        final stopIdx = _stops.indexWhere((s) => s.id == stop.id);
+        if (stopIdx != -1) {
+          _stops[stopIdx] = _stops[stopIdx].copyWith(
+            isAbsent: true,
+            isSkipped: true,
+            skipReason: selectedReason,
+          );
+        }
+
+        // Advance to next stop
+        setState(() {
+          _hasNotified = false;
+          _isMovingToStop = false;
+          _isActionLoading = false;
+        });
+
+        _sortPendingStopsByDistance();
+        _fetchRoadFollowingRoute();
+      } catch (e) {
+        if (mounted) {
+          setState(() { _isActionLoading = false; });
+          AppSnackBar.showError(context, e.toString());
+        }
+      }
     }
   }
 
@@ -2296,6 +2414,25 @@ class _RouteNavigationScreenState extends State<RouteNavigationScreen> {
                                         }
                                       },
                                     ).slideY(begin: 0.3, end: 0, duration: 350.ms),
+                                if (!isSchoolState && currentStop != null && !currentStop.isAbsent && !_isFinished)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: TextButton.icon(
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.orange[800],
+                                          padding: const EdgeInsets.symmetric(vertical: 6),
+                                        ),
+                                        icon: const Icon(PhosphorIconsBold.skipForward, size: 16),
+                                        label: Text(
+                                          isArabic ? 'تخطي هذه المحطة' : 'Skip this stop',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                        ),
+                                        onPressed: _isActionLoading ? null : () => _skipCurrentStopDialog(currentStop, isArabic),
+                                      ),
+                                    ),
+                                  ),
                             ],
                           ),
                         ),

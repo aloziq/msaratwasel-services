@@ -12,6 +12,7 @@ abstract class RouteRepository {
   Future<void> groupBoard({required List<String> studentIds});
   Future<void> markStudentDropped({required String studentId});
   Future<void> markStudentAbsent({required String studentId});
+  Future<void> skipStudentStop({required String studentId, required String reason, String? notes});
   Future<void> notifyParentNearHouse({required String studentId});
   Future<void> updateLocation({
     required double latitude,

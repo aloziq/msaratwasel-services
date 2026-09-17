@@ -13,9 +13,14 @@ class StudentStop {
   final bool isBoarded;
   final bool isDroppedOff;
   final bool isWaiting;
+  final bool isSkipped;
+  final String? skipReason;
   final String? waitingSince;
   final int waitingElapsedSeconds;
   final int stopOrder;
+
+  bool get isPickedUp => isBoarded;
+  bool get isCompleted => isDroppedOff;
 
   const StudentStop({
     required this.id,
@@ -30,6 +35,8 @@ class StudentStop {
     this.isBoarded = false,
     this.isDroppedOff = false,
     this.isWaiting = false,
+    this.isSkipped = false,
+    this.skipReason,
     this.waitingSince,
     this.waitingElapsedSeconds = 0,
     this.stopOrder = 0,
@@ -40,6 +47,8 @@ class StudentStop {
     bool? isBoarded,
     bool? isDroppedOff,
     bool? isWaiting,
+    bool? isSkipped,
+    String? skipReason,
     String? waitingSince,
     int? waitingElapsedSeconds,
     int? stopOrder,
@@ -57,9 +66,12 @@ class StudentStop {
       isBoarded: isBoarded ?? this.isBoarded,
       isDroppedOff: isDroppedOff ?? this.isDroppedOff,
       isWaiting: isWaiting ?? this.isWaiting,
+      isSkipped: isSkipped ?? this.isSkipped,
+      skipReason: skipReason ?? this.skipReason,
       waitingSince: waitingSince ?? this.waitingSince,
       waitingElapsedSeconds: waitingElapsedSeconds ?? this.waitingElapsedSeconds,
       stopOrder: stopOrder ?? this.stopOrder,
     );
   }
 }
+
